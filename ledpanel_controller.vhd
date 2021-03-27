@@ -36,7 +36,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 		reset     : in std_logic;
 		data      : in std_logic_vector (5 downto 0);
 		--
-		addr      : out std_logic_vector (12 downto 0);
+		addr      : out std_logic_vector (14 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
@@ -50,13 +50,13 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 	);
    end component;
 	
-	component dp_ram_8k
+	component dp_ram_32k
 	PORT
 	(
 		data			: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
-		rdaddress	: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		rdaddress	: IN STD_LOGIC_VECTOR (14 DOWNTO 0);
 		rdclock		: IN STD_LOGIC;
-		wraddress	: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		wraddress	: IN STD_LOGIC_VECTOR (14 DOWNTO 0);
 		wrclock		: IN STD_LOGIC := '1';
 		wren			: IN STD_LOGIC := '0';
 		q				: OUT STD_LOGIC_VECTOR (5 DOWNTO 0)
@@ -65,7 +65,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 	
 	signal panel_reset : std_logic := '0';
 	signal clk         : std_logic;
-	signal ram_addr    : std_logic_vector (12 downto 0);
+	signal ram_addr    : std_logic_vector (14 downto 0);
 	signal ram_data    : std_logic_vector (5 downto 0);
 	
 begin
@@ -95,12 +95,12 @@ begin
 		c0 => clk
 	);
 	
-	RAM : dp_ram_8k
+	RAM : dp_ram_32k
 	port map	 (
 		data      => "000000",
       rdaddress => ram_addr,
 		rdclock   => clk,
-		wraddress => "0000000000000",
+		wraddress => "000000000000000",
       wrclock   => '0',
       wren      => '1',
 	 	q         => ram_data

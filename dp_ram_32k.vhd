@@ -4,7 +4,7 @@
 -- MODULE: altsyncram 
 
 -- ============================================================
--- File Name: dp_ram_8k.vhd
+-- File Name: dp_ram_32k.vhd
 -- Megafunction Name(s):
 -- 			altsyncram
 --
@@ -40,21 +40,21 @@ USE ieee.std_logic_1164.all;
 LIBRARY altera_mf;
 USE altera_mf.altera_mf_components.all;
 
-ENTITY dp_ram_8k IS
+ENTITY dp_ram_32k IS
 	PORT
 	(
 		data		: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
-		rdaddress		: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		rdaddress		: IN STD_LOGIC_VECTOR (14 DOWNTO 0);
 		rdclock		: IN STD_LOGIC ;
-		wraddress		: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		wraddress		: IN STD_LOGIC_VECTOR (14 DOWNTO 0);
 		wrclock		: IN STD_LOGIC  := '1';
 		wren		: IN STD_LOGIC  := '0';
 		q		: OUT STD_LOGIC_VECTOR (5 DOWNTO 0)
 	);
-END dp_ram_8k;
+END dp_ram_32k;
 
 
-ARCHITECTURE SYN OF dp_ram_8k IS
+ARCHITECTURE SYN OF dp_ram_32k IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (5 DOWNTO 0);
 
@@ -71,14 +71,14 @@ BEGIN
 		init_file => "image.mif",
 		intended_device_family => "MAX 10",
 		lpm_type => "altsyncram",
-		numwords_a => 8192,
-		numwords_b => 8192,
+		numwords_a => 32768,
+		numwords_b => 32768,
 		operation_mode => "DUAL_PORT",
 		outdata_aclr_b => "NONE",
 		outdata_reg_b => "UNREGISTERED",
 		power_up_uninitialized => "FALSE",
-		widthad_a => 13,
-		widthad_b => 13,
+		widthad_a => 15,
+		widthad_b => 15,
 		width_a => 6,
 		width_b => 6,
 		width_byteena_a => 1
@@ -130,7 +130,7 @@ END SYN;
 -- Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
 -- Retrieval info: PRIVATE: JTAG_ID STRING "NONE"
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
--- Retrieval info: PRIVATE: MEMSIZE NUMERIC "49152"
+-- Retrieval info: PRIVATE: MEMSIZE NUMERIC "196608"
 -- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
 -- Retrieval info: PRIVATE: MIFfilename STRING "image.mif"
 -- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "2"
@@ -168,34 +168,34 @@ END SYN;
 -- Retrieval info: CONSTANT: INIT_FILE STRING "image.mif"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "MAX 10"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
--- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "8192"
--- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "8192"
+-- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "32768"
+-- Retrieval info: CONSTANT: NUMWORDS_B NUMERIC "32768"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "DUAL_PORT"
 -- Retrieval info: CONSTANT: OUTDATA_ACLR_B STRING "NONE"
 -- Retrieval info: CONSTANT: OUTDATA_REG_B STRING "UNREGISTERED"
 -- Retrieval info: CONSTANT: POWER_UP_UNINITIALIZED STRING "FALSE"
--- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "13"
--- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "13"
+-- Retrieval info: CONSTANT: WIDTHAD_A NUMERIC "15"
+-- Retrieval info: CONSTANT: WIDTHAD_B NUMERIC "15"
 -- Retrieval info: CONSTANT: WIDTH_A NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTH_B NUMERIC "6"
 -- Retrieval info: CONSTANT: WIDTH_BYTEENA_A NUMERIC "1"
 -- Retrieval info: USED_PORT: data 0 0 6 0 INPUT NODEFVAL "data[5..0]"
 -- Retrieval info: USED_PORT: q 0 0 6 0 OUTPUT NODEFVAL "q[5..0]"
--- Retrieval info: USED_PORT: rdaddress 0 0 13 0 INPUT NODEFVAL "rdaddress[12..0]"
+-- Retrieval info: USED_PORT: rdaddress 0 0 15 0 INPUT NODEFVAL "rdaddress[14..0]"
 -- Retrieval info: USED_PORT: rdclock 0 0 0 0 INPUT NODEFVAL "rdclock"
--- Retrieval info: USED_PORT: wraddress 0 0 13 0 INPUT NODEFVAL "wraddress[12..0]"
+-- Retrieval info: USED_PORT: wraddress 0 0 15 0 INPUT NODEFVAL "wraddress[14..0]"
 -- Retrieval info: USED_PORT: wrclock 0 0 0 0 INPUT VCC "wrclock"
 -- Retrieval info: USED_PORT: wren 0 0 0 0 INPUT GND "wren"
--- Retrieval info: CONNECT: @address_a 0 0 13 0 wraddress 0 0 13 0
--- Retrieval info: CONNECT: @address_b 0 0 13 0 rdaddress 0 0 13 0
+-- Retrieval info: CONNECT: @address_a 0 0 15 0 wraddress 0 0 15 0
+-- Retrieval info: CONNECT: @address_b 0 0 15 0 rdaddress 0 0 15 0
 -- Retrieval info: CONNECT: @clock0 0 0 0 0 wrclock 0 0 0 0
 -- Retrieval info: CONNECT: @clock1 0 0 0 0 rdclock 0 0 0 0
 -- Retrieval info: CONNECT: @data_a 0 0 6 0 data 0 0 6 0
 -- Retrieval info: CONNECT: @wren_a 0 0 0 0 wren 0 0 0 0
 -- Retrieval info: CONNECT: q 0 0 6 0 @q_b 0 0 6 0
--- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_8k.vhd TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_8k.inc FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_8k.cmp TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_8k.bsf FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_8k_inst.vhd FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_32k.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_32k.inc FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_32k.cmp TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_32k.bsf FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL dp_ram_32k_inst.vhd FALSE
 -- Retrieval info: LIB_FILE: altera_mf
