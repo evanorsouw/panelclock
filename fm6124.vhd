@@ -8,7 +8,7 @@ entity FM6124 is
 		reset     : in std_logic;
 		data      : in std_logic_vector (5 downto 0);
 		--
-		addr      : out std_logic_vector (11 downto 0);
+		addr      : out std_logic_vector (12 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
@@ -33,7 +33,7 @@ begin
 	variable pixclk       : std_logic; 
 	variable oe           : std_logic;
 	variable latch        : std_logic;
-	variable pixel_count  : unsigned (11 downto 0);
+	variable pixel_count  : unsigned (12 downto 0);
 	begin
 		if (reset = '1') then
 			clk_count    := "00";
@@ -71,7 +71,7 @@ begin
 					oe := '0';
 					column_count := "00000000";
 					if (row_count = 31) then
-						pixel_count := "000000000000";
+						pixel_count := "0000000000000";
 					end if;
 				else
 					pixclk := '1';

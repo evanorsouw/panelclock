@@ -36,7 +36,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 		reset     : in std_logic;
 		data      : in std_logic_vector (5 downto 0);
 		--
-		addr      : out std_logic_vector (11 downto 0);
+		addr      : out std_logic_vector (12 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
@@ -50,9 +50,22 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 	);
    end component;
 	
+	component dp_ram_8k
+	PORT
+	(
+		data			: IN STD_LOGIC_VECTOR (5 DOWNTO 0);
+		rdaddress	: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		rdclock		: IN STD_LOGIC;
+		wraddress	: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
+		wrclock		: IN STD_LOGIC := '1';
+		wren			: IN STD_LOGIC := '0';
+		q				: OUT STD_LOGIC_VECTOR (5 DOWNTO 0)
+	);
+	end component;
+	
 	signal panel_reset : std_logic := '0';
 	signal clk         : std_logic;
-	signal ram_addr    : std_logic_vector (11 downto 0);
+	signal ram_addr    : std_logic_vector (12 downto 0);
 	signal ram_data    : std_logic_vector (5 downto 0);
 	
 begin
@@ -82,19 +95,20 @@ begin
 		c0 => clk
 	);
 	
-	--B2 G2 R1 B1 G1 R2
-	Reset_Proc: process (clk,reset)
+	RAM : dp_ram_8k
+	port map	 (
+		data      => "000000",
+      rdaddress => ram_addr,
+		rdclock   => clk,
+		wraddress => "0000000000000",
+      wrclock   => '0',
+      wren      => '1',
+	 	q         => ram_data
+	);
+	
+	Reset_Proc: process (reset)
 	begin
 		panel_reset <= not reset;
-		if rising_edge(clk) then
-			if (unsigned(ram_addr) = 0 or unsigned(ram_addr) = 127) then
-				ram_data <= "000111";
-			elsif (unsigned(ram_addr) = 3968 or unsigned(ram_addr) = 4095) then
-				ram_data <= "111000";
-			else
-				ram_data <= "000000";
-			end if;
-		end if;
 	end process;
 	
 end architecture ledpanel_controller_arch;
