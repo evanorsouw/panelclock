@@ -28,15 +28,16 @@ architecture FM6124_arch of FM6124 is
 begin
 	Clock_Proc: process (clk, reset)
 	variable clk_count    : unsigned (1 downto 0);
-	variable column_count : unsigned (6 downto 0);
+	variable column_count : unsigned (7 downto 0);
 	variable row_count    : unsigned (4 downto 0);
 	variable pixclk       : std_logic; 
 	variable oe           : std_logic;
 	variable latch        : std_logic;
+	variable pixel_count  : unsigned (11 downto 0);
 	begin
 		if (reset = '1') then
 			clk_count    := "00";
-			column_count := "0000000";
+			column_count := "00000000";
 			row_count    := "00000";
 			pixclk       := '0';
 			latch        := '0';
@@ -44,7 +45,6 @@ begin
 			
 		elsif rising_edge(clk) then
 			
-			oe        := '0';
 			clk_count := clk_count + 1;
 			
 			if (clk_count = 0) then
@@ -60,19 +60,28 @@ begin
 				
 			elsif (clk_count = 2) then
 				column_count := column_count + 1;
-				if (column_count = 65) then
-					latch  := '1';
-					column_count := "0000000";
-					row_count := row_count + 1;
-				else
+				if (column_count = 129) then
+					oe := '1';
+				elsif (column_count = 130) then
+			     	latch  := '1';
+				elsif (column_count = 131) then
 					latch := '0';
+					row_count := row_count + 1;
+				elsif (column_count = 132) then
+					oe := '0';
+					column_count := "00000000";
+					if (row_count = 31) then
+						pixel_count := "000000000000";
+					end if;
+				else
 					pixclk := '1';
+					pixel_count := pixel_count + 1;
 				end if;
 												
 			end if;			
 		end if;
 		
-		addr      <= "000000" & std_logic_vector(column_count)(5 downto 0);
+		addr      <= std_logic_vector(pixel_count);
 		dsp_clk   <= pixclk;
 		dsp_oe    <= oe;
 		dsp_latch <= latch;

@@ -82,26 +82,17 @@ begin
 		c0 => clk
 	);
 	
+	--B2 G2 R1 B1 G1 R2
 	Reset_Proc: process (clk,reset)
 	begin
 		panel_reset <= not reset;
 		if rising_edge(clk) then
-			if (to_integer(unsigned(ram_addr)) = 0) then
-				ram_data <= "000000";
-			elsif (to_integer(unsigned(ram_addr)) = 1) then
-				ram_data <= "100100";
-			elsif (to_integer(unsigned(ram_addr)) = 2) then
-				ram_data <= "010010";
-			elsif (to_integer(unsigned(ram_addr)) = 3) then
-				ram_data <= "001001";
-			elsif (to_integer(unsigned(ram_addr)) = 4) then
-				ram_data <= "111111";
-			elsif (to_integer(unsigned(ram_addr)) = 5) then
-				ram_data <= "111111";
-			elsif (to_integer(unsigned(ram_addr)) = 6) then
+			if (unsigned(ram_addr) = 0 or unsigned(ram_addr) = 127) then
+				ram_data <= "000111";
+			elsif (unsigned(ram_addr) = 3968 or unsigned(ram_addr) = 4095) then
 				ram_data <= "111000";
 			else
-				ram_data <= "000111";
+				ram_data <= "000000";
 			end if;
 		end if;
 	end process;
