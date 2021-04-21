@@ -34,19 +34,12 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 	port ( 	
 		clk       : in std_logic;
 		reset     : in std_logic;
-		data      : in std_logic_vector (5 downto 0);
 		--
 		addr      : out std_logic_vector (14 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
-		dsp_addr  : out std_logic_vector (4 downto 0);
-		dsp_r1    : out std_logic;
-		dsp_g1    : out std_logic;
-		dsp_b1    : out std_logic;
-		dsp_r2    : out std_logic;
-		dsp_g2    : out std_logic;
-		dsp_b2    : out std_logic
+		dsp_addr  : out std_logic_vector (4 downto 0)
 	);
    end component;
 	
@@ -62,7 +55,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 		q				: OUT STD_LOGIC_VECTOR (5 DOWNTO 0)
 	);
 	end component;
-	
+		
 	signal panel_reset : std_logic := '0';
 	signal clk         : std_logic;
 	signal ram_addr    : std_logic_vector (14 downto 0);
@@ -73,19 +66,12 @@ begin
 	port map (
 		clk    => clk,
 		reset  => panel_reset,
-		data   => ram_data,
 		--
 		addr      => ram_addr,
 		dsp_clk   => dsp_clk,
 		dsp_latch => dsp_latch,
 		dsp_addr  => dsp_addr,
-		dsp_oe    => dsp_oe,
-		dsp_r1    => dsp_r1,
-		dsp_g1    => dsp_g1,
-		dsp_b1    => dsp_b1,
-		dsp_r2    => dsp_r2,
-		dsp_g2    => dsp_g2,
-		dsp_b2    => dsp_b2
+		dsp_oe    => dsp_oe
 	);
 	
 	ClockGenerator : pll
@@ -98,17 +84,23 @@ begin
 	RAM : dp_ram_32k
 	port map	 (
 		data      => "000000",
-      rdaddress => ram_addr,
+		rdaddress => ram_addr,
 		rdclock   => clk,
 		wraddress => "000000000000000",
-      wrclock   => '0',
-      wren      => '1',
-	 	q         => ram_data
+		wrclock   => '0',
+		wren      => '1',
+		q         => ram_data
 	);
 	
 	Reset_Proc: process (reset)
 	begin
 		panel_reset <= not reset;
+		dsp_r1      <= std_logic_vector(ram_data)(0);
+		dsp_g1      <= std_logic_vector(ram_data)(1);
+		dsp_b1      <= std_logic_vector(ram_data)(2);
+		dsp_r2      <= std_logic_vector(ram_data)(3);
+		dsp_g2      <= std_logic_vector(ram_data)(4);
+		dsp_b2      <= std_logic_vector(ram_data)(5);
 	end process;
 	
 end architecture ledpanel_controller_arch;

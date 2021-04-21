@@ -6,28 +6,19 @@ entity FM6124 is
 	port ( 	
 		clk       : in std_logic;
 		reset     : in std_logic;
-		data      : in std_logic_vector (5 downto 0);
 		--
 		addr      : out std_logic_vector (14 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
-		dsp_addr  : out std_logic_vector (4 downto 0);
-		dsp_r1    : out std_logic;
-		dsp_g1    : out std_logic;
-		dsp_b1    : out std_logic;
-		dsp_r2    : out std_logic;
-		dsp_g2    : out std_logic;
-		dsp_b2    : out std_logic
+		dsp_addr  : out std_logic_vector (4 downto 0)
 	);
 end entity FM6124;
 
-architecture FM6124_arch of FM6124 is
-
-	
+architecture FM6124_arch of FM6124 is	
 begin
 	Clock_Proc: process (clk, reset)
-	variable clk_count    : unsigned (1 downto 0);
+	variable clk_count    : std_logic;
 	variable column_count : unsigned (6 downto 0);
 	variable row_count    : unsigned (4 downto 0);
 	variable pixclk       : std_logic; 
@@ -39,7 +30,7 @@ begin
 	variable depth_delay  : unsigned (6 downto 0);
 	begin
 		if (reset = '1') then
-			clk_count    := "00";
+			clk_count    := '0';
 			column_count := "0000000";
 			row_count    := "00000";
 			pixclk       := '0';
@@ -51,20 +42,12 @@ begin
 			
 		elsif rising_edge(clk) then
 			
-			clk_count := clk_count + 1;
+			clk_count := not clk_count;
 			
-			if (clk_count = 0) then
+			if (clk_count = '0') then
 				pixclk := '0';
-				
-			elsif (clk_count = 1) then			
-				dsp_r1 <= std_logic_vector(data)(0);
-				dsp_g1 <= std_logic_vector(data)(1);
-				dsp_b1 <= std_logic_vector(data)(2);
-				dsp_r2 <= std_logic_vector(data)(3);
-				dsp_g2 <= std_logic_vector(data)(4);
-				dsp_b2 <= std_logic_vector(data)(5);
-				
-			elsif (clk_count = 2) then
+								
+			else
 			   if (waiting = '1') then
 					depth_count := depth_count - 1;
 					if (depth_count = 0) then
@@ -91,6 +74,7 @@ begin
 						oe := '0';
 						waiting := '1';
 						depth_count := depth_delay * 67;
+						depth_count := depth_count - 66;
 					end if;
 					if (waiting = '1') then
 						column_count := "0000000";
