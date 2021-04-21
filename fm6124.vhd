@@ -28,26 +28,26 @@ architecture FM6124_arch of FM6124 is
 begin
 	Clock_Proc: process (clk, reset)
 	variable clk_count    : unsigned (1 downto 0);
-	variable column_count : unsigned (8 downto 0);
+	variable column_count : unsigned (6 downto 0);
 	variable row_count    : unsigned (4 downto 0);
 	variable pixclk       : std_logic; 
 	variable oe           : std_logic;
 	variable latch        : std_logic;
 	variable pixel_count  : unsigned (14 downto 0);
 	variable waiting      : std_logic;
-	variable depth_count  : unsigned (7 downto 0);
-	variable depth_delay  : unsigned (7 downto 0);
+	variable depth_count  : unsigned (13 downto 0);
+	variable depth_delay  : unsigned (6 downto 0);
 	begin
 		if (reset = '1') then
 			clk_count    := "00";
-			column_count := "000000000";
+			column_count := "0000000";
 			row_count    := "00000";
 			pixclk       := '0';
 			latch        := '0';
 			oe           := '1';
 			waiting      := '0';
-			depth_count  := "00000000";
-			depth_delay  := "10000000";
+			depth_count  := "00000000000000";
+			depth_delay  := "1000000";
 			
 		elsif rising_edge(clk) then
 			
@@ -66,34 +66,34 @@ begin
 				
 			elsif (clk_count = 2) then
 			   if (waiting = '1') then
-					depth_count := depth_count + 1;
-					if (depth_count = depth_delay) then
+					depth_count := depth_count - 1;
+					if (depth_count = 0) then
 						waiting := '0';
 						if (row_count = 31) then
-							depth_delay := depth_delay(0) & depth_delay(7 downto 1);
-							if (depth_delay = "10000000") then 
+							depth_delay := depth_delay(0) & depth_delay(6 downto 1);
+							if (depth_delay = "1000000") then 
 								pixel_count := "000000000000000";
 							end if;
 						end if;
 					end if;
 				else
-					if (column_count < 128) then 
+					-- repeat line while waiting instead of simply waiting idle
+					if (column_count < 64) then 
+						latch := '0';
 						pixclk := '1';
 						pixel_count := pixel_count + 1;
-					elsif (column_count = 128) then
-						oe := '1';
-					elsif (column_count = 129) then
+					elsif (column_count = 64) then
 						latch  := '1';
-					elsif (column_count = 130) then
-						latch := '0';
+					elsif (column_count = 65) then
+						oe := '1';
 						row_count := row_count + 1;
-					elsif (column_count = 131) then
+					elsif (column_count = 66) then
 						oe := '0';
 						waiting := '1';
-						depth_count := "00000000";
+						depth_count := depth_delay * 67;
 					end if;
 					if (waiting = '1') then
-						column_count := "000000000";
+						column_count := "0000000";
 					else
 						column_count := column_count + 1;
 					end if;
