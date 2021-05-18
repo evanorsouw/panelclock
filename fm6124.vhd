@@ -7,11 +7,12 @@ entity FM6124 is
 		clk       : in std_logic;
 		reset     : in std_logic;
 		--
-		addr      : out std_logic_vector (14 downto 0);
+		addr      : out std_logic_vector (13 downto 0);
 		dsp_clk   : out std_logic;
 		dsp_latch : out std_logic;
 		dsp_oe    : out std_logic;
-		dsp_addr  : out std_logic_vector (4 downto 0)
+		dsp_addr  : out std_logic_vector (4 downto 0);
+		vbl       : out std_logic
 	);
 end entity FM6124;
 
@@ -24,10 +25,12 @@ begin
 	variable pixclk       : std_logic; 
 	variable oe           : std_logic;
 	variable latch        : std_logic;
-	variable pixel_count  : unsigned (14 downto 0);
+	variable pixel_count  : unsigned (13 downto 0);
 	variable waiting      : std_logic;
 	variable depth_count  : unsigned (13 downto 0);
 	variable depth_delay  : unsigned (6 downto 0);
+	variable restart      : std_logic;          
+	
 	begin
 		if (reset = '1') then
 			clk_count    := '0';
@@ -39,13 +42,16 @@ begin
 			waiting      := '0';
 			depth_count  := "00000000000000";
 			depth_delay  := "1000000";
+			restart      := '1';
 			
 		elsif rising_edge(clk) then
 			
 			clk_count := not clk_count;
+			restart   := '0';
 			
 			if (clk_count = '0') then
-				pixclk := '0';
+				pixclk  := '0';
+				restart := '1';
 								
 			else
 			   if (waiting = '1') then
@@ -55,7 +61,7 @@ begin
 						if (row_count = 31) then
 							depth_delay := depth_delay(0) & depth_delay(6 downto 1);
 							if (depth_delay = "1000000") then 
-								pixel_count := "000000000000000";
+								pixel_count := to_unsigned(0, pixel_count'length);
 							end if;
 						end if;
 					end if;
@@ -91,6 +97,7 @@ begin
 		dsp_oe    <= oe;
 		dsp_latch <= latch;
 		dsp_addr  <= std_logic_vector(row_count);
+		vbl       <= restart;
 		
 	end process;
 	

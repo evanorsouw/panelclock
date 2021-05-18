@@ -1,0 +1,2 @@
+ipv bit14 voor screenflip, explicit (2x14336) bij adress optellen
+hiermee passen 4 volledige schermen ook in het statisc geheugen.
