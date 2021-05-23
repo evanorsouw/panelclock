@@ -2,3 +2,5 @@
 incremental_db/**
 output_files/**
 *.bak
+**/.qsys_edit/**
+**/greybox_tmp/**
