@@ -103,9 +103,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal wr_clk_r2       : std_logic;
    signal wr_clk_g2       : std_logic;
    signal wr_clk_b2       : std_logic;
-   shared variable write_clock    : std_logic;
-   shared variable uart_clock     : std_logic_vector (2 downto 0);
-
 
 begin
    LEDChip : FM6124
@@ -233,19 +230,7 @@ begin
    variable counter : unsigned (8 downto 0);
    begin
       if rising_edge(clk) then
-         counter := counter + 1;
-         --if (counter = 391) then   -- 9600 Bd @8x oversampling @ 60MHz
-         --if (counter = 195) then   -- 19200 Bd @8x oversampling @ 60MHz
-         --if (counter = 98) then   -- 38400 Bd @8x oversampling @ 60MHz
-         --if (counter = 49) then   -- 76800 Bd @8x oversampling @ 60MHz
-         --if (counter = 33) then   -- 115200 Bd @8x oversampling @ 60MHz
-         --if (counter = 16) then   -- 230400 Bd @8x oversampling @ 60MHz
-         --if (counter = 8) then   -- 460800 Bd @8x oversampling @ 60MHz
-         if (counter = 4) then   -- 921600 Bd @8x oversampling @ 60MHz
-            counter := to_unsigned(0, counter'length);
-            uart_clk <= not uart_clk;
-         end if;
-         
+         uart_clk <= not uart_clk;
       end if;
    end process;
 
@@ -254,7 +239,8 @@ begin
    type T_APISTATE is ( START, DSPADDRHI, DSPADDRLO, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B ); 
    variable state         : T_APISTATE;
    variable write_count   : unsigned (7 downto 0);
-   
+   variable uart_clock    : std_logic_vector (2 downto 0);
+      
    begin
    
       if rising_edge(clk) then
