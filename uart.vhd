@@ -15,8 +15,6 @@ end entity UART;
 
 architecture UART_arch of UART is	
 
-type states is (StartBit, DataBit, StopBit);
-
 begin
 	clock_proc: process (clkx8, reset)
 	variable clk_count    : unsigned (3 downto 0);

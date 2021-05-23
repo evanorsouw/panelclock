@@ -18,7 +18,7 @@ end entity FM6124;
 
 architecture FM6124_arch of FM6124 is	
 begin
-	Clock_Proc: process (clk, reset)
+	p_clock: process (clk, reset)
 	variable clk_count    : std_logic;
 	variable column_count : unsigned (6 downto 0);
 	variable row_count    : unsigned (4 downto 0);
