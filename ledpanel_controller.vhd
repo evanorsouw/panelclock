@@ -65,7 +65,16 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       log      : out std_logic_vector (7 downto 0)
    );
    end component;   
-   
+
+   component brightness_control 
+    port (
+        valuein:	  in  std_logic_vector(7 downto 0);
+        brightness: in std_logic_vector (7 downto 0);
+        --
+        valueout:	  out std_logic_vector(7 downto 0)
+    );
+   end component;   
+
    component UART
    PORT
    (
@@ -73,36 +82,38 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       reset         : in std_logic;
       rx            : in std_logic;
       datain        : out std_logic_vector (7 downto 0);
-      datain_clk   : out std_logic
+      datain_clk    : out std_logic
    );
    end component;
    
-   signal panel_reset    : std_logic := '0';
-   signal clk            : std_logic;
-   signal ram_rd_addr    : std_logic_vector (13 downto 0);
-   signal color_r1       : std_logic;
-   signal color_g1       : std_logic;
-   signal color_b1       : std_logic;
-   signal color_r2       : std_logic;
-   signal color_g2       : std_logic;
-   signal color_b2       : std_logic;
-   signal uart_clk       : std_logic;
-   signal uart_delay     : unsigned (15 downto 0);
-   signal uart_datain    : std_logic_vector (7 downto 0);
-   signal color_byte     : std_logic_vector (7 downto 0);
-   signal uart_dataclk   : std_logic;
-   signal ram_wr_addr    : std_logic_vector(15 downto 0);
-   signal ram_wr_data    : std_logic_vector (7 downto 0);
-   signal visible_page   : std_logic;
-   signal vbl            : std_logic;
-   signal dsp_base_addr  : std_logic_vector (15 downto 0);
-   signal write_address  : unsigned (15 downto 0);
+   signal panel_reset     : std_logic := '0';
+   signal clk             : std_logic;
+   signal ram_rd_addr     : std_logic_vector (13 downto 0);
+   signal color_r1        : std_logic;
+   signal color_g1        : std_logic;
+   signal color_b1        : std_logic;
+   signal color_r2        : std_logic;
+   signal color_g2        : std_logic;
+   signal color_b2        : std_logic;
+   signal uart_clk        : std_logic;
+   signal uart_delay      : unsigned (15 downto 0);
+   signal uart_datain     : std_logic_vector (7 downto 0);
+   signal brightness_byte : std_logic_vector (7 downto 0);
+   signal color_byte      : std_logic_vector (7 downto 0);
+   signal uart_dataclk    : std_logic;
+   signal ram_wr_addr     : std_logic_vector(15 downto 0);
+   signal ram_wr_data     : std_logic_vector (7 downto 0);
+   signal visible_page    : std_logic;
+   signal vbl             : std_logic;
+   signal dsp_base_addr   : std_logic_vector (15 downto 0);
+   signal write_address   : unsigned (15 downto 0);
    signal wr_clk_r1       : std_logic;
    signal wr_clk_g1       : std_logic;
    signal wr_clk_b1       : std_logic;
    signal wr_clk_r2       : std_logic;
    signal wr_clk_g2       : std_logic;
    signal wr_clk_b2       : std_logic;
+   signal brightness      : std_logic_vector (7 downto 0) := "11111111";
 
 begin
    LEDChip : FM6124
@@ -197,12 +208,18 @@ begin
       q          => color_b2
    );
    
+   brightness_correct : brightness_control
+   port map (
+      valuein    => uart_datain,
+      brightness => brightness,
+      valueout   => brightness_byte
+   );
+    
    color_correct : linear2logarithmic
    port map (
-      lin => uart_datain,
+      lin => brightness_byte,
       log => color_byte
    );  
-
    
    PC : UART
    port map (
@@ -236,7 +253,7 @@ begin
 
    
    p_uartapi: process (clk)
-   type T_APISTATE is ( START, DSPADDRHI, DSPADDRLO, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B ); 
+   type T_APISTATE is ( START, DSPADDRHI, DSPADDRLO, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B, BRIGHTNESS ); 
    variable state         : T_APISTATE;
    variable write_count   : unsigned (7 downto 0);
    variable uart_clock    : std_logic_vector (2 downto 0);
@@ -262,6 +279,8 @@ begin
                   state := PIXCOUNT;
                elsif (unsigned(uart_datain) = X"03") then
                   state := DSPADDRHI;
+               elsif (unsigned(uart_datain) = X"04") then
+                  state := BRIGHTNESS;
                end if;
             when DSPADDRHI =>
                dsp_base_addr(15 downto 8) <= std_logic_vector(uart_datain);
@@ -296,6 +315,9 @@ begin
                else
                   state := WRITE_R;
                end if;
+            when BRIGHTNESS =>
+               brightness <= uart_datain;
+               state := START;
             when others =>
                state := START;
             end case;      
