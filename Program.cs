@@ -15,13 +15,33 @@ namespace WhiteMagic.PanelClock
 
             items = new List<IDrawable>();
 
-            var analog = new AnalogClock(64, 0, 0);
+            var analog = new AnalogClock(44, 64, 0);
             var digital = new DigitalClock(20, 62, 0);
+            var segment = new SegmentClock(20, 20, 20);
+            var panel = new TextPanel(0,0,128,64);
             digital.IncludeSeconds = false;
-            analog.SmoothSeconds = true;
+            analog.SmoothSeconds = false;
+            segment.Thickness = 0.4f;
+            segment.Skew = 0.5f;
+            segment.X = 128 - segment.Width;
+            segment.Y = 63 - segment.Height;
+            segment.IncludeSeconds = true;
 
-            items.Add(analog);
+            panel.Title = "Verjaardagen";
+            panel//.AddItem("eric")
+                .AddItem("jeanette")
+                .AddItem("18:15", "Afspraakbevestiging")
+                .AddItem("Trouwdag Eric en Jeanette")
+                .AddItem("Koelkast afvoer schoonmaken")
+                .AddItem("stage s")
+                .AddItem("Inge Ctac BE in NL")
+                .AddItem("J Fysiofit m Agnes cxd")
+                .AddItem("J vaccin 1");
+
+            items.Add(panel);
+            //items.Add(analog);
             items.Add(digital);
+            //items.Add(segment);
 
             var lastTime = DateTime.Now;
             var updateInterval = 25;
@@ -49,22 +69,29 @@ namespace WhiteMagic.PanelClock
                 digital.Y = 0;
                 digital.X = 128 - digital.BWidth;
                 digital.Height = 12 + (1f - anim) * 6;
+
+                segment.Height = 18;
+                segment.IncludeSeconds =  (now.Second % 6) > 2;
+                segment.X = 126 - segment.Width;
+                segment.Y = 62 - segment.Height;
+                segment.Thickness = 0.5f;
+                segment.Skew = 0.1f;
             }
         }
 
-            static List<IDrawable> items = new List<IDrawable>();
+        static List<IDrawable> items = new List<IDrawable>();
 
         static Bitmap RenderDisplay(int width, int height)
         {
             var bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            Graphics g = Graphics.FromImage(bitmap);
 
             foreach(var item in items)
             {
+                Graphics g = Graphics.FromImage(bitmap);
                 item.Draw(g);
+                g.Flush();
             }
 
-            g.Flush();
             return bitmap;
         }
 

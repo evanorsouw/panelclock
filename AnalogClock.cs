@@ -39,10 +39,7 @@ namespace WhiteMagic.PanelClock
             var now = DateTime.Now;
             var seconds = (float)(now.Second / 60.0);
             var minutes = (float)((now.Minute + seconds) / 60.0);
-            var hours = (float)((now.Hour + minutes) / 12.0);
-
-            var cx = Diameter / 2 - 0.5f;
-            var cy = Diameter / 2 - 0.5f;
+            var hours = (float)((now.Hour % 12 + minutes) / 12.0);
 
             for (int i = 0; i < 12; ++i)
             {
@@ -86,7 +83,7 @@ namespace WhiteMagic.PanelClock
                     angle += 0.003f;
                 }
             }
-            var width = 0.04;
+
             points = new PointF[] {
                 RotatedCenter(-0.1f, angle),
                 RotatedCenter(0.15f, angle-0.02f),
@@ -101,13 +98,13 @@ namespace WhiteMagic.PanelClock
                 var date = now.Day.ToString();
                 var font = new Font("Tahoma", Diameter/6.0f, FontStyle.Regular, GraphicsUnit.Pixel);
                 var size = g.MeasureString(date, font, 999);
-                var quadrant = DateQuadrant(hours, minutes, seconds);
+                var quadrant = DateQuadrant(hours, minutes);
                 var position = DateQuadrantToPosition(quadrant, size);
                 g.DrawString(date, font, brush, position);
             }
         }
 
-        private int DateQuadrant(float hours, float minutes, float seconds)
+        private int DateQuadrant(float hours, float minutes)
         {
             var top = true;
             var bottom = true;
@@ -115,7 +112,6 @@ namespace WhiteMagic.PanelClock
             var right = true;
             CheckQuadrant(hours, ref top, ref right, ref bottom, ref left);
             CheckQuadrant(minutes, ref top, ref right, ref bottom, ref left);
-            //CheckQuadrant(seconds, ref top, ref right, ref bottom, ref left);
             if (bottom)
                 return 2;
             if (right)
