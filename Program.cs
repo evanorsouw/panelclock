@@ -18,7 +18,7 @@ namespace WhiteMagic.PanelClock
             var analog = new AnalogClock(44, 64, 0);
             var digital = new DigitalClock(20, 62, 0);
             var segment = new SegmentClock(20, 20, 20);
-            var panel = new TextPanel(0,0,128,64);
+            var panel = new TextPanel(0,0,96,64);
             digital.IncludeSeconds = false;
             analog.SmoothSeconds = false;
             segment.Thickness = 0.4f;
@@ -28,15 +28,18 @@ namespace WhiteMagic.PanelClock
             segment.IncludeSeconds = true;
 
             panel.Title = "Verjaardagen";
-            panel//.AddItem("eric")
-                .AddItem("jeanette")
-                .AddItem("18:15", "Afspraakbevestiging")
-                .AddItem("Trouwdag Eric en Jeanette")
-                .AddItem("Koelkast afvoer schoonmaken")
-                .AddItem("stage s")
-                .AddItem("Inge Ctac BE in NL")
-                .AddItem("J Fysiofit m Agnes cxd")
-                .AddItem("J vaccin 1");
+            panel.TitleHeight = 11;
+            panel.AddItem("eric")
+                .AddItem("08:00", "Stage s")
+                .AddItem("09:00", "J Fysio Fit")
+                .AddItem("Jeanette koken")
+                .AddItem("17:30", "Dominos")
+                .AddItem("15:20", "555555")
+                .AddItem("Frank Bielschovsky '66")
+                .AddItem("19:00", "Koelkast schoonmaken voordat hij weer verstopt raakt!")
+                .AddItem("08:30", "Inge Ctac BE in NL")
+                .AddItem("18:10", "Afspraakbevestiging")
+                .AddItem("18:10", "J vaccin 1");
 
             items.Add(panel);
             //items.Add(analog);
@@ -52,7 +55,6 @@ namespace WhiteMagic.PanelClock
                 if (elapsed < updateInterval)
                 {
                     var delay = updateInterval - elapsed;
-                    Console.WriteLine($"wait={delay}");
                     Thread.Sleep(delay);
                 }
                 lastTime = now;
@@ -68,7 +70,7 @@ namespace WhiteMagic.PanelClock
                 digital.Rotation = anim / 4f;
                 digital.Y = 0;
                 digital.X = 128 - digital.BWidth;
-                digital.Height = 12 + (1f - anim) * 6;
+                digital.Height = 12 + anim * 7;
 
                 segment.Height = 18;
                 segment.IncludeSeconds =  (now.Second % 6) > 2;
