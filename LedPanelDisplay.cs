@@ -61,6 +61,7 @@ namespace WhiteMagic.PanelClock
             try
             {
                 _comm = new SerialPort(_port, 3750000, Parity.None, 8, StopBits.One);
+                _comm.Open();
             }
             catch (Exception ex)
             {
