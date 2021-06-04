@@ -8,7 +8,7 @@ namespace WhiteMagic.PanelClock
         {
             if (scale >= 1f)
                 return c;
-            return Color.FromArgb((byte)(c.R * scale), (byte)(c.G * scale), (byte)(c.R * scale));
+            return Color.FromArgb((byte)(c.R * scale), (byte)(c.G * scale), (byte)(c.B * scale));
         }
     }
 }
