@@ -1,9 +1,7 @@
 ﻿using System;
-using System.IO.Ports;
 using System.Threading;
 using System.Drawing;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 namespace WhiteMagic.PanelClock
 {
@@ -11,14 +9,20 @@ namespace WhiteMagic.PanelClock
     {
         static void Main(string[] args)
         {
-            IDisplay display = new Display(128,64);
+            IDisplay screen = new Display(128, 64);
+            var ledpanel = new LedPanelDisplay("COM4", 64, 64);
+            IDisplay display = screen;
+
+            var images = new FileImageSource("NAS", @"\\nas\photo");
 
             items = new List<IDrawable>();
 
-            var analog = new AnalogClock(44, 64, 0);
+            var analog = new AnalogClock(64, 0, 0);
             var digital = new DigitalClock(20, 62, 0);
             var segment = new SegmentClock(20, 20, 20);
-            var panel = new TextPanel(0,0,96,64);
+            var textpanel = new TextPanel(0,0,64,64);
+            var imageviewer = new ImageViewer(0, 0, 128, 64);
+
             digital.IncludeSeconds = false;
             analog.SmoothSeconds = false;
             segment.Thickness = 0.4f;
@@ -27,21 +31,25 @@ namespace WhiteMagic.PanelClock
             segment.Y = 63 - segment.Height;
             segment.IncludeSeconds = true;
 
-            panel.Title = "Verjaardagen";
-            panel.TitleHeight = 11;
-            panel.AddItem("eric")
+            imageviewer.ImageSource = images;
+            
+            textpanel.Title = "Verjaardg."; 
+            textpanel.AllFonts.Typeface = "Tahoma" ;
+            textpanel.AllFonts.Height = 10;
+            //panel.ItemFont.Height = 9;
+            textpanel.AddItem("07:15", "eric")
                 .AddItem("08:00", "Stage s")
-                .AddItem("09:00", "J Fysio Fit")
-                .AddItem("Jeanette koken")
-                .AddItem("17:30", "Dominos")
-                .AddItem("15:20", "555555")
-                .AddItem("Frank Bielschovsky '66")
-                .AddItem("19:00", "Koelkast schoonmaken voordat hij weer verstopt raakt!")
                 .AddItem("08:30", "Inge Ctac BE in NL")
+                .AddItem("09:00", "J Fysio Fit")
+                .AddItem("17:30", "Dominos")
                 .AddItem("18:10", "Afspraakbevestiging")
-                .AddItem("18:10", "J vaccin 1");
+                .AddItem("19:00", "Koelkast schoonmaken voordat het niet meer lukt!")
+                .AddItem("Jeanette koken")
+                .AddItem("Frank Bielschovsky '66")
+                ;
 
-            items.Add(panel);
+            items.Add(imageviewer);
+            //items.Add(textpanel);
             //items.Add(analog);
             items.Add(digital);
             //items.Add(segment);
@@ -78,6 +86,8 @@ namespace WhiteMagic.PanelClock
                 segment.Y = 62 - segment.Height;
                 segment.Thickness = 0.5f;
                 segment.Skew = 0.1f;
+
+                ledpanel.SetBrightness((now.Second & 1)==0?64:255);
             }
         }
 
