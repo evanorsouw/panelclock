@@ -66,7 +66,6 @@ begin
 						end if;
 					end if;
 				else
-					-- repeat line while waiting instead of simply waiting idle
 					if (column_count < 64) then 
 						latch := '0';
 						pixclk := '1';

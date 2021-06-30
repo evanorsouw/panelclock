@@ -96,7 +96,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal ram_wr_data     : std_logic_vector (7 downto 0);
    signal visible_page    : std_logic;
    signal vbl             : std_logic;
-   signal dsp_base_addr   : std_logic_vector (15 downto 0);
    signal write_address   : unsigned (15 downto 0);
    signal brightness      : std_logic_vector (7 downto 0) := "11111111";
 
@@ -304,7 +303,7 @@ begin
 
    
    p_uartapi: process (clk)
-   type T_APISTATE is ( START, DSPADDRHI, DSPADDRLO, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B, BRIGHTNESS ); 
+   type T_APISTATE is ( START, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B, BRIGHTNESS ); 
    variable state         : T_APISTATE;
    variable write_count   : unsigned (7 downto 0);
    variable uart_clock    : std_logic_vector (2 downto 0);
@@ -323,17 +322,9 @@ begin
                   state := ADDRHI;
                elsif (unsigned(uart_datain) = X"02") then
                   state := PIXCOUNT;
-               elsif (unsigned(uart_datain) = X"03") then
-                  state := DSPADDRHI;
                elsif (unsigned(uart_datain) = X"04") then
                   state := BRIGHTNESS;
                end if;
-            when DSPADDRHI =>
-               dsp_base_addr(15 downto 8) <= std_logic_vector(uart_datain);
-               state := DSPADDRLO;
-            when DSPADDRLO =>
-               dsp_base_addr(7 downto 0) <= std_logic_vector(uart_datain);
-               state := START;
             when ADDRHI =>
                write_address(15 downto 8) <= unsigned(uart_datain);
                state := ADDRLO;
@@ -350,7 +341,7 @@ begin
                   when "10" => color_wr_clk(6) <= '1';
                   when "11" => color_wr_clk(9) <= '1';
                end case;
-               state           := WRITE_G;
+               state := WRITE_G;
             when WRITE_G =>
                case ram_wr_addr(12 downto 11) is
                   when "00" => color_wr_clk(1) <= '1';
@@ -358,7 +349,7 @@ begin
                   when "10" => color_wr_clk(7) <= '1';
                   when "11" => color_wr_clk(10) <= '1';
                end case;
-               state           := WRITE_B;
+               state := WRITE_B;
             when WRITE_B =>
                case ram_wr_addr(12 downto 11) is
                   when "00" => color_wr_clk(2) <= '1';
