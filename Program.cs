@@ -2,6 +2,12 @@
 using System.Threading;
 using System.Drawing;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
+using NLog;
+using NLog.Common;
+using NLog.Extensions;
+using NLog.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace WhiteMagic.PanelClock
 {
@@ -9,19 +15,34 @@ namespace WhiteMagic.PanelClock
     {
         static void Main(string[] args)
         {
-            IDisplay screen = new Display(128, 64);
-            var ledpanel = new LedPanelDisplay("COM4", 64, 64);
-            IDisplay display = screen;
+            var config = new ConfigurationBuilder()
+                .SetBasePath(System.IO.Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
 
-            var images = new FileImageSource("NAS", @"\\nas\photo");
+
+            var factory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .ClearProviders()
+                    .AddNLog("nlog.config");
+            });
+
+            var logger = factory.CreateLogger<Program>();
+            logger.LogInformation("ledpanelwriter started");
+
+            //IDisplay display = new Display(64, 64);
+            IDisplay display = new LedPanelDisplay("COM4", 64, 128);
+
+            var images = new FileImageSource("NAS", @"\\nas\photo", logger);
 
             items = new List<IDrawable>();
 
-            var analog = new AnalogClock(64, 0, 0);
-            var digital = new DigitalClock(20, 62, 0);
-            var segment = new SegmentClock(20, 20, 20);
+            var analog = new AnalogClock(64, 10, 10);
+            var digital = new DigitalClock(20, 0, 50);
+            var segment = new SegmentClock(20, 0, 0);
             var textpanel = new TextPanel(0,0,64,64);
-            var imageviewer = new ImageViewer(0, 0, 128, 64);
+            var imageviewer = new ImageViewer(0, 0, 64, 64, logger);
 
             digital.IncludeSeconds = false;
             analog.SmoothSeconds = false;
@@ -51,11 +72,11 @@ namespace WhiteMagic.PanelClock
             items.Add(imageviewer);
             //items.Add(textpanel);
             //items.Add(analog);
-            items.Add(digital);
-            //items.Add(segment);
+            //items.Add(digital);
+            items.Add(segment);
 
             var lastTime = DateTime.Now;
-            var updateInterval = 25;
+            var updateInterval = 40;
             while (true)
             {
                 var now = DateTime.Now;
@@ -70,24 +91,24 @@ namespace WhiteMagic.PanelClock
                 var bitmap = RenderDisplay(display.Width, display.Height);
                 display.Show(bitmap);
 
-                var anim = ((now.Ticks / 10000) % 10000) / 1000f;
-                if (anim < 5f)
+
+                var anim = ((now.Ticks / 20000) % 4000) / 1000f;
+                if (anim < 2f)
                     anim = Math.Min(anim, 1f);
                 else
-                    anim = 6f - Math.Min(anim, 6f);
-                digital.Rotation = anim / 4f;
-                digital.Y = 0;
-                digital.X = 128 - digital.BWidth;
-                digital.Height = 12 + anim * 7;
+                    anim = 3f - Math.Min(anim, 3f);
 
-                segment.Height = 18;
-                segment.IncludeSeconds =  (now.Second % 6) > 2;
-                segment.X = 126 - segment.Width;
-                segment.Y = 62 - segment.Height;
-                segment.Thickness = 0.5f;
+                //digital.Rotation = anim / 4f;
+                //digital.Y = anim * 108;
+                //digital.X = 128 - digital.BWidth;
+                //digital.Height = 12 + anim * 7;
+
+                segment.Height = 24;
+                segment.IncludeSeconds = false;
+                segment.X = 0;
+                segment.Y = anim*(128-segment.Height);
+                segment.Thickness = 0.7f;
                 segment.Skew = 0.1f;
-
-                ledpanel.SetBrightness((now.Second & 1)==0?64:255);
             }
         }
 

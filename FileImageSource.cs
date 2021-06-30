@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Reactive.Subjects;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace WhiteMagic.PanelClock
 {
@@ -24,25 +25,39 @@ namespace WhiteMagic.PanelClock
 
     public class FileImageSource : IImageSource, IDisposable
     {
+        private ILogger _logger;
         private string _name;
         private string _path;
         private List<DirectoryInfo> _directories;
         private Subject<DirectoryInfo> _directorySubject;
-        private Random _rnd = new Random();
+        private Random _rnd = new Random((int)DateTime.Now.Ticks);
         private ImageInfo _defaultImage;
 
-        public FileImageSource(string name, string path)
+        public FileImageSource(string name, string path, ILogger logger)
         {
+            _logger = logger;
             _name = name;
             _path = path;
+
+            _logger.LogInformation($"created file image source on path={_path}");
 
             _directories = new List<DirectoryInfo>();
             _directorySubject = new Subject<DirectoryInfo>();
             _directorySubject.Subscribe(AddDirectory);
-            Task.Run(() => ScanDirectories(_path));
+            Task.Run(() => ScanDirectories());
         }
 
         public string Name => _name;
+
+        private void ScanDirectories()
+        {
+            _logger.LogInformation($"scanning path='{_path}' for image files");
+            ScanDirectories(_path);
+
+            var ndirs = _directories.Count;
+            var nimages = _directories.Sum(d => d.Count);
+            _logger.LogInformation($"scanning path='{_path}' complete, total of image='{nimages}' in directories='{ndirs}'");
+        }
 
         private void ScanDirectories(string searchPath)
         {
@@ -82,7 +97,7 @@ namespace WhiteMagic.PanelClock
             }
         }
 
-        public IImageInfo GetRandomImage()
+        public async Task<IImageInfo> GetRandomImage()
         {
             DirectoryInfo dir = null;
             var index = 0;
@@ -91,6 +106,7 @@ namespace WhiteMagic.PanelClock
                 var max = _directories.Sum(d => d.Count);
                 if (max == 0)
                     return _defaultImage;
+
                 index = _rnd.Next(0, max);
                 dir = _directories.FirstOrDefault(d => {
                     var hit = index < d.Count;
@@ -98,20 +114,24 @@ namespace WhiteMagic.PanelClock
                     return hit;
                 });
             }
-            var file = GetImageFilesFromDirectory(dir.Path).Skip(index).FirstOrDefault();
-            try
+            var file =  GetImageFilesFromDirectory(dir.Path).Skip(index).FirstOrDefault();
+            if (file != null)
             {
-                return new ImageInfo
+                try
                 {
-                    Path = file,
-                    Image = Bitmap.FromFile(file),
-                    Source = Name
-                };
+                    _logger.LogDebug($"retrieved image='{file}'");
+                    return new ImageInfo
+                    {
+                        Path = file,
+                        Image = Image.FromFile(file),
+                        Source = Name
+                    };
+                }
+                catch (Exception)
+                {
+                }
             }
-            catch (Exception)
-            {
-                return _defaultImage;
-            }
+            return _defaultImage;
         }
 
         public void Dispose()

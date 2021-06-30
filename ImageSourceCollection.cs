@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace WhiteMagic.PanelClock
 {
@@ -15,9 +16,9 @@ namespace WhiteMagic.PanelClock
             }
         }
 
-        public IImageInfo GetRandomImage()
+        public async Task<IImageInfo> GetRandomImage()
         {
-            return GetRandomSource().GetRandomImage();
+            return await GetRandomSource().GetRandomImage();
         }
 
         private IImageSource GetRandomSource()

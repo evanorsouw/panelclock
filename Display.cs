@@ -42,18 +42,19 @@ namespace WhiteMagic.PanelClock
 
         public void Show(Bitmap bitmap)
         {
-            var graphics = Graphics.FromImage(_displayBitmap);
+            //var graphics = Graphics.FromImage(_displayBitmap);
 
-            for (int y=0; y<_height; ++y)
-            {
-                for(int x=0; x<_width; ++x)
-                {
-                    var pixel = bitmap.GetPixel(x, y);
-                    var image = GetImage(pixel);
-                    graphics.DrawImage(image, 1 + x * _scale, 1 + y * _scale);
-                }
-            }
-            _form.CreateGraphics().DrawImage(_displayBitmap, 0, 0);
+            //graphics.DrawImage(bitmap);
+            //for (int y=0; y<_height; ++y)
+            //{
+            //    for(int x=0; x<_width; ++x)
+            //    {
+            //        var pixel = bitmap.GetPixel(x, y);
+            //        var image = GetImage(pixel);
+            //        graphics.DrawImage(image, 1 + x * _scale, 1 + y * _scale);
+            //    }
+            //}
+            _form.CreateGraphics().DrawImage(bitmap, new Rectangle(0, 0, _displayBitmap.Width, _displayBitmap.Height), new Rectangle(0,0,bitmap.Width, bitmap.Height), GraphicsUnit.Pixel);
         }
 
         private Bitmap GetImage(Color color)

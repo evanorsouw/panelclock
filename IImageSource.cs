@@ -1,9 +1,11 @@
-﻿namespace WhiteMagic.PanelClock
+﻿using System.Threading.Tasks;
+
+namespace WhiteMagic.PanelClock
 {
     public interface IImageSource
     {
         string Name { get; }
 
-        IImageInfo GetRandomImage();
+        Task<IImageInfo> GetRandomImage();
     }
 }
