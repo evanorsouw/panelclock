@@ -26,7 +26,7 @@
 # Notes:
 #
 # 1) The default values for assignments are stored in the file:
-#		hub75-5_assignment_defaults.qdf
+#		hub75_assignment_defaults.qdf
 #    If this file doesn't exist, see file:
 #		assignment_defaults.qdf
 #
