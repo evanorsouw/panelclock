@@ -1,0 +1,8 @@
+*.bak
+*.bck
+*.net
+*.dsn
+*.ses
+*-bak
+**/gerber/**
+**/.svg2shenzhen-cache/**
