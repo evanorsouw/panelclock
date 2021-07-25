@@ -4,7 +4,7 @@ JedecChain;
 	DefaultMfr(6E);
 
 	P ActionCode(Cfg)
-		Device PartName(10M08SAU169) Path("D:/projects/fpgaclock/fpga/output_files/") File("hub75.pof") MfrSpec(OpMask(1) Child_OpMask(2 1 1));
+		Device PartName(10M08SAU169) Path("D:/projects/fpgaclock/fpga/output_files/") File("hub75.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

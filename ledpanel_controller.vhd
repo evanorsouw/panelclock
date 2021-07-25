@@ -63,7 +63,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 
    component brightness_control 
     port (
-        valuein:	  in  std_logic_vector(7 downto 0);
+        valuein:	  in std_logic_vector(7 downto 0);
         brightness: in std_logic_vector (7 downto 0);
         --
         valueout:	  out std_logic_vector(7 downto 0)
@@ -95,8 +95,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal uart_dataclk    : std_logic;
    signal ram_wr_addr     : std_logic_vector(15 downto 0);
    signal ram_wr_data     : std_logic_vector (7 downto 0);
-   signal visible_page    : std_logic;
-   signal vbl             : std_logic;
    signal write_address   : unsigned (15 downto 0);
    signal brightness      : std_logic_vector (7 downto 0) := "11111111";
 
@@ -110,8 +108,7 @@ begin
       dsp_clk   => dsp_clk,
       dsp_latch => dsp_latch,
       dsp_addr  => dsp_addr,
-      dsp_oe    => dsp_oe,
-      vbl       => vbl
+      dsp_oe    => dsp_oe
    );
    
    ClockGenerator : pll
