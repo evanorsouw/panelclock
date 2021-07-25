@@ -81,6 +81,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
    
+   signal clk240M         : std_logic;
    signal panel_reset     : std_logic := '0';
    signal clk             : std_logic;
    signal ram_rd_addr     : std_logic_vector (13 downto 0);
@@ -117,7 +118,7 @@ begin
    port map (
       inclk0  => clk12M,
       --
-      c0 => clk
+      c0 => clk240M
    );
    
    ram_0 : color_bitram 
@@ -293,11 +294,21 @@ begin
       dsp_channel <= color_chan;
    end process;
    
-   p_uartclk: process (clk)
-   variable counter : unsigned (8 downto 0);
+   p_clocks: process (clk)
+   variable clk_scaler : unsigned (3 downto 0);
+   variable uart_scaler : unsigned (3 downto 0);
    begin
-      if rising_edge(clk) then
-         uart_clk <= not uart_clk;
+      if rising_edge(clk240M) then
+		   clk_scaler := clk_scaler + 1;
+			if (clk_scaler = 2) then
+				clk_scaler := "0000";
+				clk <= not clk;
+			end if;
+			uart_scaler := uart_scaler + 1;
+			if (uart_scaler = 5) then
+				uart_scaler := "0000";
+            uart_clk <= not uart_clk;
+			end if;
       end if;
    end process;
 
