@@ -12,9 +12,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using DlibDotNet;
-using DlibDotNet.Extensions;
-using Dlib = DlibDotNet.Dlib;
+//using DlibDotNet;
+//using DlibDotNet.Extensions;
+//using Dlib = DlibDotNet.Dlib;
 
 namespace WhiteMagic.PanelClock
 {
@@ -31,7 +31,7 @@ namespace WhiteMagic.PanelClock
         private float _animationTime;
         private Subject<Unit> _prepareImageSubject;
         private CompositeDisposable _disposables;
-        private FrontalFaceDetector _faceDetector;
+//        private FrontalFaceDetector _faceDetector;
         private Random _random = new Random((int)DateTime.Now.Ticks);
 
         private class ImageAnimation
@@ -90,8 +90,8 @@ namespace WhiteMagic.PanelClock
             _disposables = new CompositeDisposable();
             _imageQueue = new ConcurrentQueue<ImageAnimation>();
 
-            _faceDetector = Dlib.GetFrontalFaceDetector();
-            _disposables.Add(_faceDetector);
+            //_faceDetector = Dlib.GetFrontalFaceDetector();
+            //_disposables.Add(_faceDetector);
 
             var scheduler = new EventLoopScheduler();
             _disposables.Add(scheduler);
@@ -135,22 +135,22 @@ namespace WhiteMagic.PanelClock
                 _logger.LogInformation($"now viewing image='{image.ImagePath}' from source='{image.ImageSource}'");
                 _activeImage = image;
             }
-            _logger.LogInformation($"{_imageQueue.Count}");
+            //_logger.LogInformation($"{_imageQueue.Count}");
             LoadImageIfBufferTooLow();
             return _activeImage;
         }
 
         private RectangleF[] FindFaceLocations(Bitmap bitmap)
         {
-            try
-            {
-                using var image = bitmap.ToArray2D<RgbPixel>();
-                var faces = _faceDetector.Operator(image);
-                return faces.Select(r => new RectangleF(r.Left, r.Top, r.Width, r.Height)).ToArray();
-            }
-            catch (Exception)
-            {
-            }
+            //try
+            //{
+            //    using var image = bitmap.ToArray2D<RgbPixel>();
+            //    var faces = _faceDetector.Operator(image);
+            //    return faces.Select(r => new RectangleF(r.Left, r.Top, r.Width, r.Height)).ToArray();
+            //}
+            //catch (Exception)
+            //{
+            //}
             return new RectangleF[0];
         }
 
@@ -179,14 +179,19 @@ namespace WhiteMagic.PanelClock
 
             var oversample = 4;
             var image = ScaleDownImage(imgInfo.Image, oversample);
-            var faces = FindFaceLocations(image);
-            if (faces.Length == 0)
-            {
-                _logger.LogDebug($"skipped image='{imgInfo.Path}' because it has no faces");
-                return;
-            }
+            //var faces = FindFaceLocations(image);
+            //if (faces.Length == 0)
+            //{
+            //    _logger.LogDebug($"skipped image='{imgInfo.Path}' because it has no faces");
+            //    return;
+            //}
 
-            var face = faces[_random.Next(0, faces.Length)];
+            //var face = faces[_random.Next(0, faces.Length)];
+
+            //var graphics = Graphics.FromImage(image);
+            //graphics.DrawRectangle(Pens.Red, face.X, face.Y, face.Width, face.Height);
+            var face = new RectangleF(image.Width * 0.2f, image.Height * 0.2f, image.Width * 0.6f, image.Height * 0.6f);
+
             var zoomer = new AOIZoomer(face, Width * oversample, Height * oversample, image.Width, image.Height);
             var animation = new ImageAnimation(
                 new ImageInfo { Image = image, Path = imgInfo.Path, Source = imgInfo.Source },

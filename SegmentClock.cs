@@ -232,7 +232,7 @@ namespace WhiteMagic.PanelClock
         {
             _color = color;
             _brushOn = new SolidBrush(color);
-            var scale = 0.2f;
+            var scale = 0.0f;
             _brushOff = new SolidBrush(Color.FromArgb((int)(color.R * scale), (int)(Color.G * scale), (int)(Color.B * scale)));
         }
 

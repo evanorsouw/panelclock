@@ -3,11 +3,9 @@ using System.Threading;
 using System.Drawing;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
-using NLog;
-using NLog.Common;
-using NLog.Extensions;
 using NLog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
@@ -15,11 +13,26 @@ namespace WhiteMagic.PanelClock
     {
         static void Main(string[] args)
         {
+            string port = null;
+
+            int iArg = 0;
+            for (iArg = 0; iArg < args.Length; ++iArg)
+            {
+                if (args[iArg] == "--port")
+                {
+                    AssertArgument(args, iArg);
+                    port = args[++iArg];
+                }
+                else
+                {
+                    Usage($"unsupported argument '{args[iArg]}'");
+                }
+            }
+
             var config = new ConfigurationBuilder()
                 .SetBasePath(System.IO.Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
-
 
             var factory = LoggerFactory.Create(builder =>
             {
@@ -31,49 +44,58 @@ namespace WhiteMagic.PanelClock
             var logger = factory.CreateLogger<Program>();
             logger.LogInformation("ledpanelwriter started");
 
-            //IDisplay display = new Display(64, 64);
-            IDisplay display = new LedPanelDisplay("COM4", 64, 128);
-
+#if SIMULATION
+            IDisplay display = new Display(128, 64);
+#else
+            if (port == null)
+                Usage("port not specified");
+            IDisplay display = new LedPanelDisplay(port, 128, 64);
+#endif
             var images = new FileImageSource("NAS", @"\\nas\photo", logger);
-
+            
             items = new List<IDrawable>();
 
-            var analog = new AnalogClock(64, 10, 10);
-            var digital = new DigitalClock(20, 0, 50);
-            var segment = new SegmentClock(20, 0, 0);
-            var textpanel = new TextPanel(0,0,64,64);
-            var imageviewer = new ImageViewer(0, 0, 64, 64, logger);
+            //var analog = new AnalogClock(46, 127 - 46, 63 - 46);
+            var analog = new AnalogClock(64, 0, 0);
+            var digital = new DigitalClock(12, 86, 0);
+            var segment = new SegmentClock(14, 86, 0);
+            var textpanel = new TextPanel(0,0,128,64);
+            var imageviewer = new ImageViewer(0, 0, 128, 64, logger);
 
             digital.IncludeSeconds = false;
             analog.SmoothSeconds = false;
-            segment.Thickness = 0.4f;
-            segment.Skew = 0.5f;
-            segment.X = 128 - segment.Width;
-            segment.Y = 63 - segment.Height;
             segment.IncludeSeconds = true;
+            segment.Thickness = 0.5f;
+            segment.Skew = 0.5f;
+            segment.X = 127 - segment.Width;
+            segment.Y = 1;
 
             imageviewer.ImageSource = images;
             
             textpanel.Title = "Verjaardg."; 
             textpanel.AllFonts.Typeface = "Tahoma" ;
             textpanel.AllFonts.Height = 10;
-            //panel.ItemFont.Height = 9;
-            textpanel.AddItem("07:15", "eric")
-                .AddItem("08:00", "Stage s")
-                .AddItem("08:30", "Inge Ctac BE in NL")
-                .AddItem("09:00", "J Fysio Fit")
-                .AddItem("17:30", "Dominos")
-                .AddItem("18:10", "Afspraakbevestiging")
-                .AddItem("19:00", "Koelkast schoonmaken voordat het niet meer lukt!")
-                .AddItem("Jeanette koken")
-                .AddItem("Frank Bielschovsky '66")
-                ;
 
-            items.Add(imageviewer);
+            var calendar = new Calendar();
+            var events = calendar.GetEventsForDate(DateTime.Now);
+
+            foreach(var evt in events.OrderBy(e=>e.When).ThenByDescending(e=>e.AllDay))
+            {
+                if (evt.AllDay)
+                {
+                    textpanel.AddItem("", evt.Message);
+                }
+                else 
+                {
+                    textpanel.AddItem($"{evt.When.Hour:D2}:{evt.When.Minute:D2}", evt.Message);
+                }
+            }
+
+            //items.Add(imageviewer);
             //items.Add(textpanel);
-            //items.Add(analog);
-            //items.Add(digital);
-            items.Add(segment);
+            items.Add(analog);
+            items.Add(digital);
+            //items.Add(segment);
 
             var lastTime = DateTime.Now;
             var updateInterval = 40;
@@ -102,13 +124,6 @@ namespace WhiteMagic.PanelClock
                 //digital.Y = anim * 108;
                 //digital.X = 128 - digital.BWidth;
                 //digital.Height = 12 + anim * 7;
-
-                segment.Height = 24;
-                segment.IncludeSeconds = false;
-                segment.X = 0;
-                segment.Y = anim*(128-segment.Height);
-                segment.Thickness = 0.7f;
-                segment.Skew = 0.1f;
             }
         }
 
@@ -146,6 +161,23 @@ namespace WhiteMagic.PanelClock
                 }
             }
             return _logmap[(byte)b];
+        }
+
+        private static void AssertArgument(string[] args, int iArg)
+        {
+            if (iArg + 1 >= args.Length)
+                Usage($"Missing argument for option '{args[iArg]}'");
+
+        }
+
+        private static void Usage(string message=null)
+        {
+            Console.WriteLine($"Error: {message}");
+            Console.WriteLine("Usage:");
+            Console.WriteLine("  writer [options]");
+            Console.WriteLine("Options:");
+            Console.WriteLine("  --port <port>     - the USB port that the LED displays are connected");
+            Environment.Exit(1);
         }
     }
 }
