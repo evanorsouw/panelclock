@@ -45,7 +45,6 @@ namespace WhiteMagic.PanelClock
         {
             var graphics = Graphics.FromImage(_displayBitmap);
 
-            ////graphics.DrawImage(bitmap);
             for (int y = 0; y < _height; ++y)
             {
                 for (int x = 0; x < _width; ++x)
@@ -55,7 +54,6 @@ namespace WhiteMagic.PanelClock
                     graphics.DrawImage(image, 1 + x * _scale, 1 + y * _scale);
                 }
             }
-            //_form.CreateGraphics().DrawImage(bitmap, new Rectangle(0, 0, _displayBitmap.Width, _displayBitmap.Height), new Rectangle(0,0,bitmap.Width, bitmap.Height), GraphicsUnit.Pixel);
             _form.CreateGraphics().DrawImage(_displayBitmap, 0, 0);
         }
 

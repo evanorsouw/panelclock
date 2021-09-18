@@ -46,12 +46,14 @@ namespace WhiteMagic.PanelClock
                     for (int x = 0; x < 64; ++x)
                     {
                         var pix = bitmap.GetPixel(x + (1-panel) * 64, y);
+                        //bytes[i++] = (byte)(255 - pix.R);
+                        //bytes[i++] = (byte)(255 - pix.G);
+                        //bytes[i++] = (byte)(255 - pix.B);
                         bytes[i++] = pix.R;
                         bytes[i++] = pix.G;
-                        bytes[i++] = pix.B;
+                        bytes[i++] = pix.B;                    }
                     }
                 }
-            }
             WriteBytes(_writeBuffer, i);
         }
 

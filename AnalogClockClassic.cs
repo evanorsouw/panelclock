@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Drawing;
 
 namespace WhiteMagic.PanelClock
 {
-    public class AnalogClock : IDrawable
+    public class AnalogClockClassic : IDrawable
     {
         private DateTime _lastTime;
 
-        public AnalogClock() : this(64, 0, 0)
+        public AnalogClockClassic() : this(64, 0, 0)
         {
         }
 
-        public AnalogClock(float diameter, float anchorX, float anchory)
+        public AnalogClockClassic(float diameter, float anchorX, float anchory)
         { 
             Diameter = diameter;
             X = anchorX;
