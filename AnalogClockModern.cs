@@ -1,33 +1,30 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Drawing;
 
 namespace WhiteMagic.PanelClock
 {
     public class AnalogClockModern : IDrawable
     {
+        private ILogger _logger;
         private DateTime _lastTime;
         private bool _visible;
         private DateTime _animateStartTime;
+        private string _timezonename;
+        private TimeZoneInfo _timezone = null;
 
-        public AnalogClockModern() : this(64, 0, 0)
+        public AnalogClockModern(ILogger logger) 
         {
-        }
-
-        public AnalogClockModern(float diameter, float anchorX, float anchory)
-        { 
-            Diameter = diameter;
-            X = anchorX;
-            Y = anchory;
+            _logger = logger;
             Visible = true;
         }
 
-        public float Diameter{ get; set; }
-
+        public float Diameter { get; set; } = 64;
         public float X { get; set; }
         public float Y { get; set; }
-
+        public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
+        public bool ShowSeconds { get; set; } = false;
         public bool SmoothSeconds { get; set; } = false;
-
         public bool Visible
         {
             get { return _visible; }
@@ -39,7 +36,6 @@ namespace WhiteMagic.PanelClock
                 }
             }
         }
-
         public float AnimationTime { get; set; } = 1f;
 
         public bool AnimationComplete
@@ -59,6 +55,10 @@ namespace WhiteMagic.PanelClock
             g.FillEllipse(Brushes.White, new RectangleF(X+(Diameter- dia) /2, Y+(Diameter- dia) /2, dia, dia));
 
             var now = DateTime.Now;
+            if (_timezone != null)
+            {
+                now = TimeZoneInfo.ConvertTime(now, _timezone);
+            }
             var seconds = (float)(now.Second / 60.0);
             var minutes = (float)((now.Minute + seconds) / 60.0);
             var hours = (float)((now.Hour % 12 + minutes) / 12.0);
@@ -76,23 +76,25 @@ namespace WhiteMagic.PanelClock
             pen = new Pen(Color.White, 1.6f);
             g.DrawLine(pen, RotatedCenter(0.2f, minutes), RotatedCenter(0.8f, minutes));
 
-            float angle;
-            if (SmoothSeconds)
+            if (ShowSeconds)
             {
-                angle = (now.Second + now.Millisecond / 1000f)/60f;
-            }
-            else
-            {
-                angle = now.Second / 60f;
-                if (_lastTime.Second != now.Second)
+                float angle;
+                if (SmoothSeconds)
                 {
-                    _lastTime = now;
-                    angle += 0.003f;
+                    angle = (now.Second + now.Millisecond / 1000f) / 60f;
                 }
+                else
+                {
+                    angle = now.Second / 60f;
+                    if (_lastTime.Second != now.Second)
+                    {
+                        _lastTime = now;
+                        angle += 0.003f;
+                    }
+                }
+                pen = new Pen(Color.Red, 0.6f);
+                g.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
             }
-
-            pen = new Pen(Color.Red, 0.6f);
-            g.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
         }
 
         private float sin(double rel)
@@ -138,6 +140,29 @@ namespace WhiteMagic.PanelClock
 
             var scale = Diameter * distance / 2;
             return new PointF(X + Diameter / 2 - 0.5f + scale * cos(angle), Y + Diameter / 2 - 0.5f + scale * sin(angle));
+        }
+
+        private void SetTimeZone(string value)
+        {
+            _timezonename = value;
+            _timezone = null;
+
+            foreach(var info in TimeZoneInfo.GetSystemTimeZones())
+            {
+                if (info.Id.ToLower().Contains(value.ToLower()))
+                {
+                    _timezone = info;
+                    break;
+                }
+            }
+            if (_timezone == null)
+            {
+                _logger.LogWarning($"timezone='{value}' is not recognized");
+                foreach (var info in TimeZoneInfo.GetSystemTimeZones())
+                {
+                    _logger.LogInformation($"possible timezone='{info.Id}'");
+                }
+            }
         }
     }
 }

@@ -151,13 +151,12 @@ namespace WhiteMagic.PanelClock
         {
             var tw = _actualTextWidth + _paddings[0] + _paddings[2];
             var th = _fontHeightInPixels + _paddings[1] + _paddings[3];
-            var bw = _width != 0 ? _width : tw;
             var bh = _height != 0 ? _height : th;
             var x = _hAlignment switch
             {
                 Alignment.Left => _x,
-                Alignment.Center => _x - bw / 2,
-                _ => _x - bw
+                Alignment.Center => (_width == 0) ? (_x - tw / 2) : (_x + (_width - tw) / 2),
+                Alignment.Right => (_width == 0) ? (_x - tw) : (_x + _width)
             };
             var y = _vAlignment switch
             {
@@ -165,13 +164,13 @@ namespace WhiteMagic.PanelClock
                 Alignment.Center => _y - bh / 2,
                 _ => _y - bh
             };
-            _backgroundBox = new RectangleF(x, y, bw, bh);
+            _backgroundBox = new RectangleF(x, y, _width == 0 ? tw : _width, _height == 0 ? th : _height);
 
             x = _hAlignment switch
             {
                 Alignment.Left => _x + _paddings[0],
-                Alignment.Center => _x - _actualTextWidth / 2,
-                _ => _x - _actualTextWidth - _paddings[2]
+                Alignment.Center => (_width==0) ? (_x - _actualTextWidth / 2) : (_x + (Width - _actualTextWidth)/2),
+                _ => (_width==0) ? (_x - _actualTextWidth - _paddings[2]) : (_x + _width - _actualTextWidth - _paddings[2])
             };
             y = _vAlignment switch
             {
