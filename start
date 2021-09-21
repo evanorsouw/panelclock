@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /opt/fpgaclock
+dotnet writer.dll --port /dev/ttyUSB1
