@@ -27,9 +27,25 @@ namespace WhiteMagic.PanelClock
             return this;
         }
 
+        private DateTime _nextCheckTime = DateTime.MinValue;
+        private Scene _activeScene;
+
         public Scene GetScene(DateTime now)
         {
-            return _scenes.First().Value;
+            if (now < _nextCheckTime)
+                return _activeScene;
+
+            _nextCheckTime = DateTime.MaxValue;
+            foreach (var scene in _scenes.Values)
+            {
+                var next = scene.NextActive;
+                if (next < _nextCheckTime)
+                {
+                    _nextCheckTime = next;
+                    _activeScene = scene;
+                }
+            }
+            return _activeScene;
         }
 
         public IDrawable GetItem(string id)

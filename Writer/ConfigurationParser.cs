@@ -44,6 +44,8 @@ namespace WhiteMagic.PanelClock
                 return null;
 
             var scene = new Scene(id, stock);
+            scene.CronSpec = sceneCfg["cron"];
+
             for (int iitem = 0; ; ++iitem)
             {
                 var itemCfg = sceneCfg.GetSection($"items:{iitem}");

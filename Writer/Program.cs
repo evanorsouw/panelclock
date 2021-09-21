@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Drawing;
-using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using NLog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
-using System.Linq;
-using writer;
 using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
 
@@ -45,7 +42,7 @@ namespace WhiteMagic.PanelClock
             IConfiguration config = new ConfigurationBuilder()
                 .SetBasePath(System.IO.Directory.GetCurrentDirectory())
 #if SIMULATION
-                .AddJsonFile("d:\\projects\\fpgaclock\\sw\\appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("d:\\projects\\fpgaclock\\sw\\Writer\\appsettings.json", optional: true, reloadOnChange: true)
 #else
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
 #endif
