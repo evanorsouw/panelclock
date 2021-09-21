@@ -1,31 +1,115 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Text.RegularExpressions;
 using writer;
 
 namespace WhiteMagic.PanelClock
 {
-    public class VarLabel : Label
+    public class VarLabel : IDrawable
     {
+        private ILogger _logger;
         private string _format;
+        private float[] _paddings = { 0, 0, 0, 0 };
+        private float _fontHeightInPixels;
+        private float _actualTextWidth;
+        private string _fontname;
+        private Font _font;
+        private float _width;
+        private float _height;
+        private RectangleF _textBox;
+        private RectangleF _backgroundBox;
+        private bool _visible;
         private List<Func<string>> _parts = new List<Func<string>>();
+        private DateTime _animateStartTime;
 
-        public VarLabel() : this(0, 0)
+        public VarLabel(string id, ILogger logger)
         {
+            Id = id;
+            _logger = logger;
+            _fontname = "Arial";
+            BackgroundColor = Color.Transparent;
+            HorizontalAlignment = Alignment.Left;
+            VerticalAlignment = Alignment.Top;
+            TextColor = Color.White;
+            Visible = true;
         }
 
-        public VarLabel(float x, float y) : base(x, y)
+        #region IDrawable
+
+        public string Id { get; private set; }
+
+        public IDrawable Clone(string id)
         {
+            var copy = new VarLabel(id, _logger);
+
+            return copy;
         }
 
+        public void Draw(Graphics graphics)
+        {
+            EvaluateText();
+
+            var animationComplete = DateTime.Now.Subtract(_animateStartTime).TotalSeconds > AnimationTime; 
+            if (!Visible && animationComplete)
+                return;
+
+            var elapsed = (float)Math.Min(1, DateTime.Now.Subtract(_animateStartTime).TotalSeconds / AnimationTime);
+            var textcolor = TextColor;
+            var backgroundcolor = BackgroundColor;
+            if (!animationComplete)
+            {
+                if (!Visible)
+                    elapsed = 1 - elapsed;
+                textcolor = textcolor.Scale(elapsed);
+                backgroundcolor = backgroundcolor.Scale(elapsed);
+            }
+
+            if (BackgroundColor.A > 0)
+            {
+                graphics.FillRectangle(new SolidBrush(backgroundcolor), _backgroundBox);
+            }
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+            graphics.SetClip(_backgroundBox);
+            graphics.DrawString(Text, _font, new SolidBrush(textcolor), _textBox);
+        }
+
+        #endregion
+
+        #region Properties
+
+        public float Width { get { return _backgroundBox.Width; } set { _width = value; SetDimensions(); } }
+        public float Height { get { return _backgroundBox.Height; } set { _height = value; SetDimensions(); } }
+        public float X { get; set; }
+        public float Y { get; set; }
+        public string FontName { get { return _fontname; } set { SetFontName(value); } }
+        public string Text { get; private set; }
+        public Color TextColor { get; set; }
+        public Color BackgroundColor { get; set; }
+        public float HorizontalPadding { set { _paddings[0] = _paddings[2] = value; } }
+        public float LeftPadding { get { return _paddings[0]; } set { _paddings[0] = value; } }
+        public float RightPadding { get { return _paddings[2]; } set { _paddings[2] = value; } }
+        public Alignment HorizontalAlignment { get; set; }
+        public Alignment VerticalAlignment { get; set; }
+        public bool Visible
+        {
+            get { return _visible; }
+            set
+            {
+                if (_visible != value)
+                {
+                    _visible = value; _animateStartTime = DateTime.Now;
+                }
+            }
+        }
+        public float AnimationTime { get; set; } = 0.5f;
         public string Format { get { return _format; } set{ SetFormat(value); } }
 
-        public override void Draw(Graphics graphics)
-        {
-            Text = CalculateText();
-            base.Draw(graphics);
-        }
+        #endregion
+
+        #region private code
 
         private void SetFormat(string format)
         {
@@ -67,6 +151,64 @@ namespace WhiteMagic.PanelClock
                 parts.Add(() => literal);
             }
             _parts = parts;
+        }
+
+        private void SetFontName(string fontname)
+        {
+            var parts = fontname.Split(":");
+            var fontsize = 12;
+            FontStyle fontstyle = 0;
+            foreach (var part in parts.Skip(1).Select(p => p.ToLower()))
+            {
+                if (Regex.IsMatch(part, "^\\d+$"))
+                {
+                    fontsize = int.Parse(part);
+                }
+                else if (part == "bold")
+                {
+                    fontstyle |= FontStyle.Bold;
+                }
+                else if (part == "italic")
+                {
+                    fontstyle |= FontStyle.Bold;
+                }
+            }
+#if !SIMULATION
+            fontsize -= 1;
+#endif
+            _font = new Font(parts[0], fontsize, fontstyle, GraphicsUnit.Pixel);
+            var graphics = Graphics.FromImage(new Bitmap(1, 1));
+            _fontHeightInPixels = graphics.MeasureString("ZQdg", _font).Height;
+#if SIMULATION
+            _fontHeightInPixels -= 1;
+#else
+            _fontHeightInPixels += 2;
+#endif
+            _fontname = fontname;
+            SetText(Text, true);
+        }
+
+        private void EvaluateText()
+        {
+            var text = "";
+            foreach (var part in _parts)
+            {
+                text += part();
+            }
+            SetText(text);
+        }
+
+        private void SetText(string txt, bool force = false)
+        {
+            if (Text != txt || force)
+            {
+                Text = txt;
+                _actualTextWidth = Graphics.FromImage(new Bitmap(1, 1)).MeasureString(Text, _font).Width;
+#if !SIMULATION
+                _actualTextWidth += 2;
+#endif
+                SetDimensions();
+            }
         }
 
         private Func<string> ParseFunction(string function, string args)
@@ -116,14 +258,40 @@ namespace WhiteMagic.PanelClock
             return () => $"{function}({args})";
         }
 
-        private string CalculateText()
+        private void SetDimensions()
         {
-            var text = "";
-            foreach(var part in _parts)
+            var tw = _actualTextWidth + _paddings[0] + _paddings[2];
+            var th = _fontHeightInPixels + _paddings[1] + _paddings[3];
+            var bh = _height != 0 ? _height : th;
+            var x = HorizontalAlignment switch
             {
-                text += part();
-            }
-            return text;
+                Alignment.Left => X,
+                Alignment.Center => (_width == 0) ? (X - tw / 2) : (X + (_width - tw) / 2),
+                Alignment.Right => (_width == 0) ? (X - tw) : (X + _width)
+            };
+            var y = VerticalAlignment switch
+            {
+                Alignment.Top => Y,
+                Alignment.Center => Y - bh / 2,
+                _ => Y - bh
+            };
+            _backgroundBox = new RectangleF(x, y, _width == 0 ? tw : _width, _height == 0 ? th : _height);
+
+            x = HorizontalAlignment switch
+            {
+                Alignment.Left => X + _paddings[0],
+                Alignment.Center => (_width == 0) ? (X - _actualTextWidth / 2) : (X + (Width - _actualTextWidth) / 2),
+                _ => (_width == 0) ? (X - _actualTextWidth - _paddings[2]) : (X + _width - _actualTextWidth - _paddings[2])
+            };
+            y = VerticalAlignment switch
+            {
+                Alignment.Top => y + (bh - th) / 2,
+                Alignment.Center => Y - _fontHeightInPixels / 2,
+                _ => Y - _fontHeightInPixels - _paddings[3]
+            };
+            _textBox = new RectangleF(x, y - 1, tw, th);
         }
+
+        #endregion
     }
 }

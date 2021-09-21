@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
     public class Scene
     {
-        private int _id;
-        private List<IDrawable> _items;
+        private List<SceneItem> _items;
+        private Stock _stock;
 
-        public Scene(int id)
+        public Scene(string id, Stock stock)
         {
-            _id = id;
-            _items = new List<IDrawable>();
+            Id = id;
+            _stock = stock;
+            _items = new List<SceneItem>();
         }
 
-        public Scene AddItem(IDrawable item)
+        public string Id { get; private set; }
+
+        public Scene AddItem(SceneItem item)
         {
             _items.Add(item);
             return this;
@@ -27,14 +31,13 @@ namespace WhiteMagic.PanelClock
 
             using (Graphics g = Graphics.FromImage(bitmap))
             {
-                foreach (var item in _items)
+                foreach (var item in _items.Select(item => _stock.GetItem(item.ItemId)))
                 {
                     g.ResetTransform();
                     g.ResetClip();
                     item.Draw(g);
                 }
             }
-
             return bitmap;
         }
     }

@@ -51,13 +51,13 @@ namespace WhiteMagic.PanelClock
 #endif
                 .Build();
 
-            var movie = new ConfigurationParser(config, logger).Parse();
+            var stock = new ConfigurationParser(config, logger).Parse();
 
             ChangeToken.OnChange(
                 () => config.GetReloadToken(),
                 async () => {
                     await Task.Delay(1000);
-                    movie = new ConfigurationParser(config, logger).Parse();
+                    stock = new ConfigurationParser(config, logger).Parse();
                 });
 
 #if SIMULATION
@@ -83,7 +83,7 @@ namespace WhiteMagic.PanelClock
                 }
                 lastTime = now;
 
-                var scene = movie.GetScene(now);
+                var scene = stock.GetScene(now);
                 Bitmap bitmap = scene.Render(display.Width, display.Height);
                 display.Show(bitmap);
             }

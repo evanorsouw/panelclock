@@ -13,48 +13,46 @@ namespace WhiteMagic.PanelClock
         private string _timezonename;
         private TimeZoneInfo _timezone = null;
 
-        public AnalogClockModern(ILogger logger) 
+        public AnalogClockModern(string id, ILogger logger=null) 
         {
+            Id = id;
             _logger = logger;
             Visible = true;
+                
         }
 
-        public float Diameter { get; set; } = 64;
-        public float X { get; set; }
-        public float Y { get; set; }
-        public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
-        public bool ShowSeconds { get; set; } = false;
-        public bool SmoothSeconds { get; set; } = false;
-        public bool Visible
-        {
-            get { return _visible; }
-            set
-            {
-                if (_visible != value)
-                {
-                    _visible = value; _animateStartTime = DateTime.Now;
-                }
-            }
-        }
-        public float AnimationTime { get; set; } = 1f;
+        #region IDrawable interface
 
-        public bool AnimationComplete
+        public string Id { get; private set; }
+
+        public IDrawable Clone(string id)
         {
-            get { return DateTime.Now.Subtract(_animateStartTime).TotalSeconds > AnimationTime; }
+            var copy = new AnalogClockModern(id, _logger);
+
+            copy.Diameter = Diameter;
+            copy.X = X;
+            copy.Y = Y;
+            copy.TimeZone = TimeZone;
+            copy.ShowSeconds = ShowSeconds;
+            copy.SmoothSeconds = SmoothSeconds;
+            copy.Visible = Visible;
+            copy.AnimationTime = AnimationTime;
+            return this;
         }
 
-        public void Draw(Graphics g)
+        public void Draw(Graphics graphics)
         {
-            if (!Visible && AnimationComplete)
+            var now = DateTime.Now;
+            var animationComplete = now.Subtract(_animateStartTime).TotalSeconds > AnimationTime;
+            if (!Visible && animationComplete)
                 return;
 
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
             var dia = Diameter * 0.07f;
-            g.FillEllipse(Brushes.White, new RectangleF(X+(Diameter- dia) /2, Y+(Diameter- dia) /2, dia, dia));
+            graphics.FillEllipse(Brushes.White, new RectangleF(X + (Diameter - dia) / 2, Y + (Diameter - dia) / 2, dia, dia));
 
-            var now = DateTime.Now;
             if (_timezone != null)
             {
                 now = TimeZoneInfo.ConvertTime(now, _timezone);
@@ -68,13 +66,13 @@ namespace WhiteMagic.PanelClock
                 var a = i / 12f;
                 var p1 = RotatedCenter(0.9f, a);
                 var p2 = RotatedCenter(1f, a);
-                g.DrawLine(Pens.White, p1, p2);
+                graphics.DrawLine(Pens.White, p1, p2);
             }
 
             var pen = new Pen(Color.White, 3);
-            g.DrawLine(pen, RotatedCenter(0.2f, hours), RotatedCenter(0.6f, hours));
+            graphics.DrawLine(pen, RotatedCenter(0.2f, hours), RotatedCenter(0.6f, hours));
             pen = new Pen(Color.White, 1.6f);
-            g.DrawLine(pen, RotatedCenter(0.2f, minutes), RotatedCenter(0.8f, minutes));
+            graphics.DrawLine(pen, RotatedCenter(0.2f, minutes), RotatedCenter(0.8f, minutes));
 
             if (ShowSeconds)
             {
@@ -93,9 +91,35 @@ namespace WhiteMagic.PanelClock
                     }
                 }
                 pen = new Pen(Color.Red, 0.6f);
-                g.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
+                graphics.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
             }
         }
+
+        #endregion
+
+        #region Properties
+        public float Diameter { get; set; } = 64;
+        public float X { get; set; }
+        public float Y { get; set; }
+        public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
+        public bool ShowSeconds { get; set; } = true;
+        public bool SmoothSeconds { get; set; } = false;
+        public bool Visible
+        {
+            get { return _visible; }
+            set
+            {
+                if (_visible != value)
+                {
+                    _visible = value; _animateStartTime = DateTime.Now;
+                }
+            }
+        }
+        public float AnimationTime { get; set; } = 1f;
+
+        #endregion
+
+        #region private code
 
         private float sin(double rel)
         {
@@ -164,5 +188,7 @@ namespace WhiteMagic.PanelClock
                 }
             }
         }
+
+        #endregion
     }
 }

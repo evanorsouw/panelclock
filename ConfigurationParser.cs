@@ -15,51 +15,64 @@ namespace WhiteMagic.PanelClock
             _logger = logger;
         }
 
-        public Movie Parse()
+        public Stock Parse()
         {
-            var movie = new Movie();
-            for(int iscene=0; ;++iscene )
+            var stock = new Stock();
+            for (int iitem = 0; ; ++iitem)
+            {
+                var itemCfg = _config.GetSection($"items:{iitem}");
+                var item = ParseItem(itemCfg);
+                if (item == null)
+                    break;
+                stock.AddItem(item);
+            }
+            for (int iscene=0; ;++iscene )
             {
                 var sceneCfg = _config.GetSection($"scenes:{iscene}");
-                var scene = ParseScene(sceneCfg);
+                var scene = ParseScene(stock, sceneCfg);
                 if (scene == null)
                     break;
-                movie.AddScene(scene);
+                stock.AddScene(scene);
             }
-            return movie;
+            return stock;
         }
 
-        private Scene ParseScene(IConfigurationSection sceneCfg)
+        private Scene ParseScene(Stock stock, IConfigurationSection sceneCfg)
         {
-            var idCfg = sceneCfg["id"];
-            if (idCfg == null)
+            var id = sceneCfg["id"];
+            if (id == null)
                 return null;
 
-            var id = int.Parse(idCfg);
-            var scene = new Scene(id);
+            var scene = new Scene(id, stock);
             for (int iitem = 0; ; ++iitem)
             {
                 var itemCfg = sceneCfg.GetSection($"items:{iitem}");
-                if (!ParseSceneItems(scene, itemCfg))
+                var item = ParseSceneItem(itemCfg);
+                if (item == null)
                     break;
+                scene.AddItem(item);
             }
             return scene;
         }
 
-        private bool ParseSceneItems(Scene scene, IConfigurationSection itemCfg)
+        private IDrawable ParseItem(IConfigurationSection itemCfg)
         {
+            var id = itemCfg["id"];
+            if (id == null)
+                return null;
+
             var type = itemCfg["type"];
             if (type == null)
-                return false;
+                return null;
 
             IDrawable item = null;
             if (type == "label")
             {
-                item = new VarLabel();
+                item = new VarLabel(id, _logger);
             }
             else if (type == "analogclock-modern")
             {
-                item = new AnalogClockModern(_logger);
+                item = new AnalogClockModern(id, _logger);
             }
             else
             {
@@ -68,9 +81,8 @@ namespace WhiteMagic.PanelClock
             if (item != null)
             {
                 ParseProperties(itemCfg, item);
-                scene.AddItem(item);
             }
-            return true;
+            return item;
         }
 
         private void ParseProperties(IConfigurationSection itemCfg, IDrawable item)
@@ -136,6 +148,17 @@ namespace WhiteMagic.PanelClock
                     }
                 }
             }
+        }
+
+        private SceneItem ParseSceneItem(IConfigurationSection itemCfg)
+        {
+            var id = itemCfg["id"];
+            if (id == null)
+                return null;
+
+            var item = new SceneItem(id);
+
+            return item;
         }
     }
 }
