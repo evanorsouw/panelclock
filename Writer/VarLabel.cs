@@ -108,15 +108,15 @@ namespace WhiteMagic.PanelClock
         #endregion
 
         #region Properties
-        public float Width { get { return _backgroundBox.Width; } set { _width = value; SetDimensions(); } }
-        public float Height { get { return _backgroundBox.Height; } set { _height = value; SetDimensions(); } }
+        public float Width { get { return _backgroundBox.Width; } set { SetWidth(value); } }
+        public float Height { get { return _backgroundBox.Height; } set { SetHeight(value); } }
         public float X { get; set; }
         public float Y { get; set; }
         public string FontName { get { return _fontname; } set { SetFontName(value); } }
         public string Text { get; private set; }
         public Color TextColor { get; set; }
         public Color BackgroundColor { get; set; }
-        public float HorizontalPadding { set { _paddings[0] = _paddings[2] = value; } }
+        public float HorizontalPadding { set { _paddings[0] = _paddings[2] = value; } } // todo: padding does not update dimensions
         public float LeftPadding { get { return _paddings[0]; } set { _paddings[0] = value; } }
         public float RightPadding { get { return _paddings[2]; } set { _paddings[2] = value; } }
         public Alignment HorizontalAlignment { get; set; }
@@ -180,8 +180,29 @@ namespace WhiteMagic.PanelClock
             _parts = parts;
         }
 
+        private void SetWidth(float width)
+        {
+            if (width != _width)
+            {
+                _width = width;
+                SetDimensions();
+            }
+        }
+
+        private void SetHeight(float height)
+        {
+            if (height != _height)
+            {
+                _height = height;
+                SetDimensions();
+            }
+        }
+
         private void SetFontName(string fontname)
         {
+            if (fontname == _fontname)
+                return;
+
             var parts = fontname.Split(":");
             var fontsize = 12;
             FontStyle fontstyle = 0;
