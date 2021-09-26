@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace WhiteMagic.PanelClock
 {
-    public class AnalogClockModern : IDrawable
+    public class AnalogClockModern : Component
     {
         private ILogger _logger;
         private DateTime _lastTime;
@@ -13,19 +13,24 @@ namespace WhiteMagic.PanelClock
         private string _timezonename;
         private TimeZoneInfo _timezone = null;
 
-        public AnalogClockModern(string id, ILogger logger=null) 
+        public AnalogClockModern(string id, ILogger logger=null) : base(id)
         {
             Id = id;
             _logger = logger;
             Visible = true;
-                
+
+            AddProperty(Create("x", typeof(float), () => X, (obj) => X = (float)obj));
+            AddProperty(Create("y", typeof(float), () => Y, (obj) => Y = (float)obj));
+            AddProperty(Create("diameter", typeof(float), () => Diameter, (obj) => Diameter = (float)obj));
+            AddProperty(Create("showseconds", typeof(bool), () => ShowSeconds, (obj) => ShowSeconds = (bool)obj));
+            AddProperty(Create("smoothseconds", typeof(bool), () => SmoothSeconds, (obj) => SmoothSeconds = (bool)obj));
         }
 
-        #region IDrawable interface
+        #region IComponent
 
         public string Id { get; private set; }
 
-        public IDrawable Clone(string id)
+        public override IComponent Clone(string id)
         {
             var copy = new AnalogClockModern(id, _logger);
 
@@ -40,7 +45,11 @@ namespace WhiteMagic.PanelClock
             return this;
         }
 
-        public void Draw(Graphics graphics)
+        #endregion
+
+        #region IDrawable interface
+
+        public override void Draw(Graphics graphics)
         {
             var now = DateTime.Now;
             var animationComplete = now.Subtract(_animateStartTime).TotalSeconds > AnimationTime;
@@ -98,6 +107,7 @@ namespace WhiteMagic.PanelClock
         #endregion
 
         #region Properties
+
         public float Diameter { get; set; } = 64;
         public float X { get; set; }
         public float Y { get; set; }

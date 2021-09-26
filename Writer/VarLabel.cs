@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
-using writer;
 
 namespace WhiteMagic.PanelClock
 {
-    public class VarLabel : IDrawable
+    public class VarLabel : Component
     {
         private ILogger _logger;
         private string _format;
@@ -25,7 +24,7 @@ namespace WhiteMagic.PanelClock
         private List<Func<string>> _parts = new List<Func<string>>();
         private DateTime _animateStartTime;
 
-        public VarLabel(string id, ILogger logger)
+        public VarLabel(string id, ILogger logger) : base(id)
         {
             Id = id;
             _logger = logger;
@@ -35,20 +34,50 @@ namespace WhiteMagic.PanelClock
             VerticalAlignment = Alignment.Top;
             TextColor = Color.White;
             Visible = true;
+
+            AddProperty(Create("x", typeof(float), () => X, (obj) => X = Convert.ToSingle(obj)));
+            AddProperty(Create("y", typeof(float), () => Y, (obj) => Y = Convert.ToSingle(obj)));
+            AddProperty(Create("format", typeof(string), () => Y, (obj) => Format = (string)obj));
+            AddProperty(Create("width", typeof(float), () => Width, (obj) => Width = Convert.ToSingle(obj)));
+            AddProperty(Create("height", typeof(float), () => Height, (obj) => Height = Convert.ToSingle(obj)));
+            AddProperty(Create("fontname", typeof(string), () => FontName, (obj) => FontName = (string)obj));
+            AddProperty(Create("textcolor", typeof(Color), () => TextColor, (obj) => TextColor = (Color)obj));
+            AddProperty(Create("backgroundcolor", typeof(Color), () => BackgroundColor, (obj) => BackgroundColor = (Color)obj));
+            AddProperty(Create("horizontalalignment", typeof(Alignment), () => HorizontalAlignment, (obj) => HorizontalAlignment = (Alignment)obj));
+            AddProperty(Create("verticalalignment", typeof(Alignment), () => VerticalAlignment, (obj) => VerticalAlignment = (Alignment)obj));
+            AddProperty(Create("visible", typeof(bool), () => Visible, (obj) => Visible = (bool)obj));
         }
 
-        #region IDrawable
+        #region IComponent
 
         public string Id { get; private set; }
 
-        public IDrawable Clone(string id)
+        public override IComponent Clone(string id)
         {
             var copy = new VarLabel(id, _logger);
+
+            copy._width = _width;
+            copy._height = _height;
+            copy.X = X;
+            copy.Y = Y;
+            copy.FontName = _fontname;
+            copy.TextColor = TextColor;
+            copy.BackgroundColor = BackgroundColor;
+            copy._paddings = _paddings.ToArray();
+            copy.HorizontalAlignment = HorizontalAlignment;
+            copy.VerticalAlignment = VerticalAlignment;
+            copy.Visible = Visible;
+            copy.AnimationTime = AnimationTime;
+            copy.Format = Format;
 
             return copy;
         }
 
-        public void Draw(Graphics graphics)
+        #endregion
+
+        #region IDrawable
+
+        public override void Draw(Graphics graphics)
         {
             EvaluateText();
 
@@ -79,7 +108,6 @@ namespace WhiteMagic.PanelClock
         #endregion
 
         #region Properties
-
         public float Width { get { return _backgroundBox.Width; } set { _width = value; SetDimensions(); } }
         public float Height { get { return _backgroundBox.Height; } set { _height = value; SetDimensions(); } }
         public float X { get; set; }
@@ -121,8 +149,7 @@ namespace WhiteMagic.PanelClock
             var literal = "";
             while (!tok.EOF)
             {
-                var id = tok.identifier();
-                if (id == null)
+                if (!tok.Identifier(out var id, false))
                 {
                     literal += tok.Next();
                 }

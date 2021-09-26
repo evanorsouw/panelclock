@@ -81,6 +81,7 @@ namespace WhiteMagic.PanelClock
                 lastTime = now;
 
                 var scene = stock.GetScene(now);
+                scene.MakeAssignments();
                 Bitmap bitmap = scene.Render(display.Width, display.Height);
                 display.Show(bitmap);
             }

@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Writer", "Writer\Writer.csproj", "{57ABAC2A-8372-498B-ABF2-05972259BB5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WriterTest", "WriterTest\WriterTest.csproj", "{92361FBE-4F06-4E9E-B5AB-B68793DED048}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WriterTest", "WriterTest\WriterTest.csproj", "{92361FBE-4F06-4E9E-B5AB-B68793DED048}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C826599C-D84C-45A1-9D8F-DEADA41635F3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

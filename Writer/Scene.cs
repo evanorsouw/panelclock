@@ -55,5 +55,13 @@ namespace WhiteMagic.PanelClock
             options.IncludingSeconds = true;
             _cron = CrontabSchedule.Parse(value, options);
         }
+
+        internal void MakeAssignments()
+        {
+            foreach(var assignment in _stock.GetAssignments())
+            {
+                assignment.Make();
+            }
+        }
     }
 }
