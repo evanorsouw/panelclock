@@ -19,11 +19,11 @@ namespace WhiteMagic.PanelClock
             _logger = logger;
             Visible = true;
 
-            AddProperty(Create("x", typeof(float), () => X, (obj) => X = (float)obj));
-            AddProperty(Create("y", typeof(float), () => Y, (obj) => Y = (float)obj));
-            AddProperty(Create("diameter", typeof(float), () => Diameter, (obj) => Diameter = (float)obj));
-            AddProperty(Create("showseconds", typeof(bool), () => ShowSeconds, (obj) => ShowSeconds = (bool)obj));
-            AddProperty(Create("smoothseconds", typeof(bool), () => SmoothSeconds, (obj) => SmoothSeconds = (bool)obj));
+            AddProperty(Create("x", () => X, (obj) => X = obj));
+            AddProperty(Create("y", () => Y, (obj) => Y = obj));
+            AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
+            AddProperty(Create("showseconds", () => ShowSeconds, (obj) => ShowSeconds = obj));
+            AddProperty(Create("smoothseconds", () => SmoothSeconds, (obj) => SmoothSeconds = obj));
         }
 
         #region IComponent

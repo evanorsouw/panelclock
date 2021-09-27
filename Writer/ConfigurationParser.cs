@@ -126,7 +126,7 @@ namespace WhiteMagic.PanelClock
                 if (value == null)
                     continue;
 
-                value = ValueSource.Create($"{item.Id}.{name}", property.NativeType, value);
+                value = ValueSource.Create($"{item.Id}.{name}", value);
                 stock.AddExpression(value);
                 stock.AddAssignment(new Assignment(() => { property.Value = value.Value; }));
             }
@@ -143,7 +143,7 @@ namespace WhiteMagic.PanelClock
             return item;
         }
 
-        private ValueSource ParseExpression(Stock stock, object value)
+        private ValueSource ParseExpression(Stock stock, string value)
         { 
             ValueSource expression = null;
             if (value.GetType() == typeof(string) && value.ToString().StartsWith("="))

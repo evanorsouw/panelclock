@@ -6,11 +6,11 @@ namespace WhiteMagic.PanelClock
 {
     public class NowDateSource : ValueSource
     {
-        public NowDateSource(): base("now", typeof(DateTime))
+        public NowDateSource(): base("now")
         {
-            AddProperty(Create("seconds", typeof(int), () => DateTime.Now.Second));
-            AddProperty(Create("minutes", typeof(int), () => DateTime.Now.Minute));
-            AddProperty(Create("hours", typeof(int), () => DateTime.Now.Hour));
+            AddProperty(Create("seconds", () => DateTime.Now.Second));
+            AddProperty(Create("minutes", () => DateTime.Now.Minute));
+            AddProperty(Create("hours", () => DateTime.Now.Hour));
         }
     }
 }

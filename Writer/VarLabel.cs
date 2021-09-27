@@ -35,17 +35,17 @@ namespace WhiteMagic.PanelClock
             TextColor = Color.White;
             Visible = true;
 
-            AddProperty(Create("x", typeof(float), () => X, (obj) => X = Convert.ToSingle(obj)));
-            AddProperty(Create("y", typeof(float), () => Y, (obj) => Y = Convert.ToSingle(obj)));
-            AddProperty(Create("format", typeof(string), () => Y, (obj) => Format = (string)obj));
-            AddProperty(Create("width", typeof(float), () => Width, (obj) => Width = Convert.ToSingle(obj)));
-            AddProperty(Create("height", typeof(float), () => Height, (obj) => Height = Convert.ToSingle(obj)));
-            AddProperty(Create("fontname", typeof(string), () => FontName, (obj) => FontName = (string)obj));
-            AddProperty(Create("textcolor", typeof(Color), () => TextColor, (obj) => TextColor = (Color)obj));
-            AddProperty(Create("backgroundcolor", typeof(Color), () => BackgroundColor, (obj) => BackgroundColor = (Color)obj));
-            AddProperty(Create("horizontalalignment", typeof(Alignment), () => HorizontalAlignment, (obj) => HorizontalAlignment = (Alignment)obj));
-            AddProperty(Create("verticalalignment", typeof(Alignment), () => VerticalAlignment, (obj) => VerticalAlignment = (Alignment)obj));
-            AddProperty(Create("visible", typeof(bool), () => Visible, (obj) => Visible = (bool)obj));
+            AddProperty(Create("x", () => X, (obj) => X = obj));
+            AddProperty(Create("y", () => Y, (obj) => Y = obj));
+            AddProperty(Create("format", () => Y, (obj) => Format = obj));
+            AddProperty(Create("width", () => Width, (obj) => Width = obj));
+            AddProperty(Create("height", () => Height, (obj) => Height = obj));
+            AddProperty(Create("fontname", () => FontName, (obj) => FontName = obj));
+            AddProperty(Create("textcolor", () => TextColor, (obj) => TextColor = obj));
+            AddProperty(Create("backgroundcolor", () => BackgroundColor, (obj) => BackgroundColor = obj));
+            AddProperty(Create("horizontalalignment", () => HorizontalAlignment, (obj) => HorizontalAlignment = obj.ToEnum<Alignment>()));
+            AddProperty(Create("verticalalignment", () => VerticalAlignment, (obj) => VerticalAlignment = obj.ToEnum<Alignment>()));
+            AddProperty(Create("visible", () => Visible, (obj) => Visible = obj));
         }
 
         #region IComponent
