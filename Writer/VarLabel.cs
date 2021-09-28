@@ -25,8 +25,7 @@ namespace WhiteMagic.PanelClock
         private DateTime _animateStartTime;
 
         public VarLabel(string id, ILogger logger) : base(id)
-        {
-            Id = id;
+        { 
             _logger = logger;
             _fontname = "Arial";
             BackgroundColor = Color.Transparent;
@@ -37,6 +36,8 @@ namespace WhiteMagic.PanelClock
 
             AddProperty(Create("x", () => X, (obj) => X = obj));
             AddProperty(Create("y", () => Y, (obj) => Y = obj));
+            AddProperty(Create("x2", () => X + Width));
+            AddProperty(Create("y2", () => Y + Height));
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
             AddProperty(Create("width", () => Width, (obj) => Width = obj));
             AddProperty(Create("height", () => Height, (obj) => Height = obj));
@@ -49,8 +50,6 @@ namespace WhiteMagic.PanelClock
         }
 
         #region IComponent
-
-        public string Id { get; private set; }
 
         public override IComponent Clone(string id)
         {
@@ -315,7 +314,7 @@ namespace WhiteMagic.PanelClock
             {
                 Alignment.Left => X,
                 Alignment.Center => (_width == 0) ? (X - tw / 2) : (X + (_width - tw) / 2),
-                Alignment.Right => (_width == 0) ? (X - tw) : (X + _width)
+                _ => (_width == 0) ? (X - tw) : (X + _width)
             };
             var y = VerticalAlignment switch
             {

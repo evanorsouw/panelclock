@@ -27,6 +27,90 @@ namespace WhiteMagic.PanelClock
         public static implicit operator double(Value v) { return v.ToDouble(); }
         public static implicit operator Color(Value v) { return v.ToColor(); }
 
+        public static bool operator true(Value v) { return true; }
+
+        public static bool operator false(Value v) { return false; }
+
+        public static bool operator ==(Value lhs, Value rhs)
+        {
+            if (lhs.GetType() == rhs.GetType())
+                return lhs.Equals(rhs);
+            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+                return lhs.ToBool() == rhs.ToBool();
+            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+                return lhs.ToString() == rhs.ToString();
+
+            return false;
+        }
+
+        public static bool operator !=(Value lhs, Value rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public static bool operator <(Value lhs, Value rhs)
+        {
+            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+                throw new Exception("cannot relative compare booleans");
+            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+                return lhs.ToString().CompareTo(rhs.ToString()) < 0;
+            return lhs.ToDouble() < rhs.ToDouble();
+        }
+
+        public static bool operator <=(Value lhs, Value rhs)
+        {
+            return lhs < rhs || lhs == rhs;
+        }
+
+        public static bool operator >(Value lhs, Value rhs)
+        {
+            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+                throw new Exception("cannot relative compare booleans");
+            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+                return lhs.ToString().CompareTo(rhs.ToString()) > 0;
+            return lhs.ToDouble() > rhs.ToDouble();
+        }
+
+        public static bool operator >=(Value lhs, Value rhs)
+        {
+            return lhs > rhs || lhs == rhs;
+        }
+
+        public static Value operator | (Value lhs, Value rhs)
+        {
+            return lhs.ToBool() || rhs.ToBool();
+        }
+
+        public static Value operator & (Value lhs, Value rhs)
+        {
+            return lhs.ToBool() && rhs.ToBool();
+        }
+
+        public static Value operator +(Value lhs, Value rhs)
+        {
+            return lhs.ToDouble() + rhs.ToDouble();
+        }
+
+        public static Value operator -(Value lhs, Value rhs)
+        {
+            return lhs.ToDouble() - rhs.ToDouble();
+        }
+
+        public static Value operator *(Value lhs, Value rhs)
+        {
+            return lhs.ToDouble() * rhs.ToDouble();
+        }
+
+        public static Value operator /(Value lhs, Value rhs)
+        {
+            return lhs.ToDouble() / rhs.ToDouble();
+        }
+
+        public static Value operator %(Value lhs, Value rhs)
+        {
+            return lhs.ToDouble() % rhs.ToDouble();
+        }
+
         public bool ToBool()
         {
             if (_value.GetType() == typeof(bool))
@@ -37,10 +121,12 @@ namespace WhiteMagic.PanelClock
                 return (float)_value > 0;
             if (_value.GetType() == typeof(double))
                 return (double)_value > 0;
+            if (_value.GetType() == typeof(string))
+                return _value.ToString().Length > 0;
             return false;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return _value.ToString();
         }
@@ -67,6 +153,8 @@ namespace WhiteMagic.PanelClock
                 return (float)_value;
             if (_value.GetType() == typeof(double))
                 return (float)(double)_value;
+            if (_value.GetType() == typeof(int))
+                return (int)_value;
             if (_value.GetType() == typeof(bool))
                 return ((bool)_value) ? 1f : 0f;
             if (_value.GetType() == typeof(string))
@@ -82,7 +170,9 @@ namespace WhiteMagic.PanelClock
             if (_value.GetType() == typeof(double))
                 return (double)_value;
             if (_value.GetType() == typeof(float))
-                return (double)(float)_value;
+                return (float)_value;
+            if (_value.GetType() == typeof(int))
+                return (int)_value;
             if (_value.GetType() == typeof(bool))
                 return ((bool)_value) ? 1.0 : 0.0;
             if (_value.GetType() == typeof(string))

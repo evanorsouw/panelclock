@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace WhiteMagic.PanelClock
@@ -126,9 +128,9 @@ namespace WhiteMagic.PanelClock
                 if (value == null)
                     continue;
 
-                value = ValueSource.Create($"{item.Id}.{name}", value);
-                stock.AddExpression(value);
-                stock.AddAssignment(new Assignment(() => { property.Value = value.Value; }));
+                var namedvalue = ValueSource.Create($"{item.Id}.{name}", value);
+                stock.AddExpression(namedvalue);
+                stock.AddAssignment(new Assignment(() => { property.Value = namedvalue.Value; }));
             }
         }
 
@@ -149,11 +151,141 @@ namespace WhiteMagic.PanelClock
             if (value.GetType() == typeof(string) && value.ToString().StartsWith("="))
             {
                 var tok = new Tokenizer(value.ToString().Substring(1));
-                expression = ParseSubExpression(stock, tok);
+                expression = ParseOr(stock, tok);
+                if (!tok.EOF)
+                    throw new Exception("syntax error");
             }
             else 
             {
                 expression = ValueSource.Create(() => value);
+            }
+            return expression;
+        }
+
+        private ValueSource ParseOr(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseAnd(stock, tok);
+            while (tok.Match("||"))
+            {
+                var lhs = expression;
+                var rhs = ParseAnd(stock, tok);
+                expression = ValueSource.Create(() => lhs.Value || rhs.Value);
+            }
+            return expression;
+        }
+
+        private ValueSource ParseAnd(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseRelational(stock, tok);
+            while (tok.Match("&&"))
+            {
+                var lhs = expression;
+                var rhs = ParseRelational(stock, tok);
+                expression = ValueSource.Create(() => lhs.Value && rhs.Value);
+            }
+            return expression;
+        }
+
+
+        private ValueSource ParseRelational(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseEquality(stock, tok);
+            for (; ; )
+            {
+                var lhs = expression;
+                if (tok.Match("<"))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value < rhs.Value);
+                }
+                else if (tok.Match("<="))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value <= rhs.Value);
+                }
+                else if (tok.Match(">"))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value > rhs.Value);
+                }
+                else if (tok.Match(">="))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value >= rhs.Value);
+                }
+                else
+                    break;
+            }
+            return expression;
+        }
+
+        private ValueSource ParseEquality(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseAddition(stock, tok);
+            for (; ; )
+            {
+                var lhs = expression;
+                if (tok.Match("=="))
+                {
+                    var rhs = ParseAddition(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value == rhs.Value);
+                }
+                else if (tok.Match("!="))
+                {
+                    var rhs = ParseAddition(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value != rhs.Value);
+                }
+                else
+                    break;
+            }
+            return expression;
+        }
+
+        private ValueSource ParseAddition(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseMultiplication(stock, tok);
+            for (; ; )
+            {
+                var lhs = expression;
+                if (tok.Match("+"))
+                {
+                    var rhs = ParseMultiplication(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value + rhs.Value);
+                }
+                else if (tok.Match("-"))
+                {
+                    var rhs = ParseMultiplication(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value - rhs.Value);
+                }
+                else
+                    break;
+            }
+            return expression;
+        }
+
+        private ValueSource ParseMultiplication(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression = ParseSubExpression(stock, tok);
+            for (; ; )
+            {
+                var lhs = expression;
+                if (tok.Match("*"))
+                {
+                    var rhs = ParseSubExpression(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value * rhs.Value);
+                }
+                else if (tok.Match("/"))
+                {
+                    var rhs = ParseSubExpression(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value / rhs.Value);
+                }
+                else if (tok.Match("%"))
+                {
+                    var rhs = ParseSubExpression(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value % rhs.Value);
+                }
+                else
+                    break;
             }
             return expression;
         }
@@ -164,18 +296,13 @@ namespace WhiteMagic.PanelClock
 
             if (tok.Match("("))
             {
-                expression = ParseSubExpression(stock, tok);
+                expression = ParseOr(stock, tok);
                 if (!tok.Match(")"))
                     throw new Exception("missing closing brace");
             }
             else
             {
                 expression = ParseTerminal(stock, tok);
-            }
-
-            if (tok.Match("."))
-            {
-                expression = ParseSourceProperty(stock, tok, expression);
             }
 
             return expression;
@@ -194,6 +321,16 @@ namespace WhiteMagic.PanelClock
         }
 
         private ValueSource ParseTerminal(Stock stock, Tokenizer tok)
+        {
+            var expression = ParseValueOrIdentifier(stock, tok);
+            while (tok.Match("."))
+            {
+                expression = ParseSourceProperty(stock, tok, expression);
+            }
+            return expression;
+        }
+
+        private ValueSource ParseValueOrIdentifier(Stock stock, Tokenizer tok)
         {
             ValueSource expression = null;
 
@@ -235,13 +372,32 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseFunction(Stock stock, Tokenizer tok, string functionname)
         {
+            var arguments = new List<ValueSource>();
             if (!tok.Match(")"))
-                throw new Exception("arguments not yet supported");
-
-            if (functionname == "now")
-                return new NowDateSource();            
+            {
+                arguments = ParseArguments(stock, tok);
+                if (!tok.Match(")"))
+                    throw new Exception("missing closing brace after arguments");
+            }
+            if (functionname == NowDateSource.Name)
+                return new NowDateSource(arguments);
+            if (functionname == "color")
+                return new ColorSource(arguments);
 
             throw new Exception($"invalid function='{functionname}'");
+        }
+
+        private List<ValueSource> ParseArguments(Stock stock, Tokenizer tok)
+        {
+            var arguments = new List<ValueSource>();
+            do
+            {
+                var argument = ParseOr(stock, tok);
+                arguments.Add(argument);
+            }
+            while (tok.Match(','));
+
+            return arguments;
         }
     }
 }

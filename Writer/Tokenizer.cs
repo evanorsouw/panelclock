@@ -94,7 +94,7 @@ namespace WhiteMagic.PanelClock
                 var add = 0.1;
                 while (char.IsDigit(Head))
                 {
-                    value += add * (Head - '0');
+                    value += add * (Next() - '0');
                     add /= 10;
                 }
             }

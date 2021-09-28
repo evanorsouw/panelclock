@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Drawing;
+using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
@@ -15,20 +16,25 @@ namespace WhiteMagic.PanelClock
 
         public AnalogClockModern(string id, ILogger logger=null) : base(id)
         {
-            Id = id;
             _logger = logger;
             Visible = true;
 
             AddProperty(Create("x", () => X, (obj) => X = obj));
             AddProperty(Create("y", () => Y, (obj) => Y = obj));
+            AddProperty(Create("x2", () => X + Diameter));
+            AddProperty(Create("y2", () => Y + Diameter));
             AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
+            AddProperty(Create("width", () => Diameter));
+            AddProperty(Create("height", () => Diameter));
             AddProperty(Create("showseconds", () => ShowSeconds, (obj) => ShowSeconds = obj));
             AddProperty(Create("smoothseconds", () => SmoothSeconds, (obj) => SmoothSeconds = obj));
+            AddProperty(Create("visible", () => Visible, (obj) => Visible = obj));
+            AddProperty(Create("timezone", () => TimeZone, (obj) => TimeZone = obj));
+            AddProperty(Create("maincolor", () => MainColor, (obj) => MainColor = obj));
+            AddProperty(Create("secondhandcolor", () => SecondHandColor, (obj) => SecondHandColor = obj));
         }
 
         #region IComponent
-
-        public string Id { get; private set; }
 
         public override IComponent Clone(string id)
         {
@@ -55,12 +61,13 @@ namespace WhiteMagic.PanelClock
             var animationComplete = now.Subtract(_animateStartTime).TotalSeconds > AnimationTime;
             if (!Visible && animationComplete)
                 return;
-
+            
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
             var dia = Diameter * 0.07f;
-            graphics.FillEllipse(Brushes.White, new RectangleF(X + (Diameter - dia) / 2, Y + (Diameter - dia) / 2, dia, dia));
+            var brush = new SolidBrush(MainColor);
+            graphics.FillEllipse(brush, new RectangleF(X + (Diameter - dia) / 2, Y + (Diameter - dia) / 2, dia, dia));
 
             if (_timezone != null)
             {
@@ -70,17 +77,18 @@ namespace WhiteMagic.PanelClock
             var minutes = (float)((now.Minute + seconds) / 60.0);
             var hours = (float)((now.Hour % 12 + minutes) / 12.0);
 
+            var pen = new Pen(MainColor, 1);
             for (int i = 0; i < 12; ++i)
             {
                 var a = i / 12f;
                 var p1 = RotatedCenter(0.9f, a);
                 var p2 = RotatedCenter(1f, a);
-                graphics.DrawLine(Pens.White, p1, p2);
+                graphics.DrawLine(pen, p1, p2);
             }
 
-            var pen = new Pen(Color.White, 3);
+            pen = new Pen(MainColor, 3);
             graphics.DrawLine(pen, RotatedCenter(0.2f, hours), RotatedCenter(0.6f, hours));
-            pen = new Pen(Color.White, 1.6f);
+            pen = new Pen(MainColor, 1.6f);
             graphics.DrawLine(pen, RotatedCenter(0.2f, minutes), RotatedCenter(0.8f, minutes));
 
             if (ShowSeconds)
@@ -99,7 +107,7 @@ namespace WhiteMagic.PanelClock
                         angle += 0.003f;
                     }
                 }
-                pen = new Pen(Color.Red, 0.6f);
+                pen = new Pen(SecondHandColor, 0.6f);
                 graphics.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
             }
         }
@@ -108,6 +116,8 @@ namespace WhiteMagic.PanelClock
 
         #region Properties
 
+        public Color MainColor { get; set; } = Color.White;
+        public Color SecondHandColor { get; set; } = Color.Red;
         public float Diameter { get; set; } = 64;
         public float X { get; set; }
         public float Y { get; set; }
@@ -178,6 +188,9 @@ namespace WhiteMagic.PanelClock
 
         private void SetTimeZone(string value)
         {
+            if (value == _timezonename)
+                return;
+
             _timezonename = value;
             _timezone = null;
 

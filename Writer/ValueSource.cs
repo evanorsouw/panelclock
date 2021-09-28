@@ -67,6 +67,12 @@ namespace WhiteMagic.PanelClock
             return new ValueSource(name, getter, obj => { }, properties);
         }
 
+        protected ValueSource SetGetter(Func<Value> getter)
+        {
+            _getter = getter;
+            return this;
+        }
+
         public ValueSource AddProperty(ValueSource expr)
         {
             _properties.Add(expr);
@@ -77,6 +83,8 @@ namespace WhiteMagic.PanelClock
         {
             return _properties.FirstOrDefault(p => p.Id == name);
         }
+
+        #region IValueSource
 
         public string Id { get; private set; }
 
@@ -91,5 +99,7 @@ namespace WhiteMagic.PanelClock
         public ValueSource this[string name] => _properties.FirstOrDefault(p => p.Id == name);
 
         public IEnumerable<string> Properties => _properties.Select(p => p.Id);
+
+        #endregion
     }
 }

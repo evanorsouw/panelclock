@@ -72,7 +72,7 @@ namespace WhiteMagic.PanelClock
                     ScanDirectories(path);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         }
