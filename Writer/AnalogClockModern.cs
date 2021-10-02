@@ -9,15 +9,12 @@ namespace WhiteMagic.PanelClock
     {
         private ILogger _logger;
         private DateTime _lastTime;
-        private bool _visible;
-        private DateTime _animateStartTime;
         private string _timezonename;
         private TimeZoneInfo _timezone = null;
 
         public AnalogClockModern(string id, ILogger logger=null) : base(id)
         {
             _logger = logger;
-            Visible = true;
 
             AddProperty(Create("x", () => X, (obj) => X = obj));
             AddProperty(Create("y", () => Y, (obj) => Y = obj));
@@ -28,7 +25,6 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("height", () => Diameter));
             AddProperty(Create("showseconds", () => ShowSeconds, (obj) => ShowSeconds = obj));
             AddProperty(Create("smoothseconds", () => SmoothSeconds, (obj) => SmoothSeconds = obj));
-            AddProperty(Create("visible", () => Visible, (obj) => Visible = obj));
             AddProperty(Create("timezone", () => TimeZone, (obj) => TimeZone = obj));
             AddProperty(Create("maincolor", () => MainColor, (obj) => MainColor = obj));
             AddProperty(Create("secondhandcolor", () => SecondHandColor, (obj) => SecondHandColor = obj));
@@ -57,9 +53,7 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            var now = DateTime.Now;
-            var animationComplete = now.Subtract(_animateStartTime).TotalSeconds > AnimationTime;
-            if (!Visible && animationComplete)
+            if (!Visible && !Animating)
                 return;
             
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -69,10 +63,12 @@ namespace WhiteMagic.PanelClock
             var brush = new SolidBrush(MainColor);
             graphics.FillEllipse(brush, new RectangleF(X + (Diameter - dia) / 2, Y + (Diameter - dia) / 2, dia, dia));
 
+            var now = DateTime.Now;
             if (_timezone != null)
             {
                 now = TimeZoneInfo.ConvertTime(now, _timezone);
             }
+            var elapsed = (float)AnimationElapsed;
             var seconds = (float)(now.Second / 60.0);
             var minutes = (float)((now.Minute + seconds) / 60.0);
             var hours = (float)((now.Hour % 12 + minutes) / 12.0);
@@ -81,15 +77,15 @@ namespace WhiteMagic.PanelClock
             for (int i = 0; i < 12; ++i)
             {
                 var a = i / 12f;
-                var p1 = RotatedCenter(0.9f, a);
-                var p2 = RotatedCenter(1f, a);
+                var p1 = RotatedCenter(0.9f, a, elapsed);
+                var p2 = RotatedCenter(1f, a, elapsed);
                 graphics.DrawLine(pen, p1, p2);
             }
 
             pen = new Pen(MainColor, 3);
-            graphics.DrawLine(pen, RotatedCenter(0.2f, hours), RotatedCenter(0.6f, hours));
+            graphics.DrawLine(pen, RotatedCenter(0.2f, hours, elapsed), RotatedCenter(0.6f, hours, elapsed));
             pen = new Pen(MainColor, 1.6f);
-            graphics.DrawLine(pen, RotatedCenter(0.2f, minutes), RotatedCenter(0.8f, minutes));
+            graphics.DrawLine(pen, RotatedCenter(0.2f, minutes, elapsed), RotatedCenter(0.8f, minutes, elapsed));
 
             if (ShowSeconds)
             {
@@ -108,7 +104,7 @@ namespace WhiteMagic.PanelClock
                     }
                 }
                 pen = new Pen(SecondHandColor, 0.6f);
-                graphics.DrawLine(pen, RotatedCenter(0.1f, angle), RotatedCenter(0.9f, angle));
+                graphics.DrawLine(pen, RotatedCenter(0.1f, angle, elapsed), RotatedCenter(0.9f, angle, elapsed));
             }
         }
 
@@ -124,18 +120,6 @@ namespace WhiteMagic.PanelClock
         public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
         public bool ShowSeconds { get; set; } = true;
         public bool SmoothSeconds { get; set; } = false;
-        public bool Visible
-        {
-            get { return _visible; }
-            set
-            {
-                if (_visible != value)
-                {
-                    _visible = value; _animateStartTime = DateTime.Now;
-                }
-            }
-        }
-        public float AnimationTime { get; set; } = 1f;
 
         #endregion
 
@@ -156,31 +140,16 @@ namespace WhiteMagic.PanelClock
             return (float)(Math.PI * 2 * rel - Math.PI / 2);
         }
 
-        private PointF RotatedCenter(float distance, float angle)
+        private PointF RotatedCenter(float distance, float angle, float elapsed)
         {
-            var elapsed = (float)DateTime.Now.Subtract(_animateStartTime).TotalSeconds;
-            if (_visible)
-            {
-                var timePhase1 = AnimationTime / 3f;
-                var timePhase2 = AnimationTime - timePhase1;
+            var timePhase1 = 1 / 3f;
+            var timePhase2 = 1f - timePhase1;
 
-                var elapsedPhase1 = Math.Min(timePhase1, elapsed) / timePhase1;
-                var elapsedPhase2 = Math.Min(timePhase2, Math.Max(0, elapsed - timePhase1)) / timePhase2;
+            var elapsedPhase1 = Math.Min(timePhase1, elapsed) / timePhase1;
+            var elapsedPhase2 = Math.Min(timePhase2, Math.Max(0, elapsed - timePhase1)) / timePhase2;
 
-                distance = elapsedPhase1 * distance;
-                angle = angle * elapsedPhase2;
-            }
-            else
-            {
-                var timePhase2 = AnimationTime / 3f;
-                var timePhase1 = AnimationTime - timePhase2;
-
-                var elapsedPhase1 = 1f - Math.Min(timePhase1, elapsed) / timePhase1;
-                var elapsedPhase2 = 1f - Math.Min(timePhase2, Math.Max(0, elapsed - timePhase1)) / timePhase2;
-
-                angle = angle * elapsedPhase1;
-                distance = elapsedPhase2 * distance;
-            }
+            distance = elapsedPhase1 * distance;
+            angle = angle * elapsedPhase2;
 
             var scale = Diameter * distance / 2;
             return new PointF(X + Diameter / 2 - 0.5f + scale * cos(angle), Y + Diameter / 2 - 0.5f + scale * sin(angle));

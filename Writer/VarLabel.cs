@@ -16,13 +16,13 @@ namespace WhiteMagic.PanelClock
         private float _actualTextWidth;
         private string _fontname;
         private Font _font;
+        private float _x;
+        private float _y;
         private float _width;
         private float _height;
         private RectangleF _textBox;
         private RectangleF _backgroundBox;
-        private bool _visible;
         private List<Func<string>> _parts = new List<Func<string>>();
-        private DateTime _animateStartTime;
 
         public VarLabel(string id, ILogger logger) : base(id)
         { 
@@ -32,10 +32,9 @@ namespace WhiteMagic.PanelClock
             HorizontalAlignment = Alignment.Left;
             VerticalAlignment = Alignment.Top;
             TextColor = Color.White;
-            Visible = true;
 
-            AddProperty(Create("x", () => X, (obj) => X = obj));
-            AddProperty(Create("y", () => Y, (obj) => Y = obj));
+            AddProperty(Create("x", () => _x, (obj) => X = obj));
+            AddProperty(Create("y", () => _y, (obj) => Y = obj));
             AddProperty(Create("x2", () => X + Width));
             AddProperty(Create("y2", () => Y + Height));
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
@@ -46,7 +45,6 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("backgroundcolor", () => BackgroundColor, (obj) => BackgroundColor = obj));
             AddProperty(Create("horizontalalignment", () => HorizontalAlignment, (obj) => HorizontalAlignment = obj.ToEnum<Alignment>()));
             AddProperty(Create("verticalalignment", () => VerticalAlignment, (obj) => VerticalAlignment = obj.ToEnum<Alignment>()));
-            AddProperty(Create("visible", () => Visible, (obj) => Visible = obj));
         }
 
         #region IComponent
@@ -80,17 +78,14 @@ namespace WhiteMagic.PanelClock
         {
             EvaluateText();
 
-            var animationComplete = DateTime.Now.Subtract(_animateStartTime).TotalSeconds > AnimationTime; 
-            if (!Visible && animationComplete)
+            if (!Visible && !Animating)
                 return;
 
-            var elapsed = (float)Math.Min(1, DateTime.Now.Subtract(_animateStartTime).TotalSeconds / AnimationTime);
+            var elapsed = (float)AnimationElapsed;
             var textcolor = TextColor;
             var backgroundcolor = BackgroundColor;
-            if (!animationComplete)
+            if (Animating)
             {
-                if (!Visible)
-                    elapsed = 1 - elapsed;
                 textcolor = textcolor.Scale(elapsed);
                 backgroundcolor = backgroundcolor.Scale(elapsed);
             }
@@ -107,10 +102,11 @@ namespace WhiteMagic.PanelClock
         #endregion
 
         #region Properties
+
         public float Width { get { return _backgroundBox.Width; } set { SetWidth(value); } }
         public float Height { get { return _backgroundBox.Height; } set { SetHeight(value); } }
-        public float X { get; set; }
-        public float Y { get; set; }
+        public float X { get { return _x; } set { SetX(value); } }
+        public float Y { get { return _y; } set { SetY(value); } }
         public string FontName { get { return _fontname; } set { SetFontName(value); } }
         public string Text { get; private set; }
         public Color TextColor { get; set; }
@@ -120,18 +116,6 @@ namespace WhiteMagic.PanelClock
         public float RightPadding { get { return _paddings[2]; } set { _paddings[2] = value; } }
         public Alignment HorizontalAlignment { get; set; }
         public Alignment VerticalAlignment { get; set; }
-        public bool Visible
-        {
-            get { return _visible; }
-            set
-            {
-                if (_visible != value)
-                {
-                    _visible = value; _animateStartTime = DateTime.Now;
-                }
-            }
-        }
-        public float AnimationTime { get; set; } = 0.5f;
         public string Format { get { return _format; } set{ SetFormat(value); } }
 
         #endregion
@@ -177,6 +161,24 @@ namespace WhiteMagic.PanelClock
                 parts.Add(() => literal);
             }
             _parts = parts;
+        }
+
+        private void SetX(float x)
+        {
+            if (x != _x)
+            {
+                _x = x;
+                SetDimensions();
+            }
+        }
+
+        private void SetY(float y)
+        {
+            if (y != _y)
+            {
+                _y = y;
+                SetDimensions();
+            }
         }
 
         private void SetWidth(float width)

@@ -33,11 +33,11 @@ namespace WhiteMagic.PanelClock
 
         public static bool operator ==(Value lhs, Value rhs)
         {
-            if (lhs.GetType() == rhs.GetType())
+            if (lhs._value.GetType() == rhs._value.GetType())
                 return lhs.Equals(rhs);
-            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+            if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 return lhs.ToBool() == rhs.ToBool();
-            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+            if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString() == rhs.ToString();
 
             return false;
@@ -50,9 +50,9 @@ namespace WhiteMagic.PanelClock
 
         public static bool operator <(Value lhs, Value rhs)
         {
-            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+            if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 throw new Exception("cannot relative compare booleans");
-            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+            if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString().CompareTo(rhs.ToString()) < 0;
             return lhs.ToDouble() < rhs.ToDouble();
         }
@@ -64,9 +64,9 @@ namespace WhiteMagic.PanelClock
 
         public static bool operator >(Value lhs, Value rhs)
         {
-            if (lhs.GetType() == typeof(bool) || rhs.GetType() == typeof(bool))
+            if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 throw new Exception("cannot relative compare booleans");
-            if (lhs.GetType() == typeof(string) || rhs.GetType() == typeof(string))
+            if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString().CompareTo(rhs.ToString()) > 0;
             return lhs.ToDouble() > rhs.ToDouble();
         }
