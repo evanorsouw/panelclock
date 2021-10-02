@@ -334,7 +334,15 @@ namespace WhiteMagic.PanelClock
         {
             ValueSource expression = null;
 
-            if (tok.Identifier(out var identifier))
+            if (tok.Match("true"))
+            {
+                expression = ValueSource.Create(() => true);
+            }
+            else if (tok.Match("false"))
+            {
+                expression = ValueSource.Create(() => false);
+            }
+            else if (tok.Identifier(out var identifier))
             {
                 if (tok.Match('('))
                 {
@@ -358,14 +366,6 @@ namespace WhiteMagic.PanelClock
             else if (tok.String(out var literal))
             {
                 expression = ValueSource.Create(() => literal);
-            }
-            else if (tok.Match("true"))
-            {
-                expression = ValueSource.Create(() => true);
-            }
-            else if (tok.Match("false"))
-            {
-                expression = ValueSource.Create(() => false);
             }
             return expression;
         }
