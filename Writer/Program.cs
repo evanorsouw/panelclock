@@ -49,6 +49,7 @@ namespace WhiteMagic.PanelClock
                 .Build();
 
             var stock = new ConfigurationParser(config, logger).Parse();
+            Animator animator = new Animator(stock);
 
             ChangeToken.OnChange(
                 () => config.GetReloadToken(),
@@ -80,9 +81,9 @@ namespace WhiteMagic.PanelClock
                 }
                 lastTime = now;
 
-                var scene = stock.GetScene(now);
-                scene.MakeAssignments();
-                Bitmap bitmap = scene.Render(display.Width, display.Height);
+                var bitmap = new Bitmap(display.Width, display.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+                animator.Render(bitmap, now);
+
                 display.Show(bitmap);
             }
         }

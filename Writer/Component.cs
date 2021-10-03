@@ -36,9 +36,10 @@ namespace WhiteMagic.PanelClock
                 }
             }
         }
+
         public float AnimationTime { get; set; } = 1f;
+
         public bool Animating => (Visible && AnimationElapsed < 1) || (!Visible && AnimationElapsed > 0);
-        #endregion
 
         protected double AnimationElapsed
         {
@@ -49,5 +50,7 @@ namespace WhiteMagic.PanelClock
                 return elapsed;
             }
         }
+
+        #endregion
     }
 }

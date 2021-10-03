@@ -1,0 +1,3 @@
+﻿* rename VarLavel -> Label
+* add automatic smooth properties
+* add if operator to expressions

@@ -23,11 +23,6 @@ namespace WhiteMagic.PanelClock
             _properties = properties.ToList();
         }
 
-        protected ValueSource(string name, Func<Value> getter) : this(name)
-        {
-            _getter = getter;
-        }
-
         public static ValueSource Create(string name, ValueSource expression)
         {
             var expr = new ValueSource(name);
@@ -57,23 +52,13 @@ namespace WhiteMagic.PanelClock
             return new ValueSource(name, getter, setter, new List<ValueSource>());
         }
 
-        public static ValueSource Create(string name, Func<Value> getter, Action<Value> setter, IEnumerable<ValueSource> properties)
-        {
-            return new ValueSource(name, getter, setter, properties);
-        }
-
-        public static ValueSource Create(string name, Func<Value> getter, IEnumerable<ValueSource> properties)
-        {
-            return new ValueSource(name, getter, obj => { }, properties);
-        }
-
         protected ValueSource SetGetter(Func<Value> getter)
         {
             _getter = getter;
             return this;
         }
 
-        public ValueSource AddProperty(ValueSource expr)
+        protected ValueSource AddProperty(ValueSource expr)
         {
             _properties.Add(expr);
             return this;

@@ -32,20 +32,9 @@ namespace WhiteMagic.PanelClock
             return this;
         }
 
-        public Bitmap Render(int width, int height)
+        public IEnumerable<Component> GetItems()
         {
-            var bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-
-            using (Graphics g = Graphics.FromImage(bitmap))
-            {
-                foreach (var item in _items.Select(item => _stock.GetItem(item.ItemId)))
-                {
-                    g.ResetTransform();
-                    g.ResetClip();
-                    item.Draw(g);
-                }
-            }
-            return bitmap;
+            return _items.Select(item => _stock.GetItem(item.ItemId));
         }
 
         private void SetCronSpec(string value)
