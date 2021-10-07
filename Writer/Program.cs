@@ -56,6 +56,7 @@ namespace WhiteMagic.PanelClock
                 async () => {
                     await Task.Delay(1000);
                     stock = new ConfigurationParser(config, logger).Parse();
+                    animator = new Animator(stock);
                 });
 
 #if SIMULATION

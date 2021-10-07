@@ -27,6 +27,8 @@ namespace WhiteMagic.PanelClock
         public static implicit operator double(Value v) { return v.ToDouble(); }
         public static implicit operator Color(Value v) { return v.ToColor(); }
 
+        public object Raw => _value;
+
         public static bool operator true(Value v) { return true; }
 
         public static bool operator false(Value v) { return false; }

@@ -219,7 +219,7 @@ namespace WhiteMagic.PanelClock
                 }
                 else if (part == "italic")
                 {
-                    fontstyle |= FontStyle.Bold;
+                    fontstyle |= FontStyle.Italic;
                 }
             }
 #if !SIMULATION

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace WhiteMagic.PanelClock
 {
@@ -12,21 +13,26 @@ namespace WhiteMagic.PanelClock
             _s = s;
         }
 
-        public bool Match(char c)
+        public bool Match(char c, bool ignoreCase = false)
         {
-            if (Head != c)
+            if (ignoreCase)
+            {
+                if (char.ToLower(Head) != char.ToLower(c))
+                    return false;
+            }
+            else if (Head != c)
                 return false;
 
             Next();
             return true;
         }
 
-        public bool Match(string s)
+        public bool Match(string s, bool ignoreCase=false)
         {
             var pos = SkipWhites();
             foreach(char c in s)
             {
-                if (!Match(c))
+                if (!Match(c, ignoreCase))
                 {
                     Restore(pos);
                     return false;
@@ -79,7 +85,7 @@ namespace WhiteMagic.PanelClock
                 SkipWhites();
             }
             value = 0;
-            if (!char.IsNumber(Head) && Head != '-')
+            if (!char.IsNumber(Head) && Head != '-' && Head !='.')
                 return false;
 
             var negative = Match('-');
@@ -133,6 +139,16 @@ namespace WhiteMagic.PanelClock
             }
 
             throw new Exception("unterminated string");
+        }
+
+        public string Remaining()
+        {
+            var value = new StringBuilder();
+            while (!EOF)
+            {
+                value.Append(Next());
+            }
+            return value.ToString();
         }
 
         public char Head

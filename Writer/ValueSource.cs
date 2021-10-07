@@ -86,5 +86,10 @@ namespace WhiteMagic.PanelClock
         public IEnumerable<string> Properties => _properties.Select(p => p.Id);
 
         #endregion
+
+        public override string ToString()
+        {
+            return $"{Value}:{Value.Raw.GetType()}";
+        }
     }
 }

@@ -148,17 +148,17 @@ namespace WhiteMagic.PanelClock
         private ValueSource ParseExpression(Stock stock, string value)
         { 
             ValueSource expression = null;
-            if (value.GetType() == typeof(string) && value.ToString().StartsWith("="))
+            var tok = new Tokenizer(value);
+            if (tok.Match("="))
             {
-                var tok = new Tokenizer(value.ToString().Substring(1));
                 expression = ParseOr(stock, tok);
-                if (!tok.EOF)
-                    throw new Exception("syntax error");
             }
             else 
             {
-                expression = ValueSource.Create(() => value);
+                expression = ParseValue(stock, tok);
             }
+            if (!tok.EOF)
+                throw new Exception("syntax error");
             return expression;
         }
 
@@ -330,42 +330,62 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseValueOrIdentifier(Stock stock, Tokenizer tok)
+        private ValueSource ParseValue(Stock stock, Tokenizer tok)
+        {
+            var expression = ParseNumberOrBoolean(stock, tok);
+            if (expression == null)
+            {
+                var value = tok.Remaining();
+                expression = ValueSource.Create(() => value);
+            }
+            return expression;
+        }
+
+        private ValueSource ParseNumberOrBoolean(Stock stock, Tokenizer tok)
         {
             ValueSource expression = null;
 
-            if (tok.Match("true"))
-            {
+            if (tok.Match("true", true))
+            { 
                 expression = ValueSource.Create(() => true);
             }
-            else if (tok.Match("false"))
+            else if (tok.Match("false", true))
             {
                 expression = ValueSource.Create(() => false);
             }
-            else if (tok.Identifier(out var identifier))
-            {
-                if (tok.Match('('))
-                {
-                    expression = ParseFunction(stock, tok, identifier);
-                }
-                else
-                {
-                    expression = stock.GetValueSource(identifier);
-                    if (expression == null)
-                    {
-                        expression = stock.GetItem(identifier);
-                        if (expression == null)
-                            throw new Exception($"identifier='{identifier}' is not an expression nor an item");
-                    }
-                }
-            } 
             else if (tok.Number(out var number))
             {
                 expression = ValueSource.Create(() => number);
             }
-            else if (tok.String(out var literal))
+            return expression;
+        }
+
+        private ValueSource ParseValueOrIdentifier(Stock stock, Tokenizer tok)
+        {
+            var expression = ParseNumberOrBoolean(stock, tok);
+            if (expression == null)
             {
-                expression = ValueSource.Create(() => literal);
+                if (tok.String(out var literal))
+                {
+                    expression = ValueSource.Create(() => literal);
+                }
+                else if (tok.Identifier(out var identifier))
+                {
+                    if (tok.Match('('))
+                    {
+                        expression = ParseFunction(stock, tok, identifier);
+                    }
+                    else
+                    {
+                        expression = stock.GetValueSource(identifier);
+                        if (expression == null)
+                        {
+                            expression = stock.GetItem(identifier);
+                            if (expression == null)
+                                throw new Exception($"identifier='{identifier}' is not an expression nor an item");
+                        }
+                    }
+                }
             }
             return expression;
         }

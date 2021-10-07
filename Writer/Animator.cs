@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WhiteMagic.PanelClock
 {
@@ -37,7 +35,6 @@ namespace WhiteMagic.PanelClock
                 _activeScene = scene;
             }
 
-
             /// een scene switch is pas compleet als alle removing items uit ge-fade zijn.
             /// tijdens faden worden visible assignments van removing items niet geaccepteerd.
 
@@ -53,8 +50,15 @@ namespace WhiteMagic.PanelClock
                 {
                     RenderComponent(component, graphics);
                 }
-            }
 
+                if (removing)
+                {
+                    graphics.ResetClip();
+                    graphics.ResetTransform();
+                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    graphics.FillEllipse(new SolidBrush(Color.Yellow), -2.5f, -2.5f, 5, 5);
+                }
+            }
         }
 
         private void RenderComponent(IDrawable item, Graphics graphics)
