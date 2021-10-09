@@ -102,7 +102,7 @@ namespace WhiteMagic.PanelClock
             Component item = null;
             if (type == "label")
             {
-                item = new VarLabel(id, _logger);
+                item = new Label(id, _logger);
             }
             else if (type == "analogclock-modern")
             {

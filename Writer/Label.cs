@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace WhiteMagic.PanelClock
 {
-    public class VarLabel : Component
+    public class Label : Component
     {
         private ILogger _logger;
         private string _format;
@@ -24,7 +24,7 @@ namespace WhiteMagic.PanelClock
         private RectangleF _backgroundBox;
         private List<Func<string>> _parts = new List<Func<string>>();
 
-        public VarLabel(string id, ILogger logger) : base(id)
+        public Label(string id, ILogger logger) : base(id)
         {
             _logger = logger;
             _fontname = "Arial";
@@ -53,7 +53,7 @@ namespace WhiteMagic.PanelClock
 
         public override IComponent Clone(string id)
         {
-            var copy = new VarLabel(id, _logger);
+            var copy = new Label(id, _logger);
 
             copy._width = _width;
             copy._height = _height;
