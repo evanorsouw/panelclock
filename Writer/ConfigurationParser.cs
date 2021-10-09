@@ -151,20 +151,36 @@ namespace WhiteMagic.PanelClock
             var tok = new Tokenizer(value);
             if (tok.Match("="))
             {
-                expression = ParseOr(stock, tok);
+                expression = ParseConditional(stock, tok);
             }
             else 
             {
                 expression = ParseValue(stock, tok);
             }
             if (!tok.EOF)
-                throw new Exception("syntax error");
+                tok.ThrowException("unexpected characters");
+
+            return expression;
+        }
+
+        private  ValueSource ParseConditional(Stock stock, Tokenizer tok)
+        {
+            var expression = ParseOr(stock, tok);
+            if (tok.Match("?"))
+            {
+                var conditionExpression = expression;
+                var trueExpression = ParseConditional(stock, tok);
+                if (!tok.Match(":"))
+                    tok.ThrowException("':' expected after '?' ");
+                var falseExpression = ParseConditional(stock, tok);
+                expression = ValueSource.Create(() => (bool)conditionExpression.Value ? trueExpression.Value : falseExpression.Value);
+            }
             return expression;
         }
 
         private ValueSource ParseOr(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseAnd(stock, tok);
+            var expression = ParseAnd(stock, tok);
             while (tok.Match("||"))
             {
                 var lhs = expression;
@@ -176,7 +192,7 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseAnd(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseRelational(stock, tok);
+            var expression = ParseRelational(stock, tok);
             while (tok.Match("&&"))
             {
                 var lhs = expression;
@@ -189,7 +205,7 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseRelational(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseEquality(stock, tok);
+            var expression = ParseEquality(stock, tok);
             for (; ; )
             {
                 var lhs = expression;
@@ -221,7 +237,7 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseEquality(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseAddition(stock, tok);
+            var expression = ParseAddition(stock, tok);
             for (; ; )
             {
                 var lhs = expression;
@@ -243,7 +259,7 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseAddition(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseMultiplication(stock, tok);
+            var expression = ParseMultiplication(stock, tok);
             for (; ; )
             {
                 var lhs = expression;
@@ -265,23 +281,23 @@ namespace WhiteMagic.PanelClock
 
         private ValueSource ParseMultiplication(Stock stock, Tokenizer tok)
         {
-            ValueSource expression = ParseSubExpression(stock, tok);
+            var expression = ParseUnary(stock, tok);
             for (; ; )
             {
                 var lhs = expression;
                 if (tok.Match("*"))
                 {
-                    var rhs = ParseSubExpression(stock, tok);
+                    var rhs = ParseUnary(stock, tok);
                     expression = ValueSource.Create(() => lhs.Value * rhs.Value);
                 }
                 else if (tok.Match("/"))
                 {
-                    var rhs = ParseSubExpression(stock, tok);
+                    var rhs = ParseUnary(stock, tok);
                     expression = ValueSource.Create(() => lhs.Value / rhs.Value);
                 }
                 else if (tok.Match("%"))
                 {
-                    var rhs = ParseSubExpression(stock, tok);
+                    var rhs = ParseUnary(stock, tok);
                     expression = ValueSource.Create(() => lhs.Value % rhs.Value);
                 }
                 else
@@ -290,15 +306,32 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseSubExpression(Stock stock, Tokenizer tok)
+        private ValueSource ParseUnary(Stock stock, Tokenizer tok)
         {
             ValueSource expression = null;
 
+            if (tok.Match("!"))
+            {
+                var notExpression = ParseSubExpression(stock, tok);
+                expression = ValueSource.Create(() => !notExpression.Value);
+            }
+            else
+            {
+                expression = ParseSubExpression(stock, tok);
+            }
+
+            return expression;
+        }
+
+        private ValueSource ParseSubExpression(Stock stock, Tokenizer tok)
+        {
+            ValueSource expression;
+
             if (tok.Match("("))
             {
-                expression = ParseOr(stock, tok);
+                expression = ParseConditional(stock, tok);
                 if (!tok.Match(")"))
-                    throw new Exception("missing closing brace");
+                    tok.ThrowException("missing closing brace");
             }
             else
             {
@@ -315,7 +348,7 @@ namespace WhiteMagic.PanelClock
 
             var subExpression = expression.GetProperty(identifier);
             if (subExpression == null)
-                throw new Exception($"object='{expression.Id}' does not have a property='{identifier}'");
+                tok.ThrowException($"object='{expression.Id}' does not have a property='{identifier}'");
 
             return subExpression;
         }
@@ -382,7 +415,7 @@ namespace WhiteMagic.PanelClock
                         {
                             expression = stock.GetItem(identifier);
                             if (expression == null)
-                                throw new Exception($"identifier='{identifier}' is not an expression nor an item");
+                                tok.ThrowException($"identifier='{identifier}' is not an expression nor an item");
                         }
                     }
                 }
@@ -397,14 +430,15 @@ namespace WhiteMagic.PanelClock
             {
                 arguments = ParseArguments(stock, tok);
                 if (!tok.Match(")"))
-                    throw new Exception("missing closing brace after arguments");
+                    tok.ThrowException("missing closing brace after arguments");
             }
             if (functionname == NowDateSource.Name)
                 return new NowDateSource(arguments);
             if (functionname == "color")
                 return new ColorSource(arguments);
 
-            throw new Exception($"invalid function='{functionname}'");
+            tok.ThrowException($"invalid function='{functionname}'");
+            return null;
         }
 
         private List<ValueSource> ParseArguments(Stock stock, Tokenizer tok)

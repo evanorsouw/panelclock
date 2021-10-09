@@ -176,9 +176,43 @@ namespace WhiteMagic.PanelClock
             return c;
         }
 
+        public int LineNo
+        {
+            get
+            {
+                int lineno = 1;
+                for (int i = 0; i < _head; ++i)
+                {
+                    if (_s[i] == '\n')
+                        lineno++;
+                }
+                return lineno;
+            }
+        }
+
+        public int ColumnNo
+        {
+            get
+            {
+                int colno= 1;
+                for (int i = 0; i < _head; ++i)
+                {
+                    if (_s[i] == '\n')
+                        colno = 0;
+                    colno++;
+                }
+                return colno;
+            }
+        }
+
         public override string ToString()
         {
             return _s.Substring(_head) + (EOF ? "(EOF)" : "");
+        }
+
+        internal void ThrowException(string msg)
+        {
+            throw new Exception($"{LineNo}:{ColumnNo}: {msg}");
         }
     }
 }
