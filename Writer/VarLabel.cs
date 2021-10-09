@@ -25,7 +25,7 @@ namespace WhiteMagic.PanelClock
         private List<Func<string>> _parts = new List<Func<string>>();
 
         public VarLabel(string id, ILogger logger) : base(id)
-        { 
+        {
             _logger = logger;
             _fontname = "Arial";
             BackgroundColor = Color.Transparent;
@@ -37,6 +37,8 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("y", () => _y, (obj) => Y = obj));
             AddProperty(Create("x2", () => X + Width));
             AddProperty(Create("y2", () => Y + Height));
+            AddProperty(Create("x3", () => X + Width * AnimationElapsed));
+            AddProperty(Create("y3", () => Y + Height * AnimationElapsed));
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
             AddProperty(Create("width", () => Width, (obj) => Width = obj));
             AddProperty(Create("height", () => Height, (obj) => Height = obj));

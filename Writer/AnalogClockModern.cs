@@ -20,6 +20,8 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("y", () => Y, (obj) => Y = obj));
             AddProperty(Create("x2", () => X + Diameter));
             AddProperty(Create("y2", () => Y + Diameter));
+            AddProperty(Create("x3", () => X + Diameter * AnimationElapsed));
+            AddProperty(Create("y3", () => Y + Diameter * AnimationElapsed));
             AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
             AddProperty(Create("width", () => Diameter));
             AddProperty(Create("height", () => Diameter));
@@ -73,7 +75,7 @@ namespace WhiteMagic.PanelClock
             var minutes = (float)((now.Minute + seconds) / 60.0);
             var hours = (float)((now.Hour % 12 + minutes) / 12.0);
 
-            var pen = new Pen(MainColor, 1);
+            var pen = new Pen(MainColor, Diameter/40);
             for (int i = 0; i < 12; ++i)
             {
                 var a = i / 12f;
@@ -82,9 +84,9 @@ namespace WhiteMagic.PanelClock
                 graphics.DrawLine(pen, p1, p2);
             }
 
-            pen = new Pen(MainColor, 3);
+            pen = new Pen(MainColor, Diameter/20);
             graphics.DrawLine(pen, RotatedCenter(0.2f, hours, elapsed), RotatedCenter(0.6f, hours, elapsed));
-            pen = new Pen(MainColor, 1.6f);
+            pen = new Pen(MainColor, Diameter/30);
             graphics.DrawLine(pen, RotatedCenter(0.2f, minutes, elapsed), RotatedCenter(0.8f, minutes, elapsed));
 
             if (ShowSeconds)
@@ -103,7 +105,7 @@ namespace WhiteMagic.PanelClock
                         angle += 0.003f;
                     }
                 }
-                pen = new Pen(SecondHandColor, 0.6f);
+                pen = new Pen(SecondHandColor, Diameter/60);
                 graphics.DrawLine(pen, RotatedCenter(0.1f, angle, elapsed), RotatedCenter(0.9f, angle, elapsed));
             }
         }

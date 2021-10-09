@@ -51,13 +51,13 @@ namespace WhiteMagic.PanelClock
                     RenderComponent(component, graphics);
                 }
 
-                if (removing)
-                {
-                    graphics.ResetClip();
-                    graphics.ResetTransform();
-                    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                    graphics.FillEllipse(new SolidBrush(Color.Yellow), -2.5f, -2.5f, 5, 5);
-                }
+                //if (removing)
+                //{
+                //    graphics.ResetClip();
+                //    graphics.ResetTransform();
+                //    graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                //    graphics.FillEllipse(new SolidBrush(Color.Yellow), -2.5f, -2.5f, 5, 5);
+                //}
             }
         }
 
