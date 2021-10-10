@@ -212,6 +212,7 @@ namespace WhiteMagic.PanelClock
 
         internal void ThrowException(string msg)
         {
+            
             throw new Exception($"{LineNo}:{ColumnNo}: {msg}");
         }
     }

@@ -215,25 +215,25 @@ namespace WhiteMagic.PanelClock
             for (; ; )
             {
                 var lhs = expression;
-                if (tok.Match("<"))
-                {
-                    var rhs = ParseEquality(stock, tok);
-                    expression = ValueSource.Create(() => lhs.Value < rhs.Value);
-                }
-                else if (tok.Match("<="))
+                if (tok.Match("<="))
                 {
                     var rhs = ParseEquality(stock, tok);
                     expression = ValueSource.Create(() => lhs.Value <= rhs.Value);
-                }
-                else if (tok.Match(">"))
-                {
-                    var rhs = ParseEquality(stock, tok);
-                    expression = ValueSource.Create(() => lhs.Value > rhs.Value);
                 }
                 else if (tok.Match(">="))
                 {
                     var rhs = ParseEquality(stock, tok);
                     expression = ValueSource.Create(() => lhs.Value >= rhs.Value);
+                }
+                else if (tok.Match("<"))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value < rhs.Value);
+                }
+                else if (tok.Match(">"))
+                {
+                    var rhs = ParseEquality(stock, tok);
+                    expression = ValueSource.Create(() => lhs.Value > rhs.Value);
                 }
                 else
                     break;

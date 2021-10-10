@@ -101,9 +101,10 @@ namespace WhiteMagic.PanelClock
                         Relative(relative, 0.6f, 1.0f, ref rel);
                         var y1 = (float)(y + h / 2 - rel * h / 2);
                         var y2 = (float)(y + h / 2 + rel * h / 2);
-                        var brush1 = new SolidBrush(_barColors[i].Scale(1 - rel));
-                        graphics.FillRectangle(brush1, x, y, w, y1 - y);
-                        graphics.FillRectangle(brush1, x, y2, w, y + h - y2);
+                        graphics.FillRectangle(Brushes.Black, x, y, w, h);
+                        var brush = new SolidBrush(_barColors[i].Scale(1 - rel));
+                        graphics.FillRectangle(brush, x, y, w, y1 - y);
+                        graphics.FillRectangle(brush, x, y2, w, y + h - y2);
                         var pen = new Pen(DividerColor);
                         pen.EndCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
                         pen.StartCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
@@ -115,6 +116,7 @@ namespace WhiteMagic.PanelClock
             else if (Visible)
             {
                 var pen = new Pen(DividerColor);
+                graphics.FillRectangle(Brushes.Black, X, Y - Height, Width, Height);
                 graphics.DrawLine(pen, X, Y-Height, Width, Y-Height);
             }
         }
