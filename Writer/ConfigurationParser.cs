@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 
 namespace WhiteMagic.PanelClock
@@ -66,15 +65,18 @@ namespace WhiteMagic.PanelClock
                 return null;
 
             var scene = new Scene(id, stock);
-            scene.CronSpec = sceneCfg["cron"];
+            scene.CronSpec = sceneCfg["cron"] ?? "* * * * * *";
 
             for (int iitem = 0; ; ++iitem)
             {
                 var itemCfg = sceneCfg.GetSection($"items:{iitem}");
-                var item = ParseSceneItem(itemCfg);
-                if (item == null)
+                if (!itemCfg.GetChildren().Any())
                     break;
-                scene.AddItem(item);
+                var item = ParseSceneItem(itemCfg);
+                if (item != null)
+                {
+                    scene.AddItem(item);
+                }
             }
             return scene;
         }
@@ -107,6 +109,10 @@ namespace WhiteMagic.PanelClock
             else if (type == "analogclock-modern")
             {
                 item = new AnalogClockModern(id, _logger);
+            }
+            else if (type == "ticker")
+            {
+                item = new Ticker(id, _logger);
             }
             else
             {

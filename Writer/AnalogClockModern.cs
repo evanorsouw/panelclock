@@ -7,21 +7,18 @@ namespace WhiteMagic.PanelClock
 {
     public class AnalogClockModern : Component
     {
-        private ILogger _logger;
         private DateTime _lastTime;
         private string _timezonename;
         private TimeZoneInfo _timezone = null;
 
-        public AnalogClockModern(string id, ILogger logger=null) : base(id)
+        public AnalogClockModern(string id, ILogger logger=null) : base(id, logger)
         {
-            _logger = logger;
-
             AddProperty(Create("x", () => X, (obj) => X = obj));
             AddProperty(Create("y", () => Y, (obj) => Y = obj));
             AddProperty(Create("x2", () => X + Diameter));
             AddProperty(Create("y2", () => Y + Diameter));
-            AddProperty(Create("x3", () => X + Diameter * AnimationElapsed));
-            AddProperty(Create("y3", () => Y + Diameter * AnimationElapsed));
+            AddProperty(Create("x3", () => X + Diameter * ShowOrHideAnimationElapsed));
+            AddProperty(Create("y3", () => Y + Diameter * ShowOrHideAnimationElapsed));
             AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
             AddProperty(Create("width", () => Diameter));
             AddProperty(Create("height", () => Diameter));
@@ -36,7 +33,7 @@ namespace WhiteMagic.PanelClock
 
         public override IComponent Clone(string id)
         {
-            var copy = new AnalogClockModern(id, _logger);
+            var copy = new AnalogClockModern(id, Logger);
 
             copy.Diameter = Diameter;
             copy.X = X;
@@ -45,7 +42,7 @@ namespace WhiteMagic.PanelClock
             copy.ShowSeconds = ShowSeconds;
             copy.SmoothSeconds = SmoothSeconds;
             copy.Visible = Visible;
-            copy.AnimationTime = AnimationTime;
+            copy.ShowOrHideTime = ShowOrHideTime;
             return this;
         }
 
@@ -55,7 +52,7 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            if (!Visible && !Animating)
+            if (!Visible && !ShowingOrHiding)
                 return;
             
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -70,7 +67,7 @@ namespace WhiteMagic.PanelClock
             {
                 now = TimeZoneInfo.ConvertTime(now, _timezone);
             }
-            var elapsed = (float)AnimationElapsed;
+            var elapsed = (float)ShowOrHideAnimationElapsed;
             var seconds = (float)(now.Second / 60.0);
             var minutes = (float)((now.Minute + seconds) / 60.0);
             var hours = (float)((now.Hour % 12 + minutes) / 12.0);
@@ -175,10 +172,10 @@ namespace WhiteMagic.PanelClock
             }
             if (_timezone == null)
             {
-                _logger.LogWarning($"timezone='{value}' is not recognized");
+                Logger.LogWarning($"timezone='{value}' is not recognized");
                 foreach (var info in TimeZoneInfo.GetSystemTimeZones())
                 {
-                    _logger.LogInformation($"possible timezone='{info.Id}'");
+                    Logger.LogInformation($"possible timezone='{info.Id}'");
                 }
             }
         }

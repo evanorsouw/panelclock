@@ -44,7 +44,7 @@ namespace WhiteMagic.PanelClock
                 foreach (var component in _removingComponents)
                 {
                     RenderComponent(component, graphics);
-                    removing |= component.Animating;
+                    removing |= component.ShowingOrHiding;
                 }
                 foreach (var component in _activeComponents)
                 {

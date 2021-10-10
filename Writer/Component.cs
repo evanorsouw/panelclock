@@ -1,27 +1,32 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Drawing;
 
 namespace WhiteMagic.PanelClock
 {
     public abstract class Component : ValueSource, IComponent
     {
+        private ILogger _logger;
         private bool _visible;
-        private DateTime _animateStartTime;
+        private DateTime _showOrHideStartTime;
 
-        public Component(string id) : base(id)
+        public Component(string id, ILogger logger) : base(id)
         {
+            _logger = logger;
             Visible = true;
 
             AddProperty(Create("visible", () => Visible, (obj) => Visible = obj));
-            AddProperty(Create("animationtime", () => AnimationTime, (obj) => AnimationTime = obj));
-            AddProperty(Create("animating", () => Animating));
+            AddProperty(Create("showhidetime", () => ShowOrHideTime, (obj) => ShowOrHideTime = obj));
+            AddProperty(Create("showinghiding", () => ShowingOrHiding));
 
-            SetGetter(() => AnimationElapsed);
+            SetGetter(() => ShowOrHideAnimationElapsed);
         }
 
         public abstract IComponent Clone(string id);
 
         public abstract void Draw(Graphics g);
+
+        protected ILogger Logger => _logger;
 
         #region properties
 
@@ -32,20 +37,20 @@ namespace WhiteMagic.PanelClock
             {
                 if (_visible != value)
                 {
-                    _visible = value; _animateStartTime = DateTime.Now;
+                    _visible = value; _showOrHideStartTime = DateTime.Now;
                 }
             }
         }
 
-        public float AnimationTime { get; set; } = 1f;
+        public float ShowOrHideTime { get; set; } = 1f;
 
-        public bool Animating => (Visible && AnimationElapsed < 1) || (!Visible && AnimationElapsed > 0);
+        public bool ShowingOrHiding => (Visible && ShowOrHideAnimationElapsed < 1) || (!Visible && ShowOrHideAnimationElapsed > 0);
 
-        protected double AnimationElapsed
+        protected double ShowOrHideAnimationElapsed
         {
             get
             {
-                var elapsed = Math.Min(1.0, DateTime.Now.Subtract(_animateStartTime).TotalSeconds / AnimationTime);
+                var elapsed = Math.Min(1.0, DateTime.Now.Subtract(_showOrHideStartTime).TotalSeconds / ShowOrHideTime);
                 elapsed = Visible ? elapsed : 1.0 - elapsed;
                 return elapsed;
             }

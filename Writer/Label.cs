@@ -9,7 +9,6 @@ namespace WhiteMagic.PanelClock
 {
     public class Label : Component
     {
-        private ILogger _logger;
         private string _format;
         private float[] _paddings = { 0, 0, 0, 0 };
         private float _fontHeightInPixels;
@@ -24,9 +23,8 @@ namespace WhiteMagic.PanelClock
         private RectangleF _backgroundBox;
         private List<Func<string>> _parts = new List<Func<string>>();
 
-        public Label(string id, ILogger logger) : base(id)
+        public Label(string id, ILogger logger) : base(id, logger)
         {
-            _logger = logger;
             _fontname = "Arial";
             BackgroundColor = Color.Transparent;
             HorizontalAlignment = Alignment.Left;
@@ -37,8 +35,8 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("y", () => _y, (obj) => Y = obj));
             AddProperty(Create("x2", () => X + Width));
             AddProperty(Create("y2", () => Y + Height));
-            AddProperty(Create("x3", () => X + Width * AnimationElapsed));
-            AddProperty(Create("y3", () => Y + Height * AnimationElapsed));
+            AddProperty(Create("x3", () => X + Width * ShowOrHideAnimationElapsed));
+            AddProperty(Create("y3", () => Y + Height * ShowOrHideAnimationElapsed));
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
             AddProperty(Create("width", () => Width, (obj) => Width = obj));
             AddProperty(Create("height", () => Height, (obj) => Height = obj));
@@ -53,7 +51,7 @@ namespace WhiteMagic.PanelClock
 
         public override IComponent Clone(string id)
         {
-            var copy = new Label(id, _logger);
+            var copy = new Label(id, Logger);
 
             copy._width = _width;
             copy._height = _height;
@@ -66,7 +64,7 @@ namespace WhiteMagic.PanelClock
             copy.HorizontalAlignment = HorizontalAlignment;
             copy.VerticalAlignment = VerticalAlignment;
             copy.Visible = Visible;
-            copy.AnimationTime = AnimationTime;
+            copy.ShowOrHideTime = ShowOrHideTime;
             copy.Format = Format;
 
             return copy;
@@ -80,13 +78,13 @@ namespace WhiteMagic.PanelClock
         {
             EvaluateText();
 
-            if (!Visible && !Animating)
+            if (!Visible && !ShowingOrHiding)
                 return;
 
-            var elapsed = (float)AnimationElapsed;
+            var elapsed = (float)ShowOrHideAnimationElapsed;
             var textcolor = TextColor;
             var backgroundcolor = BackgroundColor;
-            if (Animating)
+            if (ShowingOrHiding)
             {
                 textcolor = textcolor.Scale(elapsed);
                 backgroundcolor = backgroundcolor.Scale(elapsed);
