@@ -1,14 +1,16 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 namespace WhiteMagic.PanelClock
 {
     public static class ColorExtensions
     {
-        public static Color Scale(this Color c, float scale)
+        public static Color Scale(this Color c, double scale)
         {
-            if (scale >= 1f)
-                return c;
-            return Color.FromArgb((byte)(c.R * scale), (byte)(c.G * scale), (byte)(c.B * scale));
+            var r = (byte)Math.Min(255, c.R * scale);
+            var g = (byte)Math.Min(255, c.G * scale);
+            var b = (byte)Math.Min(255, c.B * scale);
+            return Color.FromArgb(c.A, r, g, b);
         }
     }
 }

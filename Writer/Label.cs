@@ -76,10 +76,10 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            EvaluateText();
-
             if (!Visible && !ShowingOrHiding)
                 return;
+
+            EvaluateText();
 
             var elapsed = (float)ShowOrHideAnimationElapsed;
             var textcolor = TextColor;

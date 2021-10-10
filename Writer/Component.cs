@@ -42,7 +42,7 @@ namespace WhiteMagic.PanelClock
             }
         }
 
-        public float ShowOrHideTime { get; set; } = 1f;
+        public double ShowOrHideTime { get; set; } = 1;
 
         public bool ShowingOrHiding => (Visible && ShowOrHideAnimationElapsed < 1) || (!Visible && ShowOrHideAnimationElapsed > 0);
 
@@ -54,6 +54,12 @@ namespace WhiteMagic.PanelClock
                 elapsed = Visible ? elapsed : 1.0 - elapsed;
                 return elapsed;
             }
+        }
+
+        protected bool Relative(double value, double min, double max, ref double relative)
+        {
+            relative = Math.Min(1, Math.Max(0, (value - min) / (max - min)));
+            return value < max;
         }
 
         #endregion

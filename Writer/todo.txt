@@ -1,3 +1,4 @@
-﻿* rename VarLavel -> Label
-* add automatic smooth properties
-* add if operator to expressions
+﻿* add automatic smooth properties - need to work this out if needed at all
+* add arrays using the braces+comma-operator and the array index operator:
+   ("a", "b"", "c")[2] => "b"
+   "a", "b", "c"[2] => ???
