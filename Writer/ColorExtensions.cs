@@ -12,5 +12,11 @@ namespace WhiteMagic.PanelClock
             var b = (byte)Math.Min(255, c.B * scale);
             return Color.FromArgb(c.A, r, g, b);
         }
+
+        public static Color ScaleAlpha(this Color c, double scale)
+        {
+            var a = (byte)Math.Min(255, c.A * scale);
+            return Color.FromArgb(a, c.R, c.G, c.B);
+        }
     }
 }

@@ -66,6 +66,12 @@ namespace WhiteMagic.PanelClock
             if (!Visible && !ShowingOrHiding)
                 return;
 
+            var y = VerticalAlignment switch
+            {
+                Alignment.Top => Y,
+                Alignment.Center => Y - Height / 2,
+                Alignment.Bottom => Y - Height
+            };
             if (ShowingOrHiding)
             {
                 var x = X;
@@ -77,38 +83,33 @@ namespace WhiteMagic.PanelClock
                     var relStart = (1 - BarAnimateOverlap) / (Bars / 2) * Math.Abs(i - Bars / 2);
                     double relative = 0;
                     Relative(elapsed, relStart, relStart + BarAnimateOverlap, ref relative);
-                    var y = Y - h;
                     var rel = 0.0;
-                    if (Relative(relative, 0.0, 0.3, ref rel))
+                    if (Relative(relative, 0.0, 0.33, ref rel))
                     {
-                        var pen = new Pen(DividerColor.Scale(rel));
-                        pen.EndCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
-                        pen.StartCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
+                        var pen = new Pen(DividerColor.ScaleAlpha(rel), 1);
                         graphics.DrawLine(pen, x, y + h / 2, x + w, y + h / 2);
                     }
-                    else if (Relative(relative, 0.3f, 0.6f, ref rel))
+                    else if (Relative(relative, 0.33, 0.66, ref rel))
                     {
                         var y1 = (float)(y + h / 2 - rel * h / 2);
                         var y2 = (float)(y + h / 2 + rel * h / 2);
                         graphics.FillRectangle(new SolidBrush(_barColors[i]), x, y1, w, y2 - y1);
-                        var pen = new Pen(DividerColor);
-                        pen.EndCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
-                        pen.StartCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
+                        var pen = new Pen(DividerColor, 1);
                         graphics.DrawLine(pen, x, y1, x + w, y1);
+                        graphics.DrawLine(pen, x, y2, x + w, y2);
                     }
                     else
                     {
-                        Relative(relative, 0.6f, 1.0f, ref rel);
+                        Relative(relative, 0.66, 1.0, ref rel);
                         var y1 = (float)(y + h / 2 - rel * h / 2);
                         var y2 = (float)(y + h / 2 + rel * h / 2);
-                        graphics.FillRectangle(Brushes.Black, x, y, w, h);
                         var brush = new SolidBrush(_barColors[i].Scale(1 - rel));
                         graphics.FillRectangle(brush, x, y, w, y1 - y);
+                        graphics.FillRectangle(Brushes.Black, x, y1, w, y2 - y1);
                         graphics.FillRectangle(brush, x, y2, w, y + h - y2);
-                        var pen = new Pen(DividerColor);
-                        pen.EndCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
-                        pen.StartCap = System.Drawing.Drawing2D.LineCap.NoAnchor;
+                        var pen = new Pen(DividerColor, 1);
                         graphics.DrawLine(pen, x, y, x + w, y);
+                        graphics.DrawLine(pen, x, y + h, x + w, y + h);
                     }
                     x += w;
                 }
@@ -116,8 +117,9 @@ namespace WhiteMagic.PanelClock
             else if (Visible)
             {
                 var pen = new Pen(DividerColor);
-                graphics.FillRectangle(Brushes.Black, X, Y - Height, Width, Height);
-                graphics.DrawLine(pen, X, Y-Height, Width, Y-Height);
+                graphics.FillRectangle(Brushes.Black, X, y, Width, Height);
+                graphics.DrawLine(pen, X, y , Width, y);
+                graphics.DrawLine(pen, X, y + Height, Width, y + Height);
             }
         }
 
