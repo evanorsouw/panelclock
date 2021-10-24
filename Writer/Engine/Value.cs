@@ -19,6 +19,7 @@ namespace WhiteMagic.PanelClock
         public static implicit operator Value(double v) => new Value(v);
         public static implicit operator Value(Color v) => new Value(v);
         public static implicit operator Value(Enum v) => new Value(v);
+        public static implicit operator Value(DateTime v) => new Value(v);
 
         public static implicit operator string(Value v) { return v.ToString(); }
         public static implicit operator bool(Value v) { return v.ToBool(); }
@@ -26,6 +27,7 @@ namespace WhiteMagic.PanelClock
         public static implicit operator float(Value v) { return v.ToFloat(); }
         public static implicit operator double(Value v) { return v.ToDouble(); }
         public static implicit operator Color(Value v) { return v.ToColor(); }
+        public static implicit operator DateTime(Value v) { return v.ToDateTime(); }
 
         public object Raw => _value;
 
@@ -39,10 +41,12 @@ namespace WhiteMagic.PanelClock
                 return lhs.Equals(rhs);
             if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 return lhs.ToBool() == rhs.ToBool();
+            if (lhs._value.GetType() == typeof(DateTime) || rhs._value.GetType() == typeof(DateTime))
+                return lhs.ToDateTime() == rhs.ToDateTime();
             if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString() == rhs.ToString();
 
-            return false;
+            return lhs.ToDouble() == rhs.ToDouble();
         }
 
         public static bool operator !=(Value lhs, Value rhs)
@@ -54,6 +58,8 @@ namespace WhiteMagic.PanelClock
         {
             if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 throw new Exception("cannot relative compare booleans");
+            if (lhs._value.GetType() == typeof(DateTime) || rhs._value.GetType() == typeof(DateTime))
+                return lhs.ToDateTime().CompareTo(rhs.ToDateTime()) < 0;
             if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString().CompareTo(rhs.ToString()) < 0;
             return lhs.ToDouble() < rhs.ToDouble();
@@ -68,6 +74,8 @@ namespace WhiteMagic.PanelClock
         {
             if (lhs._value.GetType() == typeof(bool) || rhs._value.GetType() == typeof(bool))
                 throw new Exception("cannot relative compare booleans");
+            if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
+                return lhs.ToDateTime().CompareTo(rhs.ToDateTime()) > 0;
             if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
                 return lhs.ToString().CompareTo(rhs.ToString()) > 0;
             return lhs.ToDouble() > rhs.ToDouble();
@@ -90,6 +98,8 @@ namespace WhiteMagic.PanelClock
 
         public static Value operator +(Value lhs, Value rhs)
         {
+            if (lhs._value.GetType() == typeof(string) || rhs._value.GetType() == typeof(string))
+                return lhs._value.ToString() + rhs._value.ToString();
             return lhs.ToDouble() + rhs.ToDouble();
         }
 
@@ -207,12 +217,23 @@ namespace WhiteMagic.PanelClock
             return Color.Black;
         }
 
-
         public T ToEnum<T>() where T : struct
         {
             if (Enum.TryParse<T>(_value.ToString(), true, out var enumvalue))
                 return enumvalue;
             return default(T);
+        }
+
+        public DateTime ToDateTime()
+        {
+            if (_value.GetType() == typeof(DateTime))
+                return (DateTime)_value;
+            if (_value.GetType() == typeof(string))
+            {
+                if (DateTime.TryParse(_value.ToString(), out var timestamp))
+                    return timestamp;
+            }
+            return DateTime.MinValue;
         }
     }
 }

@@ -1,14 +1,13 @@
 ﻿using NCrontab;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
     public class Scene
     {
-        private List<SceneItem> _items;
+        private List<string> _items;
         private Stock _stock;
         private string _cronspec;
         private CrontabSchedule _cron;
@@ -17,7 +16,7 @@ namespace WhiteMagic.PanelClock
         {
             Id = id;
             _stock = stock;
-            _items = new List<SceneItem>();
+            _items = new List<string>();
         }
 
         public string Id { get; private set; }
@@ -26,15 +25,15 @@ namespace WhiteMagic.PanelClock
 
         public DateTime NextActive { get { return _cron.GetNextOccurrence(DateTime.Now); } }
 
-        public Scene AddItem(SceneItem item)
+        public Scene AddItem(string itemId)
         {
-            _items.Add(item);
+            _items.Add(itemId);
             return this;
         }
 
         public IEnumerable<Component> GetItems()
         {
-            return _items.Select(item => _stock.GetItem(item.ItemId));
+            return _items.Select(itemId => _stock.GetItem(itemId));
         }
 
         private void SetCronSpec(string value)

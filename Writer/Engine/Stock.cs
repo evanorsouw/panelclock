@@ -30,13 +30,21 @@ namespace WhiteMagic.PanelClock
             return this;
         }
 
-        public void AddExpression(ValueSource expression)
+        public void AddValueSource(ValueSource source)
         {
-            _valueSource[expression.Id] = expression;
+            _valueSource[source.Id] = source;
         }
 
         private DateTime _nextCheckTime = DateTime.MinValue;
         private Scene _activeScene;
+
+
+        public Scene GetScene(string id)
+        {
+            if (!_scenes.TryGetValue(id, out var scene))
+                return null;
+            return scene;
+        }
 
         public Scene GetScene(DateTime now)
         {
@@ -58,7 +66,9 @@ namespace WhiteMagic.PanelClock
 
         public Component GetItem(string id)
         {
-            return _items[id];
+            if (!_items.TryGetValue(id, out var item))
+                return null;
+            return item;
         }
 
         internal ValueSource GetValueSource(string identifier)

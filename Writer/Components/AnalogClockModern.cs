@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Drawing;
-using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
@@ -41,7 +40,8 @@ namespace WhiteMagic.PanelClock
             copy.TimeZone = TimeZone;
             copy.ShowSeconds = ShowSeconds;
             copy.SmoothSeconds = SmoothSeconds;
-            copy.Visible = Visible;
+            copy.ExternalVisible = ExternalVisible;
+            copy.InternalVisible = InternalVisible;
             copy.ShowOrHideTime = ShowOrHideTime;
             return this;
         }
@@ -52,7 +52,7 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            if (!Visible && !ShowingOrHiding)
+            if (!InternalVisible && !ShowingOrHiding)
                 return;
             
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;

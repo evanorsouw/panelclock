@@ -48,14 +48,16 @@ namespace WhiteMagic.PanelClock
 #endif
                 .Build();
 
-            var stock = new ConfigurationParser(config, logger).Parse();
+            var environment = new EnvironmentSource(logger);
+            IFunctionFactory functions = new FunctionFactory(environment, logger);
+            var stock = new ConfigurationParser(config, functions, logger).Parse();
             Animator animator = new Animator(stock);
 
             ChangeToken.OnChange(
                 () => config.GetReloadToken(),
                 async () => {
                     await Task.Delay(1000);
-                    stock = new ConfigurationParser(config, logger).Parse();
+                    stock = new ConfigurationParser(config, functions, logger).Parse();
                     animator = new Animator(stock);
                 });
 

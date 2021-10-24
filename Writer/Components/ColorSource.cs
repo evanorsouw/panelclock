@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-
 namespace WhiteMagic.PanelClock
 {
     public class ColorSource : ValueSource
@@ -11,9 +10,11 @@ namespace WhiteMagic.PanelClock
         public ValueSource _red;
         public ValueSource _green;
         public ValueSource _blue;
+        private ILogger _logger;
 
-        public ColorSource(List<ValueSource> arguments): base(Name)
+        public ColorSource(List<ValueSource> arguments, ILogger logger): base(Name)
         {
+            _logger = logger;
             if (arguments.Count != 3)
                 throw new Exception("color(red,green,blue) expects 3 arguments");
 

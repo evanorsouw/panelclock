@@ -11,21 +11,16 @@ namespace WhiteMagic.PanelClock
     {
         private string _format;
         private float[] _paddings = { 0, 0, 0, 0 };
-        private float _fontHeightInPixels;
-        private float _actualTextWidth;
         private string _fontname;
-        private Font _font;
         private float _x;
         private float _y;
         private float _width;
         private float _height;
-        private RectangleF _textBox;
-        private RectangleF _backgroundBox;
         private List<Func<string>> _parts = new List<Func<string>>();
 
         public Label(string id, ILogger logger) : base(id, logger)
         {
-            _fontname = "Arial";
+            FontName = "Arial";
             BackgroundColor = Color.Transparent;
             HorizontalAlignment = Alignment.Left;
             VerticalAlignment = Alignment.Top;
@@ -47,6 +42,12 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("verticalalignment", () => VerticalAlignment, (obj) => VerticalAlignment = obj.ToEnum<Alignment>()));
         }
 
+        protected Font Font { get; private set; }
+        protected RectangleF BackgroundBox { get; private set; }
+        protected RectangleF TextBox { get; private set; }
+        protected float ActualTextWidth { get; private set; }
+        protected float FontHeightInPixels { get; private set; }
+
         #region IComponent
 
         public override IComponent Clone(string id)
@@ -63,7 +64,8 @@ namespace WhiteMagic.PanelClock
             copy._paddings = _paddings.ToArray();
             copy.HorizontalAlignment = HorizontalAlignment;
             copy.VerticalAlignment = VerticalAlignment;
-            copy.Visible = Visible;
+            copy.InternalVisible = InternalVisible;
+            copy.ExternalVisible = ExternalVisible;
             copy.ShowOrHideTime = ShowOrHideTime;
             copy.Format = Format;
 
@@ -76,7 +78,7 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            if (!Visible && !ShowingOrHiding)
+            if (!InternalVisible && !ShowingOrHiding)
                 return;
 
             EvaluateText();
@@ -92,19 +94,19 @@ namespace WhiteMagic.PanelClock
 
             if (BackgroundColor.A > 0)
             {
-                graphics.FillRectangle(new SolidBrush(backgroundcolor), _backgroundBox);
+                graphics.FillRectangle(new SolidBrush(backgroundcolor), BackgroundBox);
             }
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-            graphics.SetClip(_backgroundBox);
-            graphics.DrawString(Text, _font, new SolidBrush(textcolor), _textBox);
+            graphics.SetClip(BackgroundBox);
+            graphics.DrawString(Text, Font, new SolidBrush(textcolor), TextBox);
         }
 
         #endregion
 
         #region Properties
 
-        public float Width { get { return _backgroundBox.Width; } set { SetWidth(value); } }
-        public float Height { get { return _backgroundBox.Height; } set { SetHeight(value); } }
+        public float Width { get { return BackgroundBox.Width; } set { SetWidth(value); } }
+        public float Height { get { return BackgroundBox.Height; } set { SetHeight(value); } }
         public float X { get { return _x; } set { SetX(value); } }
         public float Y { get { return _y; } set { SetY(value); } }
         public string FontName { get { return _fontname; } set { SetFontName(value); } }
@@ -225,19 +227,19 @@ namespace WhiteMagic.PanelClock
 #if !SIMULATION
             fontsize -= 1;
 #endif
-            _font = new Font(parts[0], fontsize, fontstyle, GraphicsUnit.Pixel);
+            Font = new Font(parts[0], fontsize, fontstyle, GraphicsUnit.Pixel);
             var graphics = Graphics.FromImage(new Bitmap(1, 1));
-            _fontHeightInPixels = graphics.MeasureString("ZQdg", _font).Height;
+            FontHeightInPixels = graphics.MeasureString("ZQdg", Font).Height;
 #if SIMULATION
-            _fontHeightInPixels -= 1;
+            FontHeightInPixels -= 1;
 #else
-            _fontHeightInPixels += 2;
+            FontHeightInPixels += 1;
 #endif
             _fontname = fontname;
             SetText(Text, true);
         }
 
-        private void EvaluateText()
+        protected void EvaluateText()
         {
             var text = "";
             foreach (var part in _parts)
@@ -252,9 +254,9 @@ namespace WhiteMagic.PanelClock
             if (Text != txt || force)
             {
                 Text = txt;
-                _actualTextWidth = Graphics.FromImage(new Bitmap(1, 1)).MeasureString(Text, _font).Width;
+                ActualTextWidth = Graphics.FromImage(new Bitmap(1, 1)).MeasureString(Text, Font).Width;
 #if !SIMULATION
-                _actualTextWidth += 2;
+                ActualTextWidth += 2;
 #endif
                 SetDimensions();
             }
@@ -309,8 +311,8 @@ namespace WhiteMagic.PanelClock
 
         private void SetDimensions()
         {
-            var tw = _actualTextWidth + _paddings[0] + _paddings[2];
-            var th = _fontHeightInPixels + _paddings[1] + _paddings[3];
+            var tw = ActualTextWidth + _paddings[0] + _paddings[2];
+            var th = FontHeightInPixels + _paddings[1] + _paddings[3];
             var bh = _height != 0 ? _height : th;
             var x = HorizontalAlignment switch
             {
@@ -324,21 +326,21 @@ namespace WhiteMagic.PanelClock
                 Alignment.Center => Y - bh / 2,
                 _ => Y - bh
             };
-            _backgroundBox = new RectangleF(x, y, _width == 0 ? tw : _width, _height == 0 ? th : _height);
+            BackgroundBox = new RectangleF(x, y, _width == 0 ? tw : _width, _height == 0 ? th : _height);
 
             x = HorizontalAlignment switch
             {
                 Alignment.Left => X + _paddings[0],
-                Alignment.Center => (_width == 0) ? (X - _actualTextWidth / 2) : (X + (Width - _actualTextWidth) / 2),
-                _ => (_width == 0) ? (X - _actualTextWidth - _paddings[2]) : (X + _width - _actualTextWidth - _paddings[2])
+                Alignment.Center => (_width == 0) ? (X - ActualTextWidth / 2) : (X + (Width - ActualTextWidth) / 2),
+                _ => (_width == 0) ? (X - ActualTextWidth - _paddings[2]) : (X + _width - ActualTextWidth - _paddings[2])
             };
             y = VerticalAlignment switch
             {
                 Alignment.Top => y + (bh - th) / 2,
-                Alignment.Center => Y - _fontHeightInPixels / 2,
-                _ => Y - _fontHeightInPixels - _paddings[3]
+                Alignment.Center => Y - FontHeightInPixels / 2,
+                _ => Y - FontHeightInPixels - _paddings[3]
             };
-            _textBox = new RectangleF(x, y - 1, tw, th);
+            TextBox = new RectangleF(x, y - 1, tw, th);
         }
 
         #endregion

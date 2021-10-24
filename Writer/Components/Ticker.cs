@@ -2,15 +2,14 @@
 using System;
 using System.Drawing;
 using System.Linq;
-using WhiteMagic.PanelClock;
 
 namespace WhiteMagic.PanelClock
 {
     public class Ticker : Label
     {
         private int _nBars = -1;
-        private int _loopCountdown;
-        private DateTime _loopStart;
+        private int _loopCount;
+        private DateTime _startTime;
         private float[] _barWidths;
         private Color[] _barColors;
         private static Color[] _palette;
@@ -43,6 +42,9 @@ namespace WhiteMagic.PanelClock
             Bars = 13;
             BarAnimateOverlap = 0.7;
             DividerColor = Color.White.Scale(0.5);
+            BackgroundColor = Color.Black;
+            ScrollSpeed = 18;
+            DirectVisibility = false;
 
             AddProperty(Create("scrollspeed", () => ScrollSpeed, (obj) => ScrollSpeed = obj));
             AddProperty(Create("loops", () => Loops, (obj) => Loops = obj));
@@ -51,7 +53,7 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("dividercolor", () => DividerColor, (obj) => DividerColor = obj));
         }
 
-        #region
+        #region Properties
 
         public int ScrollSpeed { get; set; }
         public int Loops { get; set; }
@@ -63,7 +65,7 @@ namespace WhiteMagic.PanelClock
 
         public override void Draw(Graphics graphics)
         {
-            if (!Visible && !ShowingOrHiding)
+            if (!InternalVisible && !ShowingOrHiding)
                 return;
 
             var y = VerticalAlignment switch
@@ -74,6 +76,7 @@ namespace WhiteMagic.PanelClock
             };
             if (ShowingOrHiding)
             {
+                _startTime = DateTime.Now;
                 var x = X;
                 var h = (float)Height;
                 var elapsed = ShowOrHideAnimationElapsed;
@@ -105,7 +108,7 @@ namespace WhiteMagic.PanelClock
                         var y2 = (float)(y + h / 2 + rel * h / 2);
                         var brush = new SolidBrush(_barColors[i].Scale(1 - rel));
                         graphics.FillRectangle(brush, x, y, w, y1 - y);
-                        graphics.FillRectangle(Brushes.Black, x, y1, w, y2 - y1);
+                        graphics.FillRectangle(new SolidBrush(BackgroundColor), x, y1, w, y2 - y1);
                         graphics.FillRectangle(brush, x, y2, w, y + h - y2);
                         var pen = new Pen(DividerColor, 1);
                         graphics.DrawLine(pen, x, y, x + w, y);
@@ -114,12 +117,27 @@ namespace WhiteMagic.PanelClock
                     x += w;
                 }
             }
-            else if (Visible)
+            else if (InternalVisible)
             {
                 var pen = new Pen(DividerColor);
-                graphics.FillRectangle(Brushes.Black, X, y, Width, Height);
-                graphics.DrawLine(pen, X, y , Width, y);
-                graphics.DrawLine(pen, X, y + Height, Width, y + Height);
+                graphics.FillRectangle(new SolidBrush(BackgroundColor), X, y, Width, Height);
+                graphics.DrawLine(pen, X, y , X+ Width, y);
+                graphics.DrawLine(pen, X, y + Height, X + Width, y + Height);
+
+                EvaluateText();
+
+                var scrollWidth = ActualTextWidth + Width;
+                var elapsed = DateTime.Now.Subtract(_startTime).TotalSeconds;
+                var pixels = elapsed * ScrollSpeed;
+                var loops = (int)(pixels / scrollWidth);
+                InternalVisible = Loops == 0 || loops < Loops;
+                var tx = Width - (float)(pixels % scrollWidth);
+                var ty = y + Height/2 - FontHeightInPixels / 2;
+
+                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                graphics.SetClip(BackgroundBox);
+                graphics.DrawString(Text, Font, new SolidBrush(TextColor), tx, ty);
+
             }
         }
 

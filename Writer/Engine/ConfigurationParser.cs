@@ -10,10 +10,12 @@ namespace WhiteMagic.PanelClock
     {
         private IConfiguration _config;
         private ILogger _logger;
+        private IFunctionFactory _factory;
 
-        public ConfigurationParser(IConfiguration config, ILogger logger)
+        public ConfigurationParser(IConfiguration config, IFunctionFactory factory, ILogger logger)
         {
             _config = config;
+            _factory = factory;
             _logger = logger;
         }
 
@@ -24,41 +26,46 @@ namespace WhiteMagic.PanelClock
             {
                 var name = exprCfg.Key;
                 var expression = ValueSource.Create(name);
-                stock.AddExpression(expression);
+                stock.AddValueSource(expression);
             }
 
             foreach (var itemCfg in _config.GetSection("items").GetChildren())
             {
-                var item = ScanItem(itemCfg);
+                var item = ScanItem("", itemCfg);
                 if (item == null)
                     continue;
                 stock.AddItem(item);
+            }
+
+            foreach (var sceneCfg in _config.GetSection("scenes").GetChildren())
+            {
+                var scene = ScanScene(stock, sceneCfg);
+                if (scene == null)
+                    break;
+                stock.AddScene(scene);
             }
 
             foreach (var exprCfg in _config.GetSection("expressions").GetChildren())
             {
                 var name = exprCfg.Key;
                 var value = exprCfg.Value;
-                var expression = ParseExpression(stock, value);
-                stock.AddExpression(ValueSource.Create(name, expression));
+                var expression = ParseExpression("", stock, value);
+                stock.AddValueSource(ValueSource.Create(name, expression));
             }
 
             foreach (var itemCfg in _config.GetSection("items").GetChildren())
             {
-                ParseItem(stock, itemCfg);
+                ParseItem("", stock, itemCfg);
             }
 
             foreach (var sceneCfg in _config.GetSection("scenes").GetChildren())
-            { 
-                var scene = ParseScene(stock, sceneCfg);
-                if (scene == null)
-                    break;
-                stock.AddScene(scene);
+            {
+                ParseScene(stock, sceneCfg);
             }
             return stock;
         }
 
-        private Scene ParseScene(Stock stock, IConfigurationSection sceneCfg)
+        private Scene ScanScene(Stock stock, IConfigurationSection sceneCfg)
         {
             var id = sceneCfg["id"];
             if (id == null)
@@ -67,36 +74,77 @@ namespace WhiteMagic.PanelClock
             var scene = new Scene(id, stock);
             scene.CronSpec = sceneCfg["cron"] ?? "* * * * * *";
 
-            for (int iitem = 0; ; ++iitem)
+            foreach (var exprCfg in sceneCfg.GetSection("expressions").GetChildren())
             {
-                var itemCfg = sceneCfg.GetSection($"items:{iitem}");
-                if (!itemCfg.GetChildren().Any())
-                    break;
-                var item = ParseSceneItem(itemCfg);
+                var name = id + "." + exprCfg.Key;
+                var expression = ValueSource.Create(name);
+                stock.AddValueSource(expression);
+            }
+
+            foreach (var itemCfg in sceneCfg.GetSection("items").GetChildren())
+            {
+                string itemId = null;
+                var item = ScanItem(id, itemCfg);
                 if (item != null)
                 {
-                    scene.AddItem(item);
+                    itemId = item.Id;
+                    stock.AddItem(item);
+                }
+                else
+                {
+                    itemId = itemCfg["id"];
+                }
+                if (itemId != null)
+                {
+                    scene.AddItem(itemId);
                 }
             }
             return scene;
         }
 
-        private void ParseItem(Stock stock, IConfigurationSection itemCfg)
+        private Scene ParseScene(Stock stock, IConfigurationSection sceneCfg)
+        {
+            var id = sceneCfg["id"];
+            if (id == null)
+                return null;
+
+            var scene = stock.GetScene(id);
+
+            foreach (var itemCfg in sceneCfg.GetSection("items").GetChildren())
+            {
+                ParseItem(id, stock, itemCfg);
+            }
+            return scene;
+        }
+
+        private void ParseItem(string prefix, Stock stock, IConfigurationSection itemCfg)
         {
             var id = itemCfg["id"];
             if (id == null)
                 return;
 
             var item = stock.GetItem(id);
-            ParseItemProperties(stock, itemCfg, item);
+            if (item == null)
+            {
+                item = stock.GetItem($"{prefix}.{id}");
+            }
+            if (item != null)
+            {     
+                ParseItemProperties(prefix, stock, itemCfg, item);
+            }
+            return;
         }
 
-        private Component ScanItem(IConfigurationSection itemCfg)
+        private Component ScanItem(string prefix, IConfigurationSection itemCfg)
         {
             var id = itemCfg["id"];
             if (id == null)
                 return null;
 
+            if (prefix != "")
+            {
+                id = prefix + "." + id;
+            }
             var type = itemCfg["type"];
             if (type == null)
                 return null;
@@ -121,45 +169,34 @@ namespace WhiteMagic.PanelClock
             return item;
         }
 
-        private void ParseItemProperties(Stock stock, IConfigurationSection itemCfg, ValueSource item)
+        private void ParseItemProperties(string prefix, Stock stock, IConfigurationSection itemCfg, ValueSource item)
         {
-            foreach(var property in item.Properties.Select(prop=>item[prop]))
+            foreach (var property in item.Properties.Select(prop => item[prop]))
             {
                 var name = property.Id.ToLower();
                 var expression = itemCfg[name];
                 if (expression == null)
                     continue;
 
-                var value = ParseExpression(stock, expression);
+                var value = ParseExpression(prefix, stock, expression);
                 if (value == null)
                     continue;
 
                 var namedvalue = ValueSource.Create($"{item.Id}.{name}", value);
-                stock.AddExpression(namedvalue);
+                stock.AddValueSource(namedvalue);
                 stock.AddAssignment(new Assignment(() => { property.Value = namedvalue.Value; }));
             }
         }
 
-        private SceneItem ParseSceneItem(IConfigurationSection itemCfg)
+        private ValueSource ParseExpression(string prefix, Stock stock, string value)
         {
-            var id = itemCfg["id"];
-            if (id == null)
-                return null;
-
-            var item = new SceneItem(id);
-
-            return item;
-        }
-
-        private ValueSource ParseExpression(Stock stock, string value)
-        { 
             ValueSource expression = null;
             var tok = new Tokenizer(value);
             if (tok.Match("="))
             {
-                expression = ParseConditional(stock, tok);
+                expression = ParseConditional(prefix, stock, tok);
             }
-            else 
+            else
             {
                 expression = ParseValue(stock, tok);
             }
@@ -169,70 +206,70 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private  ValueSource ParseConditional(Stock stock, Tokenizer tok)
+        private ValueSource ParseConditional(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseOr(stock, tok);
+            var expression = ParseOr(prefix, stock, tok);
             if (tok.Match("?"))
             {
                 var conditionExpression = expression;
-                var trueExpression = ParseConditional(stock, tok);
+                var trueExpression = ParseConditional(prefix, stock, tok);
                 if (!tok.Match(":"))
                     tok.ThrowException("':' expected after '?' ");
-                var falseExpression = ParseConditional(stock, tok);
+                var falseExpression = ParseConditional(prefix, stock, tok);
                 expression = ValueSource.Create(() => (bool)conditionExpression.Value ? trueExpression.Value : falseExpression.Value);
             }
             return expression;
         }
 
-        private ValueSource ParseOr(Stock stock, Tokenizer tok)
+        private ValueSource ParseOr(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseAnd(stock, tok);
+            var expression = ParseAnd(prefix, stock, tok);
             while (tok.Match("||"))
             {
                 var lhs = expression;
-                var rhs = ParseAnd(stock, tok);
+                var rhs = ParseAnd(prefix, stock, tok);
                 expression = ValueSource.Create(() => lhs.Value || rhs.Value);
             }
             return expression;
         }
 
-        private ValueSource ParseAnd(Stock stock, Tokenizer tok)
+        private ValueSource ParseAnd(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseRelational(stock, tok);
+            var expression = ParseRelational(prefix, stock, tok);
             while (tok.Match("&&"))
             {
                 var lhs = expression;
-                var rhs = ParseRelational(stock, tok);
+                var rhs = ParseRelational(prefix, stock, tok);
                 expression = ValueSource.Create(() => lhs.Value && rhs.Value);
             }
             return expression;
         }
 
 
-        private ValueSource ParseRelational(Stock stock, Tokenizer tok)
+        private ValueSource ParseRelational(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseEquality(stock, tok);
+            var expression = ParseEquality(prefix, stock, tok);
             for (; ; )
             {
                 var lhs = expression;
                 if (tok.Match("<="))
                 {
-                    var rhs = ParseEquality(stock, tok);
+                    var rhs = ParseEquality(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value <= rhs.Value);
                 }
                 else if (tok.Match(">="))
                 {
-                    var rhs = ParseEquality(stock, tok);
+                    var rhs = ParseEquality(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value >= rhs.Value);
                 }
                 else if (tok.Match("<"))
                 {
-                    var rhs = ParseEquality(stock, tok);
+                    var rhs = ParseEquality(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value < rhs.Value);
                 }
                 else if (tok.Match(">"))
                 {
-                    var rhs = ParseEquality(stock, tok);
+                    var rhs = ParseEquality(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value > rhs.Value);
                 }
                 else
@@ -241,20 +278,20 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseEquality(Stock stock, Tokenizer tok)
+        private ValueSource ParseEquality(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseAddition(stock, tok);
+            var expression = ParseAddition(prefix, stock, tok);
             for (; ; )
             {
                 var lhs = expression;
                 if (tok.Match("=="))
                 {
-                    var rhs = ParseAddition(stock, tok);
+                    var rhs = ParseAddition(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value == rhs.Value);
                 }
                 else if (tok.Match("!="))
                 {
-                    var rhs = ParseAddition(stock, tok);
+                    var rhs = ParseAddition(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value != rhs.Value);
                 }
                 else
@@ -263,20 +300,20 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseAddition(Stock stock, Tokenizer tok)
+        private ValueSource ParseAddition(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseMultiplication(stock, tok);
+            var expression = ParseMultiplication(prefix, stock, tok);
             for (; ; )
             {
                 var lhs = expression;
                 if (tok.Match("+"))
                 {
-                    var rhs = ParseMultiplication(stock, tok);
+                    var rhs = ParseMultiplication(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value + rhs.Value);
                 }
                 else if (tok.Match("-"))
                 {
-                    var rhs = ParseMultiplication(stock, tok);
+                    var rhs = ParseMultiplication(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value - rhs.Value);
                 }
                 else
@@ -285,25 +322,25 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseMultiplication(Stock stock, Tokenizer tok)
+        private ValueSource ParseMultiplication(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseUnary(stock, tok);
+            var expression = ParseUnary(prefix, stock, tok);
             for (; ; )
             {
                 var lhs = expression;
                 if (tok.Match("*"))
                 {
-                    var rhs = ParseUnary(stock, tok);
+                    var rhs = ParseUnary(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value * rhs.Value);
                 }
                 else if (tok.Match("/"))
                 {
-                    var rhs = ParseUnary(stock, tok);
+                    var rhs = ParseUnary(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value / rhs.Value);
                 }
                 else if (tok.Match("%"))
                 {
-                    var rhs = ParseUnary(stock, tok);
+                    var rhs = ParseUnary(prefix, stock, tok);
                     expression = ValueSource.Create(() => lhs.Value % rhs.Value);
                 }
                 else
@@ -312,36 +349,36 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseUnary(Stock stock, Tokenizer tok)
+        private ValueSource ParseUnary(string prefix, Stock stock, Tokenizer tok)
         {
             ValueSource expression = null;
 
             if (tok.Match("!"))
             {
-                var notExpression = ParseSubExpression(stock, tok);
+                var notExpression = ParseSubExpression(prefix, stock, tok);
                 expression = ValueSource.Create(() => !notExpression.Value);
             }
             else
             {
-                expression = ParseSubExpression(stock, tok);
+                expression = ParseSubExpression(prefix, stock, tok);
             }
 
             return expression;
         }
 
-        private ValueSource ParseSubExpression(Stock stock, Tokenizer tok)
+        private ValueSource ParseSubExpression(string prefix, Stock stock, Tokenizer tok)
         {
             ValueSource expression;
 
             if (tok.Match("("))
             {
-                expression = ParseConditional(stock, tok);
+                expression = ParseConditional(prefix, stock, tok);
                 if (!tok.Match(")"))
                     tok.ThrowException("missing closing brace");
             }
             else
             {
-                expression = ParseTerminal(stock, tok);
+                expression = ParseTerminal(prefix, stock, tok);
             }
 
             return expression;
@@ -359,9 +396,9 @@ namespace WhiteMagic.PanelClock
             return subExpression;
         }
 
-        private ValueSource ParseTerminal(Stock stock, Tokenizer tok)
+        private ValueSource ParseTerminal(string prefix, Stock stock, Tokenizer tok)
         {
-            var expression = ParseValueOrIdentifier(stock, tok);
+            var expression = ParseValueOrIdentifier(prefix, stock, tok);
             while (tok.Match("."))
             {
                 expression = ParseSourceProperty(stock, tok, expression);
@@ -385,7 +422,7 @@ namespace WhiteMagic.PanelClock
             ValueSource expression = null;
 
             if (tok.Match("true", true))
-            { 
+            {
                 expression = ValueSource.Create(() => true);
             }
             else if (tok.Match("false", true))
@@ -399,7 +436,7 @@ namespace WhiteMagic.PanelClock
             return expression;
         }
 
-        private ValueSource ParseValueOrIdentifier(Stock stock, Tokenizer tok)
+        private ValueSource ParseValueOrIdentifier(string prefix, Stock stock, Tokenizer tok)
         {
             var expression = ParseNumberOrBoolean(stock, tok);
             if (expression == null)
@@ -412,47 +449,60 @@ namespace WhiteMagic.PanelClock
                 {
                     if (tok.Match('('))
                     {
-                        expression = ParseFunction(stock, tok, identifier);
+                        expression = ParseFunction(prefix, stock, tok, identifier);
                     }
                     else
                     {
-                        expression = stock.GetValueSource(identifier);
+                        expression = _factory.CreateFunction(identifier, new List<ValueSource>());
                         if (expression == null)
                         {
-                            expression = stock.GetItem(identifier);
-                            if (expression == null)
-                                tok.ThrowException($"identifier='{identifier}' is not an expression nor an item");
+                            expression = ParseIdentifierExpression(identifier, stock, tok);
                         }
+                        if (expression == null && prefix != "")
+                        {
+                            expression = ParseIdentifierExpression(prefix + "." + identifier, stock, tok);
+                        }
+                        if (expression == null)
+                            tok.ThrowException($"identifier='{identifier}' is not an expression nor an item");
                     }
                 }
             }
             return expression;
         }
 
-        private ValueSource ParseFunction(Stock stock, Tokenizer tok, string functionname)
+        private ValueSource ParseIdentifierExpression(string identifier, Stock stock, Tokenizer tok)
+        {
+            var expression = stock.GetValueSource(identifier);
+            if (expression == null)
+            {
+                expression = stock.GetItem(identifier);
+            }
+            return expression;
+        }
+
+        private ValueSource ParseFunction(string prefix, Stock stock, Tokenizer tok, string functionname)
         {
             var arguments = new List<ValueSource>();
             if (!tok.Match(")"))
             {
-                arguments = ParseArguments(stock, tok);
+                arguments = ParseArguments(prefix, stock, tok);
                 if (!tok.Match(")"))
                     tok.ThrowException("missing closing brace after arguments");
             }
-            if (functionname == NowDateSource.Name)
-                return new NowDateSource(arguments);
-            if (functionname == "color")
-                return new ColorSource(arguments);
+            var expression = _factory.CreateFunction(functionname, arguments);
+            if (expression != null)
+                return expression;
 
             tok.ThrowException($"invalid function='{functionname}'");
             return null;
         }
 
-        private List<ValueSource> ParseArguments(Stock stock, Tokenizer tok)
+        private List<ValueSource> ParseArguments(string prefix, Stock stock, Tokenizer tok)
         {
             var arguments = new List<ValueSource>();
             do
             {
-                var argument = ParseOr(stock, tok);
+                var argument = ParseOr(prefix, stock, tok);
                 arguments.Add(argument);
             }
             while (tok.Match(','));

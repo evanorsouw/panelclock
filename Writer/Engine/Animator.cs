@@ -30,8 +30,8 @@ namespace WhiteMagic.PanelClock
                 {
                     _removingComponents.AddRange(_activeScene.GetItems().Where(c1 => scene.GetItems().All(c2 => c1.Id != c2.Id)));
                 }
-                _activeComponents.Select(c => c.Visible = true).ToList();
-                _removingComponents.Select(c => c.Visible = false).ToList();
+                _activeComponents.Select(c => c.InternalVisible = true).ToList();
+                _removingComponents.Select(c => c.InternalVisible = false).ToList();
                 _activeScene = scene;
             }
 
