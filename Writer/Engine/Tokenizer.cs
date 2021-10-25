@@ -84,7 +84,27 @@ namespace WhiteMagic.PanelClock
             {
                 SkipWhites();
             }
+
             value = 0;
+            if (Match("0x"))
+            {
+                var n = 0;
+                for (; ;)
+                {
+                    char c = char.ToLower(Next());
+                    if (char.IsDigit(c))
+                        value = value * 16 + c - '0';
+                    else if (c >= 'a' && c <= 'f')
+                        value = value * 16 + c + 10 - 'a';
+                    else
+                        break;
+                    n++;
+                }
+                if (n == 0)
+                    ThrowException($"invalid hex number");
+                return true;
+            }
+
             if (!char.IsNumber(Head) && Head != '-' && Head !='.')
                 return false;
 
@@ -96,7 +116,7 @@ namespace WhiteMagic.PanelClock
             if (Match('.'))
             {
                 if (!char.IsDigit(Head))
-                    throw new Exception("invalid number");
+                    ThrowException("invalid number");
                 var add = 0.1;
                 while (char.IsDigit(Head))
                 {

@@ -12,6 +12,7 @@ namespace WhiteMagic.PanelClock
         private int _hPanels;
         private int _vPanels;
         private byte[] _writeBuffer;
+        private bool _initialized;
 
         public LedPanelDisplay(string port, int dx, int dy)
         {
@@ -24,6 +25,7 @@ namespace WhiteMagic.PanelClock
             _vPanels = dy/64;
 
             _writeBuffer = new byte[64 * (64 * 3 + 5) * _vPanels * _hPanels];
+            _initialized = false;
         }
 
         public int Width => _hPanels*64;
@@ -32,6 +34,13 @@ namespace WhiteMagic.PanelClock
 
         public void Show(Bitmap bitmap)
         {
+            if (!_initialized)
+            {
+                _initialized = true;
+                Initialize();
+                Initialize();
+                Initialize();
+            }
             var bytes = _writeBuffer;
             var i = 0;
             bytes[i++] = 1;
@@ -45,15 +54,16 @@ namespace WhiteMagic.PanelClock
                     bytes[i++] = (byte)64;
                     for (int x = 0; x < 64; ++x)
                     {
-                        var pix = bitmap.GetPixel(x + (1-panel) * 64, y);
+                        var pix = bitmap.GetPixel(x + (1 - panel) * 64, y);
                         //bytes[i++] = (byte)(255 - pix.R);
                         //bytes[i++] = (byte)(255 - pix.G);
                         //bytes[i++] = (byte)(255 - pix.B);
                         bytes[i++] = pix.R;
                         bytes[i++] = pix.G;
-                        bytes[i++] = pix.B;                    }
+                        bytes[i++] = pix.B;
                     }
                 }
+            }
             WriteBytes(_writeBuffer, i);
         }
 
@@ -81,6 +91,19 @@ namespace WhiteMagic.PanelClock
             bytes[i++] = (byte)((color >> 8) & 0xFF);
             bytes[i++] = (byte)((color >> 0) & 0xFF);
             WriteBytes(bytes, i);
+        }
+
+        private void Initialize()
+        {
+            var buffer = new byte[1024];
+
+            var i = 0;
+            for (var j=0; j<256; ++j)
+            {
+                buffer[i++] = 255;
+            }
+
+            WriteBytes(buffer, i);
         }
 
         private void Open()

@@ -9,15 +9,10 @@ namespace WhiteMagic.PanelClock
         private DateTime _lastTime;
         private string _timezonename;
         private TimeZoneInfo _timezone = null;
+        private float _diameter;
 
         public AnalogClockModern(string id, ILogger logger=null) : base(id, logger)
         {
-            AddProperty(Create("x", () => X, (obj) => X = obj));
-            AddProperty(Create("y", () => Y, (obj) => Y = obj));
-            AddProperty(Create("x2", () => X + Diameter));
-            AddProperty(Create("y2", () => Y + Diameter));
-            AddProperty(Create("x3", () => X + Diameter * ShowOrHideAnimationElapsed));
-            AddProperty(Create("y3", () => Y + Diameter * ShowOrHideAnimationElapsed));
             AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
             AddProperty(Create("width", () => Diameter));
             AddProperty(Create("height", () => Diameter));
@@ -26,27 +21,9 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("timezone", () => TimeZone, (obj) => TimeZone = obj));
             AddProperty(Create("maincolor", () => MainColor, (obj) => MainColor = obj));
             AddProperty(Create("secondhandcolor", () => SecondHandColor, (obj) => SecondHandColor = obj));
+
+            Diameter = 64;
         }
-
-        #region IComponent
-
-        public override IComponent Clone(string id)
-        {
-            var copy = new AnalogClockModern(id, Logger);
-
-            copy.Diameter = Diameter;
-            copy.X = X;
-            copy.Y = Y;
-            copy.TimeZone = TimeZone;
-            copy.ShowSeconds = ShowSeconds;
-            copy.SmoothSeconds = SmoothSeconds;
-            copy.ExternalVisible = ExternalVisible;
-            copy.InternalVisible = InternalVisible;
-            copy.ShowOrHideTime = ShowOrHideTime;
-            return this;
-        }
-
-        #endregion
 
         #region IDrawable interface
 
@@ -113,14 +90,28 @@ namespace WhiteMagic.PanelClock
 
         public Color MainColor { get; set; } = Color.White;
         public Color SecondHandColor { get; set; } = Color.Red;
-        public float Diameter { get; set; } = 64;
-        public float X { get; set; }
-        public float Y { get; set; }
+        public float Diameter
+        {
+            get { return _diameter; }
+            set
+            {
+                if (_diameter != value)
+                {
+                    _diameter = value;
+                    CoordinatesChanged();
+                }
+            }
+        }
         public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
         public bool ShowSeconds { get; set; } = true;
         public bool SmoothSeconds { get; set; } = false;
 
         #endregion
+
+        protected override void GetFullSize(out float width, out float height)
+        {
+            width = height = Diameter;
+        }
 
         #region private code
 

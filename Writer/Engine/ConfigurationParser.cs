@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WhiteMagic.PanelClock.Components;
 
 namespace WhiteMagic.PanelClock
 {
@@ -161,6 +162,10 @@ namespace WhiteMagic.PanelClock
             else if (type == "ticker")
             {
                 item = new Ticker(id, _logger);
+            }
+            else if (type == "icon")
+            {
+                item = new Icon(id, _logger);
             }
             else
             {

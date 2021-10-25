@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Reactive.Disposables;
@@ -67,7 +68,8 @@ namespace WhiteMagic.PanelClock
                     _logger.LogInformation($"failed to retrieve weatherinfo from uri='{uri}', status='{response.StatusCode}', reason='{response.ReasonPhrase}'");
                     return;
                 }
-                ParseJson(await response.Content.ReadAsStringAsync());
+                var parts = ParseJson(await response.Content.ReadAsStringAsync());
+                _logger.LogInformation($"retrieved {parts.Count} properties from uri='{uri}'");
             }
             catch (Exception ex)
             {
@@ -75,7 +77,7 @@ namespace WhiteMagic.PanelClock
             }
         }
 
-        private void ParseJson(string json)
+        private List<string> ParseJson(string json)
         {
             var updatedProperties = new List<string>();
             var doc = JsonDocument.Parse(json);
@@ -117,12 +119,34 @@ namespace WhiteMagic.PanelClock
                 }
                 if (properties.TryGetProperty("d0weer", out var d0weer))
                 {
-                    Enum.TryParse(d0weer.ToString(), true, out _weatherType);
+                    if (ParseEnumeration(d0weer.ToString(), out _weatherType))
                     {
                         updatedProperties.Add("weathertype");
                     }
                 }
             }
+            return updatedProperties;
+        }
+
+        private bool ParseEnumeration<T>(string text, out T enumValue)
+        {
+            enumValue = default(T);
+            foreach (var en in typeof(T).GetEnumValues())
+            {
+                var type = en.GetType();
+                var memInfo = type.GetMember(en.ToString());
+                var attributes = memInfo[0].GetCustomAttributes(typeof(DescriptionAttribute), false);
+                if (attributes.Any())
+                {
+                    var attr = attributes[0] as DescriptionAttribute;
+                    if (attr.Description.ToLower() == text.ToLower())
+                    {
+                        enumValue = (T)en;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private bool GetTimestamp(JsonElement json, out DateTime timestamp)

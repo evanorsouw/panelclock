@@ -8,7 +8,6 @@ namespace WhiteMagic.PanelClock
     public class Ticker : Label
     {
         private int _nBars = -1;
-        private int _loopCount;
         private DateTime _startTime;
         private float[] _barWidths;
         private Color[] _barColors;
@@ -40,8 +39,8 @@ namespace WhiteMagic.PanelClock
         {
             ShowOrHideTime = 1.0f;
             Bars = 13;
-            BarAnimateOverlap = 0.7;
-            DividerColor = Color.White.Scale(0.5);
+            BarAnimateOverlap = 0.7f;
+            DividerColor = Color.White.Scale(0.5f);
             BackgroundColor = Color.Black;
             ScrollSpeed = 18;
             DirectVisibility = false;
@@ -58,7 +57,7 @@ namespace WhiteMagic.PanelClock
         public int ScrollSpeed { get; set; }
         public int Loops { get; set; }
         public int Bars { get { return _nBars; } set { SetBars(value); } }
-        public double BarAnimateOverlap { get; set; }
+        public float BarAnimateOverlap { get; set; }
         public Color DividerColor { get; set; }
 
         #endregion
@@ -68,31 +67,26 @@ namespace WhiteMagic.PanelClock
             if (!InternalVisible && !ShowingOrHiding)
                 return;
 
-            var y = VerticalAlignment switch
-            {
-                Alignment.Top => Y,
-                Alignment.Center => Y - Height / 2,
-                Alignment.Bottom => Y - Height
-            };
+            var y = Y1;
             if (ShowingOrHiding)
             {
                 _startTime = DateTime.Now;
                 var x = X;
-                var h = (float)Height;
+                var h = Height;
                 var elapsed = ShowOrHideAnimationElapsed;
                 for (int i=0; i<_nBars; ++i)
                 {
                     var w = _barWidths[i] * Width;
                     var relStart = (1 - BarAnimateOverlap) / (Bars / 2) * Math.Abs(i - Bars / 2);
-                    double relative = 0;
+                    var relative = 0f;
                     Relative(elapsed, relStart, relStart + BarAnimateOverlap, ref relative);
-                    var rel = 0.0;
-                    if (Relative(relative, 0.0, 0.33, ref rel))
+                    var rel = 0.0f;
+                    if (Relative(relative, 0.0f, 0.33f, ref rel))
                     {
                         var pen = new Pen(DividerColor.ScaleAlpha(rel), 1);
                         graphics.DrawLine(pen, x, y + h / 2, x + w, y + h / 2);
                     }
-                    else if (Relative(relative, 0.33, 0.66, ref rel))
+                    else if (Relative(relative, 0.33f, 0.66f, ref rel))
                     {
                         var y1 = (float)(y + h / 2 - rel * h / 2);
                         var y2 = (float)(y + h / 2 + rel * h / 2);
@@ -103,7 +97,7 @@ namespace WhiteMagic.PanelClock
                     }
                     else
                     {
-                        Relative(relative, 0.66, 1.0, ref rel);
+                        Relative(relative, 0.66f, 1.0f, ref rel);
                         var y1 = (float)(y + h / 2 - rel * h / 2);
                         var y2 = (float)(y + h / 2 + rel * h / 2);
                         var brush = new SolidBrush(_barColors[i].Scale(1 - rel));
@@ -126,13 +120,13 @@ namespace WhiteMagic.PanelClock
 
                 EvaluateText();
 
-                var scrollWidth = ActualTextWidth + Width;
+                var scrollWidth = TextWidth + Width;
                 var elapsed = DateTime.Now.Subtract(_startTime).TotalSeconds;
                 var pixels = elapsed * ScrollSpeed;
                 var loops = (int)(pixels / scrollWidth);
                 InternalVisible = Loops == 0 || loops < Loops;
                 var tx = Width - (float)(pixels % scrollWidth);
-                var ty = y + Height/2 - FontHeightInPixels / 2;
+                var ty = y + Height/2 - TextHeight / 2;
 
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
                 graphics.SetClip(BackgroundBox);

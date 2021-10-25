@@ -201,6 +201,11 @@ namespace WhiteMagic.PanelClock
                 return (Color)_value;
             if (_value.GetType() == typeof(int))
                 return Color.FromArgb(255, (((int)_value) >> 16) & 0xFF, (((int)_value) >> 8) & 0xFF, ((int)_value) & 0xFF);
+            if (_value.GetType() == typeof(double))
+            {
+                var color = (long)(double)_value;
+                return Color.FromArgb(255, (int)((color >> 16) & 0xFF), (int)((color >> 8) & 0xFF), (int)(color & 0xFF));
+            }
             if (_value.GetType() == typeof(string))
             {
                 var s = _value.ToString();

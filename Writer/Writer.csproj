@@ -16,6 +16,88 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Graphics\.png" />
+    <None Remove="Graphics\bewolkt.png" />
+    <None Remove="Graphics\bliksem.png" />
+    <None Remove="Graphics\buien.png" />
+    <None Remove="Graphics\clearnight.png" />
+    <None Remove="Graphics\clouded.png" />
+    <None Remove="Graphics\cloudednight.png" />
+    <None Remove="Graphics\cloudy.png" />
+    <None Remove="Graphics\cloudyrain.png" />
+    <None Remove="Graphics\fog.png" />
+    <None Remove="Graphics\hagel.png" />
+    <None Remove="Graphics\hail.png" />
+    <None Remove="Graphics\halfbewolkt.png" />
+    <None Remove="Graphics\halfbewolkt_regen.png" />
+    <None Remove="Graphics\heavyclouds.png" />
+    <None Remove="Graphics\helderenacht.png" />
+    <None Remove="Graphics\lichtbewolkt.png" />
+    <None Remove="Graphics\lightning.png" />
+    <None Remove="Graphics\mist.png" />
+    <None Remove="Graphics\nachtmist.png" />
+    <None Remove="Graphics\nightfog.png" />
+    <None Remove="Graphics\partlycloudy.png" />
+    <None Remove="Graphics\rain.png" />
+    <None Remove="Graphics\regen.png" />
+    <None Remove="Graphics\showers.png" />
+    <None Remove="Graphics\sneeuw.png" />
+    <None Remove="Graphics\snow.png" />
+    <None Remove="Graphics\sunny.png" />
+    <None Remove="Graphics\test.png" />
+    <None Remove="Graphics\wolkennacht.png" />
+    <None Remove="Graphics\zwaarbewolkt.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Graphics\clearnight.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\clouded.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\cloudednight.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\cloudy.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\cloudyrain.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\fog.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\hail.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\heavyclouds.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\lightning.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\nightfog.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\partlycloudy.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\rain.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\showers.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\snow.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Graphics\sunny.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <!--PackageReference Include="DlibDotNet" Version="19.21.0.20210302" /-->
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.53.0.2382" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
