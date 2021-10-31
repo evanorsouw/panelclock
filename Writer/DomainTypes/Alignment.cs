@@ -2,10 +2,12 @@
 {
     public enum Alignment
     {
+        Top  = 0,
         Left = 0,
-        Top = 0,
         Center = 1,
+        Bottom = 2,
         Right = 2,
-        Bottom = 2
+        TopOrLeft = 0,
+        BottomOrRight = 2
     }
 }

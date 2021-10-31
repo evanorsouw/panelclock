@@ -30,7 +30,6 @@ namespace WhiteMagic.PanelClock
         private TimestampSource _sunrise;
         private NowSource _now;
         private IDisposable _timerObserver;
-
         public EnvironmentSource(ILogger logger) : base(Name)
         {
             _logger = logger;
@@ -58,6 +57,9 @@ namespace WhiteMagic.PanelClock
 
         private async Task UpdateEnvironment()
         {
+#if SIMULATION
+            var parts = ParseJson("{}");
+#else
             var uri = $"https://weerlive.nl/api/json-data-10min.php?key={_apiKey}&locatie={_longitude},{_lattitude}";
             try
             {
@@ -75,6 +77,7 @@ namespace WhiteMagic.PanelClock
             {
                 _logger.LogError($"exception while retriving weatherinfo from uri='{uri}': {ex.Message}'");
             }
+#endif
         }
 
         private List<string> ParseJson(string json)
@@ -117,9 +120,9 @@ namespace WhiteMagic.PanelClock
                         updatedProperties.Add("sunset");
                     }
                 }
-                if (properties.TryGetProperty("d0weer", out var d0weer))
+                if (properties.TryGetProperty("image", out var image))
                 {
-                    if (ParseEnumeration(d0weer.ToString(), out _weatherType))
+                    if (ParseEnumeration(image.ToString(), out _weatherType))
                     {
                         updatedProperties.Add("weathertype");
                     }

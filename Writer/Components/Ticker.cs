@@ -44,6 +44,9 @@ namespace WhiteMagic.PanelClock
             BackgroundColor = Color.Black;
             ScrollSpeed = 18;
             DirectVisibility = false;
+            VerticalAlignment = Alignment.Center;
+            DirectVisibility = true;
+            ExternalVisible = false;
 
             AddProperty(Create("scrollspeed", () => ScrollSpeed, (obj) => ScrollSpeed = obj));
             AddProperty(Create("loops", () => Loops, (obj) => Loops = obj));
@@ -126,7 +129,7 @@ namespace WhiteMagic.PanelClock
                 var loops = (int)(pixels / scrollWidth);
                 InternalVisible = Loops == 0 || loops < Loops;
                 var tx = Width - (float)(pixels % scrollWidth);
-                var ty = y + Height/2 - TextHeight / 2;
+                var ty = ContentTopLeft.Y;
 
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
                 graphics.SetClip(BackgroundBox);

@@ -14,7 +14,7 @@ namespace WhiteMagic.PanelClock
         showers,
         [Description("hagel")]
         hail,
-        [Description("mist")]
+        [Description("mist")]   
         fog,
         [Description("sneeuw")]
         snow,

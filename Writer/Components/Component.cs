@@ -44,12 +44,13 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("horizontalalignment", () => HorizontalAlignment, (obj) => HorizontalAlignment = obj.ToEnum<Alignment>()));
             AddProperty(Create("verticalalignment", () => VerticalAlignment, (obj) => VerticalAlignment = obj.ToEnum<Alignment>()));
 
-            HorizontalAlignment = Alignment.Left;
-            VerticalAlignment = Alignment.Top;
+            HorizontalAlignment = Alignment.TopOrLeft;
+            VerticalAlignment = Alignment.TopOrLeft;
             X = 0;
             Y = 0;
             Width = -1;
             Height = -1;
+            DirectVisibility = true;
 
             SetGetter(() => ShowOrHideAnimationElapsed);
         }
@@ -75,10 +76,14 @@ namespace WhiteMagic.PanelClock
 
         public bool ExternalVisible
         {
-            get { return _externalVisible; }
+            get { return _internalVisible; }
             set
             {
-                if (_externalVisible != value)
+                if (_directVisibility)
+                {
+                    InternalVisible = _externalVisible = value;
+                }
+                else if (_externalVisible != value)
                 {
                     InternalVisible |= value;
                     _externalVisible = value;
@@ -211,9 +216,9 @@ namespace WhiteMagic.PanelClock
                 _actualWidth = _width;
                 tx = _horizontalAlignment switch
                 {
-                    Alignment.Left => _x,
+                    Alignment.TopOrLeft => _x,
                     Alignment.Center => _x + (_width - maxwidth)/2,
-                    Alignment.Right => _x + _width - maxwidth
+                    Alignment.BottomOrRight => _x + _width - maxwidth
                 };
             }
             else
@@ -221,9 +226,9 @@ namespace WhiteMagic.PanelClock
                 _actualWidth = maxwidth;
                 _x1 = tx = _horizontalAlignment switch
                 {
-                    Alignment.Left => _x,
+                    Alignment.TopOrLeft => _x,
                     Alignment.Center => _x - maxwidth / 2,
-                    Alignment.Right => _x - maxwidth
+                    Alignment.BottomOrRight => _x - maxwidth
                 };
             }
 
@@ -234,9 +239,9 @@ namespace WhiteMagic.PanelClock
                 _actualHeight = _height;
                 ty = _verticalAlignment switch
                 {
-                    Alignment.Top => _y,
+                    Alignment.TopOrLeft => _y,
                     Alignment.Center => _y + (_height - maxheight) / 2,
-                    Alignment.Bottom => _y + _height - maxheight
+                    Alignment.BottomOrRight => _y + _height - maxheight
                 };
             }
             else
@@ -244,9 +249,9 @@ namespace WhiteMagic.PanelClock
                 _actualHeight = maxheight;
                 _y1 = ty = _verticalAlignment switch
                 {
-                    Alignment.Top => _y,
+                    Alignment.TopOrLeft => _y,
                     Alignment.Center => _y - maxheight / 2,
-                    Alignment.Bottom => _y - maxheight
+                    Alignment.BottomOrRight => _y - maxheight
                 };
             }
             BackgroundBox = new RectangleF(X1, Y1, X2-X1, Y2-Y1);

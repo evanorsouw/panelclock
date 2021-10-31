@@ -20,8 +20,8 @@ namespace WhiteMagic.PanelClock
         {
             FontName = "Arial";
             BackgroundColor = Color.Transparent;
-            HorizontalAlignment = Alignment.Left;
-            VerticalAlignment = Alignment.Top;
+            HorizontalAlignment = Alignment.TopOrLeft;
+            VerticalAlignment = Alignment.TopOrLeft;
             TextColor = Color.White;
 
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
