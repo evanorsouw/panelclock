@@ -167,6 +167,10 @@ namespace WhiteMagic.PanelClock
             {
                 item = new Icon(id, _logger);
             }
+            else if (type == "windindicator")
+            {
+                item = new WindIndicator(id, _logger);
+            }
             else
             {
                 _logger.LogWarning($"unrecognized scene item='{type}'");

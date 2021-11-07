@@ -28,6 +28,8 @@ namespace WhiteMagic.PanelClock
         private WeatherType _weatherType;
         private TimestampSource _sunset;
         private TimestampSource _sunrise;
+        private float _windAngle;
+        private float _windStrengthMs;
         private NowSource _now;
         private IDisposable _timerObserver;
         public EnvironmentSource(ILogger logger) : base(Name)
@@ -46,6 +48,8 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("temperature", () => _temperature));
             AddProperty(Create("windchill", () => _windchill));
             AddProperty(Create("weather", () => _weatherType));
+            AddProperty(Create("windangle", () => _windAngle));
+            AddProperty(Create("windspeed", () => _windStrengthMs));
 
             _apiKey = "31a26656d0";
             _longitude = 51.732034245965046;
@@ -58,7 +62,66 @@ namespace WhiteMagic.PanelClock
         private async Task UpdateEnvironment()
         {
 #if SIMULATION
-            var parts = ParseJson("{}");
+            var parts = ParseJson(
+"{" +
+"\"liveweer\": [" +
+"{" +
+"\"plaats\": \"Amsterdam\"," +
+"\"temp\": \"9.8\"," +
+"\"gtemp\": \"7\"," +
+"\"samenv\": \"Droog na regen\"," +
+"\"lv\": \"76\"," +
+"\"windr\": \"NW\"," +
+"\"windrgr\": \"0\"," +
+"\"windms\": \"6\"," +
+"\"winds\": \"4\"," +
+"\"windk\": \"11.7\"," +
+"\"windkmh\": \"21.6\"," +
+"\"luchtd\": \"1015.5\"," +
+"\"ldmmhg\": \"762\"," +
+"\"dauwp\": \"5\"," +
+"\"zicht\": \"15\"," +
+"\"verw\": \"Buien, in het zuidwesten en zuiden overwegend droog\"," +
+"\"sup\": \"07:46\"," +
+"\"sunder\": \"17:02\"," +
+"\"image\": \"bewolkt\"," +
+"\"d0weer\": \"bewolkt\"," +
+"\"d0tmax\": \"11\"," +
+"\"d0tmin\": \"9\"," +
+"\"d0windk\": \"4\"," +
+"\"d0windknp\": \"12\"," +
+"\"d0windms\": \"6\"," +
+"\"d0windkmh\": \"22\"," +
+"\"d0windr\": \"W\"," +
+"\"d0windrgr\": \"270\"," +
+"\"d0neerslag\": \"8\"," +
+"\"d0zon\": \"6\"," +
+"\"d1weer\": \"halfbewolkt\"," +
+"\"d1tmax\": \"12\"," +
+"\"d1tmin\": \"7\"," +
+"\"d1windk\": \"2\"," +
+"\"d1windknp\": \"6\"," +
+"\"d1windms\": \"3\"," +
+"\"d1windkmh\": \"11\"," +
+"\"d1windr\": \"W\"," +
+"\"d1windrgr\": \"270\"," +
+"\"d1neerslag\": \"40\"," +
+"\"d1zon\": \"20\"," +
+"\"d2weer\": \"bewolkt\"," +
+"\"d2tmax\": \"10\"," +
+"\"d2tmin\": \"4\"," +
+"\"d2windk\": \"2\"," +
+"\"d2windknp\": \"6\"," +
+"\"d2windms\": \"3\"," +
+"\"d2windkmh\": \"11\"," +
+"\"d2windr\": \"Z\"," +
+"\"d2windrgr\": \"180\"," +
+"\"d2neerslag\": \"10\"," +
+"\"d2zon\": \"30\"," +
+"\"alarm\": \"0\"" +
+"}" +
+"]" +
+"}");
 #else
             var uri = $"https://weerlive.nl/api/json-data-10min.php?key={_apiKey}&locatie={_longitude},{_lattitude}";
             try
@@ -125,6 +188,21 @@ namespace WhiteMagic.PanelClock
                     if (ParseEnumeration(image.ToString(), out _weatherType))
                     {
                         updatedProperties.Add("weathertype");
+                    }
+                }
+                if (properties.TryGetProperty("windrgr", out var windrgr))
+                {
+                    if (float.TryParse(windrgr.ToString(), out _windAngle))
+                    {
+                        _windAngle = (_windAngle - 90 ) / 360f % 1f;
+                        updatedProperties.Add("windangle");
+                    }
+                }
+                if (properties.TryGetProperty("windms", out var windms))
+                {
+                    if (float.TryParse(windms.ToString(), out _windStrengthMs))
+                    {
+                        updatedProperties.Add("windstrength");
                     }
                 }
             }

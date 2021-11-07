@@ -31,7 +31,6 @@ namespace WhiteMagic.PanelClock
         private List<DirectoryInfo> _directories;
         private Subject<DirectoryInfo> _directorySubject;
         private Random _rnd = new Random((int)DateTime.Now.Ticks);
-        private ImageInfo _defaultImage;
 
         public FileImageSource(string name, string path, ILogger logger)
         {
@@ -105,7 +104,7 @@ namespace WhiteMagic.PanelClock
             {
                 var max = _directories.Sum(d => d.Count);
                 if (max == 0)
-                    return _defaultImage;
+                    return null;
 
                 index = _rnd.Next(0, max);
                 dir = _directories.FirstOrDefault(d => {
@@ -131,7 +130,7 @@ namespace WhiteMagic.PanelClock
                 {
                 }
             }
-            return _defaultImage;
+            return null;
         }
 
         public void Dispose()

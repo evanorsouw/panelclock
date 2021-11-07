@@ -9,7 +9,6 @@ namespace WhiteMagic.PanelClock.Components
     public class Icon : Component
     {
         private string _source;
-        private float _phase;
         private Func<Graphics, float, float> _iconDrawer;
 
         public Icon(string id, ILogger logger) : base(id, logger)

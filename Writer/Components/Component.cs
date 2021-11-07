@@ -263,5 +263,18 @@ namespace WhiteMagic.PanelClock
             relative = Math.Min(1, Math.Max(0, (value - min) / (max - min)));
             return value < max;
         }
+
+        protected float Phase(float ms, bool wave)
+        {
+            if (ms == 0)
+                return 0f;
+            var phase = DateTime.Now.Ticks / 10000 % (int)ms / (float)ms;
+            if (wave)
+            {
+                phase = 0.5f + (float)Math.Cos(phase * Math.PI * 2) / 2f;
+            }
+            return phase;
+        }
+
     }
 }

@@ -17,7 +17,7 @@ namespace WhiteMagic.PanelClock
                 if (w > 0)
                 {
                     //g.FillRectangle(Brushes.DarkOliveGreen, 0, 0, w, h);
-                    g.TranslateTransform(w * (-0.05f + 0.1f * Phase(5700, true)), 0);
+                    g.TranslateTransform(w * (-0.05f + 0.1f * Phase(57000, true)), 0);
                     DrawSun(g, w, h, true);
                 }
                 return h;
@@ -32,12 +32,12 @@ namespace WhiteMagic.PanelClock
         [Description("buien")]
         public static Func<Graphics, float, float> Showers => CloudWithRain(true);
 
-        [Description("hagel")]  
+        [Description("hagel")]
         public static Func<Graphics, float, float> Hail =>
 
             (Graphics g, float w) =>
             {
-                return w*0.75f;
+                return w * 0.75f;
             };
 
         [Description("mist")]
@@ -49,7 +49,7 @@ namespace WhiteMagic.PanelClock
 
                 var tmp = g.Transform;
                 g.ScaleTransform(1f, 0.8f);
-                DrawCloud(g, w, Color.Transparent, Color.FromArgb(32,32,32));
+                DrawCloud(g, w, Color.Transparent, Color.FromArgb(32, 32, 32));
                 g.Transform = tmp;
                 DrawFog(g, w, h);
                 return h;
@@ -81,12 +81,13 @@ namespace WhiteMagic.PanelClock
 
             (Graphics g, float w) =>
             {
-                var h = w*0.75f;
+                var h = w * 0.75f;
                 if (w > 0)
                 {
+                    var tmp = g.Transform;
                     var d = Math.Min(w, h);
-                    g.ScaleTransform(0.8f, 0.8f);
-                    g.TranslateTransform(w * (0.1f + 0.2f * Phase(29000, true)), 0);
+                    g.ScaleTransform(0.6f, 0.6f);
+                    g.TranslateTransform(w * (0.1f + 0.2f * Phase(29000, true)), h * 0.2f);
 
                     var brush = new SolidBrush(Color.FromArgb(64, 64, 64));
                     g.FillEllipse(brush, 0, 0, d, d);
