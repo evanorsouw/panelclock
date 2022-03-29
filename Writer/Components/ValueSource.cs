@@ -1,18 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
+using WhiteMagic.PanelClock.Engine;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class ValueSource : IValueSource
     {
         private Func<Value> _getter = ()  => 0;
-        private Action<Value> _setter = obj => {};
-        private List<ValueSource> _properties = new List<ValueSource>();
+        private Action<Value> _setter = _ => {};
+        private List<ValueSource> _properties = new();
+        private readonly IConfiguration _config;
 
         protected ValueSource(string name)
         {
             Id = name;
+        }
+
+        protected ValueSource(string name, IConfiguration config)
+        {
+            Id = name;
+            _config = config;
         }
 
         protected ValueSource(string name, Func<Value> getter, Action<Value> setter, IEnumerable<ValueSource> properties)
@@ -86,6 +95,22 @@ namespace WhiteMagic.PanelClock
         public IEnumerable<string> Properties => _properties.Select(p => p.Id);
 
         #endregion
+
+        public bool GetConfig<T>(string path, out T value) 
+        {
+            path = path.Replace("/", ":");
+            var obj = _config[path];
+            try
+            {
+                value = (T)Convert.ChangeType(obj, typeof(T));
+                return true;
+            }
+            catch
+            {
+                value = default;
+                return false;
+            }
+        }
 
         public override string ToString()
         {

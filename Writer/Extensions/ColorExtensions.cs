@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Extensions
 {
     public static class ColorExtensions
     {

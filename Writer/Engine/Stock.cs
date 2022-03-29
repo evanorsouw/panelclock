@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using WhiteMagic.PanelClock.Components;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public class Stock
     {

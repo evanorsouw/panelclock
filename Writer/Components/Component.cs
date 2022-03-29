@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Drawing;
+using Microsoft.Extensions.Logging;
+using WhiteMagic.PanelClock.DomainTypes;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public abstract class Component : ValueSource, IComponent
     {

@@ -1,18 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using WhiteMagic.PanelClock.DomainTypes;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class EnvironmentSource : ValueSource, IDisposable
     {
@@ -32,7 +31,7 @@ namespace WhiteMagic.PanelClock
         private float _windStrengthMs;
         private NowSource _now;
         private IDisposable _timerObserver;
-        public EnvironmentSource(ILogger logger) : base(Name)
+        public EnvironmentSource(ILogger logger, IConfiguration config) : base(Name, config)
         {
             _logger = logger;
             _sunrise = new TimestampSource("", _logger, () => _sunriseValue);
@@ -51,9 +50,12 @@ namespace WhiteMagic.PanelClock
             AddProperty(Create("windangle", () => _windAngle));
             AddProperty(Create("windspeed", () => _windStrengthMs));
 
-            _apiKey = "31a26656d0";
-            _longitude = 51.732034245965046;
-            _lattitude = 5.32637472036842;
+            GetConfig<string>("environment/weerlive.apikey", out var apikey);
+            GetConfig<double>("environment/longitude", out var longitude);
+            GetConfig<double>("environment/lattitude", out var lattitude);
+            _apiKey = apikey;
+            _longitude = longitude;
+            _lattitude = lattitude;
 
             var next = Observable.Timer(TimeSpan.FromSeconds(3)).Merge(Observable.Interval(TimeSpan.FromSeconds(600)));
             _timerObserver = next.Subscribe(async _ => await UpdateEnvironment());

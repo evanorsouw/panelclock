@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using WhiteMagic.PanelClock.Components;
+using WhiteMagic.PanelClock.Engine;
 
 namespace WhiteMagic.PanelClock
 {

@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-namespace WhiteMagic.PanelClock
+using Microsoft.Extensions.Logging;
+
+namespace WhiteMagic.PanelClock.Components
 {
     public class ColorSource : ValueSource
     {

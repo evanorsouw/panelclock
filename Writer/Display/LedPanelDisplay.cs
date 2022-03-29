@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.IO.Ports;
-using WhiteMagic.PanelClock;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Display
 {
     public class LedPanelDisplay : IDisplay
     {

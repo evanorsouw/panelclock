@@ -1,8 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using Microsoft.Extensions.Logging;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class TimestampSource : ValueSource
     {

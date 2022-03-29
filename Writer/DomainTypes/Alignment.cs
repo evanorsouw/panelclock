@@ -1,4 +1,4 @@
-﻿namespace WhiteMagic.PanelClock
+﻿namespace WhiteMagic.PanelClock.DomainTypes
 {
     public enum Alignment
     {

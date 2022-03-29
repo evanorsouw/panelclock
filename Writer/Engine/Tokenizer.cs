@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public class Tokenizer
     {

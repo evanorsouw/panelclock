@@ -1,13 +1,10 @@
 ﻿#if SIMULATION
-using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
-using WhiteMagic.PanelClock;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Display
 {
     public class Display : IDisplay
     {

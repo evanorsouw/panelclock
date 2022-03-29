@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public interface IDrawable
     {

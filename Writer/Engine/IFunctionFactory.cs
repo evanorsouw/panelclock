@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using WhiteMagic.PanelClock.Components;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public interface IFunctionFactory
     {

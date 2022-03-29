@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
+using WhiteMagic.PanelClock.Components;
+using WhiteMagic.PanelClock.DomainTypes;
+using WhiteMagic.PanelClock.Engine;
+using WhiteMagic.PanelClock.Extensions;
 
 namespace WhiteMagic.PanelClock
 {

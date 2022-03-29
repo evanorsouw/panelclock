@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Drawing;
+using Microsoft.Extensions.Logging;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class AnalogClockModern : Component
     {

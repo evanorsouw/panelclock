@@ -6,6 +6,9 @@ using NLog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
+using WhiteMagic.PanelClock.Components;
+using WhiteMagic.PanelClock.Display;
+using WhiteMagic.PanelClock.Engine;
 
 namespace WhiteMagic.PanelClock
 {
@@ -48,7 +51,7 @@ namespace WhiteMagic.PanelClock
 #endif
                 .Build();
 
-            var environment = new EnvironmentSource(logger);
+            var environment = new EnvironmentSource(logger, config);
             IFunctionFactory functions = new FunctionFactory(environment, logger);
             var stock = new ConfigurationParser(config, functions, logger).Parse();
             Animator animator = new Animator(stock);
@@ -62,7 +65,7 @@ namespace WhiteMagic.PanelClock
                 });
 
 #if SIMULATION
-            IDisplay display = new Display(128, 64);
+            IDisplay display = new Display.Display(128, 64);
 #else
             if (port == null)
                 Usage("port not specified");

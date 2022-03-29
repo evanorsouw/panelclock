@@ -1,11 +1,7 @@
-﻿using System.Reactive.Linq;
-using System;
-using System.Reactive.Disposables;
-using System.Reactive.Subjects;
+﻿using System;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Extensions
 {
     public static class ObservableExtensions
     {

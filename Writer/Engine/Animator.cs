@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using WhiteMagic.PanelClock.Components;
+using WhiteMagic.PanelClock.Engine;
 
 namespace WhiteMagic.PanelClock
 {

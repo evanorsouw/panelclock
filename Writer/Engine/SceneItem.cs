@@ -1,4 +1,4 @@
-﻿namespace WhiteMagic.PanelClock
+﻿namespace WhiteMagic.PanelClock.Engine
 {
     public class SceneItem
     {

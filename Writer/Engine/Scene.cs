@@ -1,9 +1,10 @@
-﻿using NCrontab;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NCrontab;
+using WhiteMagic.PanelClock.Components;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public class Scene
     {

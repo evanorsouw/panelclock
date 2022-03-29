@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Drawing;
-using System.Reactive.Subjects;
 using System.IO;
+using System.Linq;
+using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using WhiteMagic.PanelClock.DomainTypes;
+using WhiteMagic.PanelClock.Engine;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class ImageInfo : IImageInfo
     {

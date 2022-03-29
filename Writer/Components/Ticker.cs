@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using WhiteMagic.PanelClock.DomainTypes;
+using WhiteMagic.PanelClock.Extensions;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Components
 {
     public class Ticker : Label
     {

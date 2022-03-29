@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
+using WhiteMagic.PanelClock.DomainTypes;
 
-namespace WhiteMagic.PanelClock
+namespace WhiteMagic.PanelClock.Engine
 {
     public interface IImageSource
     {
