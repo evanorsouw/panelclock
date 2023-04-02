@@ -1,5 +1,4 @@
 <<<<<<< HEAD
-<<<<<<< HEAD
 **/bin/**
 **/obj/**
 **/.vs/**
@@ -13,13 +12,3 @@ output_files/**
 **/.qsys_edit/**
 **/greybox_tmp/**
 >>>>>>> fpga/master
-=======
-*.bak
-*.bck
-*-bak
-*.net
-*.ses
-*.dsn
-**/.svg2shenzhen-cache/**
-**/gerber/**
->>>>>>> electronics/master
