@@ -1,0 +1,7 @@
+﻿* add automatic smooth properties - need to work this out if needed at all
+* add arrays using the braces+comma-operator and the array index operator:
+   ("a", "b"", "c")[2] => "b"
+   "a", "b", "c"[2] => ???
+
+* space invaders animation
+* sunset/sunrise 
