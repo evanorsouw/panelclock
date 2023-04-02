@@ -1,14 +1,5 @@
-<<<<<<< HEAD
 **/bin/**
 **/obj/**
 **/.vs/**
 publish/**
 **.user
-=======
-**/db/**
-incremental_db/**
-output_files/**
-*.bak
-**/.qsys_edit/**
-**/greybox_tmp/**
->>>>>>> fpga/master
