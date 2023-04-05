@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using Microsoft.Extensions.Logging;
+using WhiteMagic.PanelClock.DomainTypes;
+using WhiteMagic.PanelClock.Extensions;
 
 namespace WhiteMagic.PanelClock.Components
 {
@@ -16,8 +18,7 @@ namespace WhiteMagic.PanelClock.Components
             AddProperty(Create("diameter", () => Diameter, (obj) => Diameter = obj));
             AddProperty(Create("width", () => Diameter));
             AddProperty(Create("height", () => Diameter));
-            AddProperty(Create("showseconds", () => ShowSeconds, (obj) => ShowSeconds = obj));
-            AddProperty(Create("smoothseconds", () => SmoothSeconds, (obj) => SmoothSeconds = obj));
+            AddProperty(Create("secondmode", () => SecondMode, (obj) => SecondMode = obj.ToEnum<SecondMode>()));
             AddProperty(Create("timezone", () => TimeZone, (obj) => TimeZone = obj));
             AddProperty(Create("maincolor", () => MainColor, (obj) => MainColor = obj));
             AddProperty(Create("secondhandcolor", () => SecondHandColor, (obj) => SecondHandColor = obj));
@@ -63,23 +64,31 @@ namespace WhiteMagic.PanelClock.Components
             pen = new Pen(MainColor, Diameter/30);
             graphics.DrawLine(pen, RotatedCenter(0.2f, minutes, elapsed), RotatedCenter(0.8f, minutes, elapsed));
 
-            if (ShowSeconds)
+            var color = SecondHandColor;
+            var angle = 0.0f;
+            if (SecondMode == SecondMode.Smooth)
             {
-                float angle;
-                if (SmoothSeconds)
+                angle = (now.Second + now.Millisecond / 1000f) / 60f;
+            }
+            else
+            {
+                angle = now.Second / 60f;
+                if (_lastTime.Second != now.Second)
                 {
-                    angle = (now.Second + now.Millisecond / 1000f) / 60f;
-                }
-                else
-                {
-                    angle = now.Second / 60f;
-                    if (_lastTime.Second != now.Second)
+                    if (SecondMode == SecondMode.Fade)
                     {
-                        _lastTime = now;
+                        color = color.Scale(0.5f);
+                    }
+                    else if (SecondMode == SecondMode.Overshoot)
+                    {
                         angle += 0.003f;
                     }
+                    _lastTime = now;
                 }
-                pen = new Pen(SecondHandColor, Diameter/60);
+            }
+            if (SecondMode != SecondMode.None)
+            {
+                pen = new Pen(color, Diameter / 60);
                 graphics.DrawLine(pen, RotatedCenter(0.1f, angle, elapsed), RotatedCenter(0.9f, angle, elapsed));
             }
         }
@@ -103,8 +112,7 @@ namespace WhiteMagic.PanelClock.Components
             }
         }
         public string TimeZone { get { return _timezonename; } set { SetTimeZone(value); } }
-        public bool ShowSeconds { get; set; } = true;
-        public bool SmoothSeconds { get; set; } = false;
+        public SecondMode SecondMode { get; set; } = SecondMode.Smooth;
 
         #endregion
 

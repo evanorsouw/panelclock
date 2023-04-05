@@ -25,6 +25,11 @@ namespace WhiteMagic.PanelClock.Components
             AddProperty(Create("seconds", () => _whenGetter().Second));
             AddProperty(Create("minutes", () => _whenGetter().Minute));
             AddProperty(Create("hours", () => _whenGetter().Hour));
+            AddProperty(Create("wday", () => _whenGetter().DayOfWeek));
+            AddProperty(Create("mday", () => _whenGetter().Day-1));
+            AddProperty(Create("yday", () => _whenGetter().DayOfYear-1));
+            AddProperty(Create("month", () => _whenGetter().Month-1));
+            AddProperty(Create("year", () => _whenGetter().Year));
         }
     }
 }

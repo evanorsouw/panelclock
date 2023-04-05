@@ -86,16 +86,31 @@ namespace WhiteMagic.PanelClock
                 if (w > 0)
                 {
                     var tmp = g.Transform;
-                    var d = Math.Min(w, h);
+                    float d = Math.Min(w, h);
                     g.ScaleTransform(0.6f, 0.6f);
-                    g.TranslateTransform(w * (0.1f + 0.2f * Phase(29000, true)), h * 0.2f);
+                    g.TranslateTransform(w * (0.1f + 0.5f * Phase(29000, true)), h * 0.2f);
 
                     var brush = new SolidBrush(Color.FromArgb(64, 64, 64));
                     g.FillEllipse(brush, 0, 0, d, d);
                     var path = new GraphicsPath();
-                    path.AddArc(0, 0, d, d, 280, 160);
-                    path.AddArc(-d * 1.3f, -d / 2, d * 2, d * 2, 20, -40);
-                    g.FillPath(Brushes.White, path);
+
+                    var r1 = new RectangleF(0, 0, d, d);
+                    var p = Phase(100000, false) * 2.5f;
+                    if (p < 1)
+                    {
+                        var start = 20 + 140 * p;
+                        var sweep = start * 2;
+                        path.AddArc(r1, start, -sweep);
+                        g.FillPath(Brushes.White, path);
+                    }
+                    else if (p < 2)
+                    {
+                        p -= 1;
+                        var start = 20 + 140 * p;
+                        var sweep = start * 2;
+                        path.AddArc(r1, start, 360 - sweep);
+                        g.FillPath(Brushes.White, path);
+                    }
                 }
                 return h;
             };

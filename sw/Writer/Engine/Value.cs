@@ -240,5 +240,9 @@ namespace WhiteMagic.PanelClock.Engine
             }
             return DateTime.MinValue;
         }
+
+        public override bool Equals(object obj) => obj is Value rhs && rhs._value == _value;
+
+        public override int GetHashCode() => _value.GetHashCode();
     }
 }

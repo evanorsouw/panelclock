@@ -219,7 +219,8 @@ namespace WhiteMagic.PanelClock.Components
                 {
                     Alignment.TopOrLeft => _x,
                     Alignment.Center => _x + (_width - maxwidth)/2,
-                    Alignment.BottomOrRight => _x + _width - maxwidth
+                    Alignment.BottomOrRight => _x + _width - maxwidth,
+                    _ => throw new NotImplementedException(_horizontalAlignment.ToString())
                 };
             }
             else
@@ -229,7 +230,8 @@ namespace WhiteMagic.PanelClock.Components
                 {
                     Alignment.TopOrLeft => _x,
                     Alignment.Center => _x - maxwidth / 2,
-                    Alignment.BottomOrRight => _x - maxwidth
+                    Alignment.BottomOrRight => _x - maxwidth,
+                    _ => throw new NotImplementedException(_horizontalAlignment.ToString())
                 };
             }
 
@@ -242,7 +244,8 @@ namespace WhiteMagic.PanelClock.Components
                 {
                     Alignment.TopOrLeft => _y,
                     Alignment.Center => _y + (_height - maxheight) / 2,
-                    Alignment.BottomOrRight => _y + _height - maxheight
+                    Alignment.BottomOrRight => _y + _height - maxheight,
+                    _ => throw new NotImplementedException(_verticalAlignment.ToString())
                 };
             }
             else
@@ -252,7 +255,8 @@ namespace WhiteMagic.PanelClock.Components
                 {
                     Alignment.TopOrLeft => _y,
                     Alignment.Center => _y - maxheight / 2,
-                    Alignment.BottomOrRight => _y - maxheight
+                    Alignment.BottomOrRight => _y - maxheight,
+                    _ => throw new NotImplementedException(_verticalAlignment.ToString())
                 };
             }
             BackgroundBox = new RectangleF(X1, Y1, X2-X1, Y2-Y1);
