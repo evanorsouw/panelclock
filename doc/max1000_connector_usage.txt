@@ -1,8 +1,11 @@
+
+
+bananas
                            
-                           
+      - TOPVIEW --                     
                             (J1-3) H13 ───────────────────┐ ┌─────────────── H10 (J1-5)
                             (J1-1) G12 ─────────────────┐ │ │ ┌───────────── J10 (J1-7)
-                                    E7 ──reset────────┐ │ │ │ │ ┌─────────── K12 (J1-9/J2-8/J3-9)
+                                    E7 ──reset────────┐ │ │ │ │ ┌─────────── K12 (J1-9/J2-9/J3-9)
                                    GND ─────────────┐ │ │ │ │ │ │ ┌───────── K11 (J1-11/J2-11/J3-11)
                                    3v3 ───────────┐ │ │ │ │ │ │ │ │ ┌─────── J13 (J1-13/J2-13/J3-13)
                                    Vin ─────────┐ │ │ │ │ │ │ │ │ │ │ ┌───── J12 (J1-15/J2-15/J3-15)
@@ -19,7 +22,8 @@
                               B║ │                    VIEW   1000        O│O O│║ 4 ───┐ 10 ─io── K1  (J2-5)
                                ╟─┘                                       D│O O│║ 5 ──┐│ 11 ───── GND 
                                ║              J1                          │O O│║ 6 ─┐││ 12 ───── 3v3
-                               ║             ┌───────────────────────────┐└───┘║    ││└─────io── M1  (J1-12/J2-12/J3-12)
+                               ║             ┌
+							   ───────────────────────────┐└───┘║    ││└─────io── M1  (J1-12/J2-12/J3-12)
                                ║  B          │O O O O O O O O O O O O O O│     ║    │└────────── GND
                                ╚═════════════╧╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤═╤╧═════╝    └─────────── 3v3
                                               1 2 3 4 5 6 7 8 9 1 1 1 1 1
@@ -33,5 +37,53 @@
                              (J3-3) E3 ──io─────────────┘ │ │ └─────────────io── H8  (J3-2)
                              (J3-5) F1 ──io───────────────┘ └───────────────io── E4  (J3-7)
 
+flatcable connector (HUB75E)
 
+ -- view inside IDC connector (at back of panel)
+ 
+         +-----+                        +-----+
+ GND  16 | o o | 15  OE           R1  1 | o o | 2  G1
+ LAT  14 | o o | 13  CLK          B1  3 | o o | 4  GND
+   D  12 | o o | 11  C            R2  5 | o o | 6  G2
+   B  10 | o o   9   A            B2  7   o o | 8  E
+   E   8 | o o   7   B2            A  9   o o | 10 B
+  G2   6 | o o | 5   R2            C 11 | o o | 12 D
+ GND   4 | o o | 3   B1          CLK 13 | o o | 14 LAT
+  G1   2 | o o | 1   R1           OE 15 | o o | 16 GND
+         +-----+                        +-----+
+         
+         
+Olimex Ice4040HX8K-EVB board, GPIO connector (IDC)
 
+-- view inside IDC connector (at back of panel)
+Olimex board uses CT256 package
+
+                         +-----+
+IOL_1B/B2 - #7     R1  1 | o o | 2  G1   #28 - IOL_10A/H6
+IOL_2A/F5 - #9     B1  3 | o o | 4  GND  #2  - GND       
+IOL_2B/B1 - #11    R2  5 | o o | 6  G2   #26 - IOL_10B/F1
+IOL_3A/C1 - #13    B2  7   o o | 8  E    #24 - IOL_11A/H4
+IOL_3B/C2 - #15     A  9   o o | 10 B    #22 - IOL_11B/G2
+IOL_4A/F4 - #17     C 11 | o o | 12 D    #20 - IOL_12A/J4
+IOL_4B/D2 - #19   CLK 13 | o o | 14 LAT  #18 - IOL_12B/H2
+IOL_5A/G5 - #21    OE 15 | o o | 16 GND  #8  - GND       
+                         +-----+
+
+sram connected according to pin description in iCE40HX8K-EVB_Rev_B.pdf                      
+https://github.com/OLIMEX/iCE40HX8K-EVB/blob/master/HARDWARE/REV-B/iCE40HX8K-EVB_Rev_B.pdf
+
+temporary sram to output:
+#23 - IOL_5B/D1  - A0
+#25 - IOL_6A/G4  - A1
+#27 - IOL_6B/E3  - A2
+#29 - IOL_7A/H5  - A3
+#31 - IOL_7B/E2  - A4
+#33 - IOL_8A/G3  - A5
+
+#10 - IOL_15A/J2 - A6
+#12 - IOL_14B/H1 - A7
+#14 - IOL_13B/G1 - A8
+#16 - IOL_13A/J5 - A9
+#30 - IOL_9B/F2  - CS
+#32 - IOL_9A/H3  - WE
+#34 - IOL_8B/F3  - OE
