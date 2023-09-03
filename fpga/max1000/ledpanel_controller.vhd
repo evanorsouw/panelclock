@@ -61,15 +61,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;   
 
-   component brightness_control 
-    port (
-        valuein:	  in std_logic_vector(7 downto 0);
-        brightness: in std_logic_vector (7 downto 0);
-        --
-        valueout:	  out std_logic_vector(7 downto 0)
-    );
-   end component;   
-
    component UART
    PORT
    (
@@ -90,13 +81,11 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal uart_clk        : std_logic;
    signal uart_delay      : unsigned (15 downto 0);
    signal uart_datain     : std_logic_vector (7 downto 0);
-   signal brightness_byte : std_logic_vector (7 downto 0);
    signal color_byte      : std_logic_vector (7 downto 0);
    signal uart_dataclk    : std_logic;
    signal ram_wr_addr     : std_logic_vector(15 downto 0);
    signal ram_wr_data     : std_logic_vector (7 downto 0);
    signal write_address   : unsigned (15 downto 0);
-   signal brightness      : std_logic_vector (7 downto 0) := "11111111";
 
 begin
    LEDChip : FM6124
@@ -262,16 +251,9 @@ begin
       q          => color_chan(11)
    );
    
-   brightness_correct : brightness_control
-   port map (
-      valuein    => uart_datain,
-      brightness => brightness,
-      valueout   => brightness_byte
-   );
-    
    color_correct : linear2logarithmic
    port map (
-      lin => brightness_byte,
+      lin => uart_datain,
       log => color_byte
    );  
    
@@ -311,10 +293,11 @@ begin
 
    
    p_uartapi: process (clk)
-   type T_APISTATE is ( START, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B, BRIGHTNESS ); 
+   type T_APISTATE is ( START, ADDRHI, ADDRLO, PIXCOUNT, WRITE_R, WRITE_G, WRITE_B ); 
    variable state         : T_APISTATE;
    variable write_count   : unsigned (7 downto 0);
    variable uart_clock    : std_logic_vector (2 downto 0);
+	variable mapped_address: unsigned(15 downto 0);
       
    begin
    
@@ -330,8 +313,6 @@ begin
                   state := ADDRHI;
                elsif (unsigned(uart_datain) = X"02") then
                   state := PIXCOUNT;
-               elsif (unsigned(uart_datain) = X"04") then
-                  state := BRIGHTNESS;
                end if;
             when ADDRHI =>
                write_address(15 downto 8) <= unsigned(uart_datain);
@@ -372,15 +353,18 @@ begin
                else
                   state := WRITE_R;
                end if;
-            when BRIGHTNESS =>
-               brightness <= uart_datain;
-               state := START;
             when others =>
                state := START;
             end case;      
          end if;
          
-         ram_wr_addr  <= std_logic_vector(write_address);
+			-- move bit6 to the back to get a full 128x64 display (iso 2 64x64)
+			mapped_address(5 downto 0)  := write_address(5 downto 0);
+			mapped_address(6)           := write_address(7);
+			mapped_address(11 downto 7) := write_address(12 downto 8);
+			mapped_address(12)          := write_address(6);
+						
+         ram_wr_addr  <= std_logic_vector(mapped_address);
          ram_wr_data  <= std_logic_vector(color_byte);
             
       end if;

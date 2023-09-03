@@ -100,13 +100,12 @@ set_global_assignment -name QIP_FILE colorram.qip
 set_global_assignment -name QIP_FILE bitram.qip
 set_global_assignment -name VHDL_FILE bytedemux.vhd
 set_global_assignment -name VHDL_FILE colorbitram.vhd
-set_global_assignment -name VHDL_FILE brightness_control.vhd
-set_location_assignment PIN_D1 -to dsp_channel[0]
-set_location_assignment PIN_H8 -to dsp_channel[1]
-set_location_assignment PIN_E3 -to dsp_channel[2]
-set_location_assignment PIN_F1 -to dsp_channel[3]
-set_location_assignment PIN_K10 -to dsp_channel[4]
-set_location_assignment PIN_E4 -to dsp_channel[5]
+set_location_assignment PIN_G12 -to dsp_channel[0]
+set_location_assignment PIN_L12 -to dsp_channel[1]
+set_location_assignment PIN_H13 -to dsp_channel[2]
+set_location_assignment PIN_H10 -to dsp_channel[3]
+set_location_assignment PIN_M3 -to dsp_channel[4]
+set_location_assignment PIN_J10 -to dsp_channel[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to dsp_channel[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to dsp_channel[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to dsp_channel[9]
