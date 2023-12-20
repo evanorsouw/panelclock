@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO.Ports;
+using System.Threading;
 
 namespace WhiteMagic.PanelClock.Display
 {
@@ -37,30 +38,25 @@ namespace WhiteMagic.PanelClock.Display
             {
                 _initialized = true;
                 Initialize();
-                Initialize();
-                Initialize();
             }
             var bytes = _writeBuffer;
             var i = 0;
             bytes[i++] = 1;
             bytes[i++] = 0;
             bytes[i++] = 0;
-            for (int panel = 0; panel < _hPanels * _vPanels; ++panel)
+            for (int y = 0; y < 64; ++y)
             {
-                for (int y = 0; y < 64; ++y)
+                bytes[i++] = 2;
+                bytes[i++] = (byte)128;
+                for (int x = 0; x < 128; ++x)
                 {
-                    bytes[i++] = 2;
-                    bytes[i++] = (byte)64;
-                    for (int x = 0; x < 64; ++x)
-                    {
-                        var pix = bitmap.GetPixel(x + (1 - panel) * 64, y);
-                        //bytes[i++] = (byte)(255 - pix.R);
-                        //bytes[i++] = (byte)(255 - pix.G);
-                        //bytes[i++] = (byte)(255 - pix.B);
-                        bytes[i++] = pix.R;
-                        bytes[i++] = pix.G;
-                        bytes[i++] = pix.B;
-                    }
+                    var pix = bitmap.GetPixel(x, y);
+                    //bytes[i++] = (byte)(255 - pix.R);
+                    //bytes[i++] = (byte)(255 - pix.G);
+                    //bytes[i++] = (byte)(255 - pix.B);
+                    bytes[i++] = pix.R;
+                    bytes[i++] = pix.G;
+                    bytes[i++] = pix.B;
                 }
             }
             WriteBytes(_writeBuffer, i);
@@ -103,6 +99,7 @@ namespace WhiteMagic.PanelClock.Display
             }
 
             WriteBytes(buffer, i);
+            Thread.Sleep(100);
         }
 
         private void Open()
@@ -110,7 +107,6 @@ namespace WhiteMagic.PanelClock.Display
             Close();
             try
             {
-                //_comm = new SerialPort(_port, 3750000, Parity.None, 8, StopBits.One);
                 _comm = new SerialPort(_port, 3000000, Parity.None, 8, StopBits.One);
                 _comm.Open();
             }

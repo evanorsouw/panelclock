@@ -19,14 +19,16 @@ namespace WhiteMagic.PanelClock
         private float _textHeight;
         private List<Func<string>> _parts = new List<Func<string>>();
         private Font _font;
+        private EnvironmentSource _environment;
 
-        public Label(string id, ILogger logger) : base(id, logger)
+        public Label(string id, EnvironmentSource environment, ILogger logger) : base(id, logger)
         {
             FontName = "Arial";
             BackgroundColor = Color.Transparent;
             HorizontalAlignment = Alignment.TopOrLeft;
             VerticalAlignment = Alignment.TopOrLeft;
             TextColor = Color.White;
+            _environment = environment;
 
             AddProperty(Create("format", () => Y, (obj) => Format = obj));
             AddProperty(Create("width", () => Width, (obj) => Width = obj));
@@ -184,47 +186,60 @@ namespace WhiteMagic.PanelClock
 
         private Func<string> ParseFunction(string function, string args)
         {
+            DateTime when = DateTime.Now;
+
+            var match = Regex.Match(args, @"^(now|env.sunrise|env.sunset),?(.*)");
+            if (match.Success)
+            {
+                var id = match.Groups[1].ToString();
+                if (id == "env.sunrise")
+                {
+                    when = _environment.GetProperty("sunrise").Value;
+                }
+                else if (id == "env.sunset")
+                {
+                    when = _environment.GetProperty("sunset").Value;
+                }
+                args = match.Groups[2].ToString();
+            }
+
             if (function == "wday")
             {
                 if (args == "#")
-                    return () => (((int)DateTime.UtcNow.DayOfWeek + 1) % 7).ToString();
-                var match = Regex.Match(args, @"^\[(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+)\]$");
+                    return () => (((int)when.DayOfWeek + 1) % 7).ToString();
+                match = Regex.Match(args, @"^\[(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+)\]$");
                 if (match.Success)
-                {
                     return () => match.Groups[((int)DateTime.Now.DayOfWeek + 6) % 7 + 1].ToString();
-                }
             }
             else if (function == "month")
             {
                 if (args == "#")
-                    return () => DateTime.UtcNow.Month.ToString();
-                var match = Regex.Match(args, @"^\[(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+)\]$");
+                    return () => when.Month.ToString();
+                match = Regex.Match(args, @"^\[(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+),(\w+)\]$");
                 if (match.Success)
-                {
                     return () => match.Groups[DateTime.Now.Month].ToString();
-                }
             }
             else if (function == "mday")
             {
                 if (args == "#")
-                    return () => DateTime.Now.Day.ToString();
+                    return () => when.Day.ToString();
             }
             else if (function == "hours")
             {
                 if (args == "24H")
-                    return () => DateTime.Now.Hour.ToString("D2");
+                    return () => when.Hour.ToString("D2");
                 if (args == "12H")
-                    return () => (DateTime.Now.Hour % 12).ToString("D2");
+                    return () => (when.Hour % 12).ToString("D2");
             }
             else if (function == "minutes")
             {
-                if (args == "")
-                    return () => DateTime.Now.Minute.ToString("D2");
+                if (args.Length == 0)
+                    return () => when.Minute.ToString("D2");
             }
             else if (function == "seconds")
             {
-                if (args == "")
-                    return () => DateTime.Now.Second.ToString("D2");
+                if (args.Length == 0)
+                    return () => when.Second.ToString("D2");
             }
             return () => $"{function}({args})";
         }

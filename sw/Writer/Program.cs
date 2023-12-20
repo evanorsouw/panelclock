@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Threading;
 using System.Drawing;
 using Microsoft.Extensions.Configuration;
@@ -9,9 +10,11 @@ using System.Threading.Tasks;
 using WhiteMagic.PanelClock.Components;
 using WhiteMagic.PanelClock.Display;
 using WhiteMagic.PanelClock.Engine;
+using System.Linq;
 
 namespace WhiteMagic.PanelClock
 {
+
     class Program
     {
         static void Main(string[] args)
@@ -44,7 +47,7 @@ namespace WhiteMagic.PanelClock
 
             IConfiguration config = new ConfigurationBuilder()
                 .SetBasePath(System.IO.Directory.GetCurrentDirectory())
-#if SIMULATION
+#if true
                 .AddJsonFile("d:\\projects\\fpgaclock\\sw\\Writer\\appsettings.json", optional: true, reloadOnChange: true)
 #else
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -53,18 +56,18 @@ namespace WhiteMagic.PanelClock
 
             var environment = new EnvironmentSource(logger, config);
             IFunctionFactory functions = new FunctionFactory(environment, logger);
-            var stock = new ConfigurationParser(config, functions, logger).Parse();
+            var stock = new ConfigurationParser(config, functions, environment, logger).Parse();
             Animator animator = new Animator(stock);
 
             ChangeToken.OnChange(
                 () => config.GetReloadToken(),
                 async () => {
                     await Task.Delay(1000);
-                    stock = new ConfigurationParser(config, functions, logger).Parse();
+                    stock = new ConfigurationParser(config, functions, environment, logger).Parse();
                     animator = new Animator(stock);
                 });
 
-#if SIMULATION
+#if SIM_DISPLAY
             IDisplay display = new Display.Display(128, 64);
 #else
             if (port == null)

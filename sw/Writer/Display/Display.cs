@@ -1,5 +1,4 @@
-﻿#if SIMULATION
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
@@ -69,4 +68,3 @@ namespace WhiteMagic.PanelClock.Display
         }
     }
 }
-#endif

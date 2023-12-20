@@ -1,3 +1,4 @@
+
 Install .net5.0 on Ubuntu 18.04 LTS HASS 
 https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#1804- 
 

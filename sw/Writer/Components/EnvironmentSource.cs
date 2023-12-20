@@ -15,7 +15,7 @@ namespace WhiteMagic.PanelClock.Components
 {
     public class EnvironmentSource : ValueSource, IDisposable
     {
-        public static string Name => "environment";
+        public static string Name => "env";
         private ILogger _logger;
         private string _apiKey;
         private double _lattitude;
@@ -29,21 +29,21 @@ namespace WhiteMagic.PanelClock.Components
         private TimestampSource _sunrise;
         private float _windAngle;
         private float _windStrengthMs;
-        private NowSource _now;
+        private TimestampSource _now;
         private IDisposable _timerObserver;
         public EnvironmentSource(ILogger logger, IConfiguration config) : base(Name, config)
         {
             _logger = logger;
             _sunrise = new TimestampSource("", _logger, () => _sunriseValue);
             _sunset = new TimestampSource("", _logger, () => _sunsetValue);
-            _now = new NowSource(_logger);
+            _now = new TimestampSource("", _logger, () => DateTime.Now);
 
             AddProperty(Create("weeronlineapikey", () => _apiKey, obj => _apiKey = obj));
             AddProperty(Create("lattitude", () => _lattitude, obj => _lattitude = obj));
             AddProperty(Create("longitude", () => _longitude, obj => _longitude = obj));
             AddProperty(Create("now", _now));
-            AddProperty(Create("sunset", () => _sunset.Value));
-            AddProperty(Create("sunrise", () => _sunrise.Value));
+            AddProperty(Create("sunset", _sunset));
+            AddProperty(Create("sunrise", _sunrise));
             AddProperty(Create("temperature", () => _temperature));
             AddProperty(Create("windchill", () => _windchill));
             AddProperty(Create("weather", () => _weatherType));
@@ -63,7 +63,7 @@ namespace WhiteMagic.PanelClock.Components
 
         private async Task UpdateEnvironment()
         {
-#if SIMULATION
+#if SIM_WEATHER
             var parts = ParseJson(
 "{" +
 "\"liveweer\": [" +
@@ -140,7 +140,7 @@ namespace WhiteMagic.PanelClock.Components
             }
             catch (Exception ex)
             {
-                _logger.LogError($"exception while retriving weatherinfo from uri='{uri}': {ex.Message}'");
+                _logger.LogError($"exception while retrieving weatherinfo from uri='{uri}': {ex.Message}'");
             }
 #endif
         }

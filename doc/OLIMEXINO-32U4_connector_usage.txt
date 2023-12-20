@@ -1,0 +1,86 @@
+
+
+OLIMEX 32U4 REV.B Arduino board
+-------------------------------
+LEDs
+
+PE6 - D7  - LED1    
+PB5 - D9  - LED2
+PD5 -     - Green LED  TxLED
+PB0 - D17 - Yellow LED (Rx)
+
+Buttons:
+PE2   - HWB Button
+Reset - Reset
+            
+              
+Olimex Ice4040HX8K-EVB FPGA board
+---------------------------
+
+Male IDC connector
+-------------------
+UEXT Top-view (looking inside connector)
+
+                            +-----+
+        3v3 -           - 1 | o o | 2  Gnd           - Gnd
+     D1/TxD -  IOB_99/RxD 3 | o o | 4  IOB_100/TxD   - D0/RxD
+     D3/SCL -       CDONE 5   o o | 6  CRESET        - D2/SDA
+   D14/MOSI           SDI 7 | o o | 8  SDO           - D16 MISO
+    D15/SCK -         SCK 9 | o o | 10 SS_B          - D13/CS
+                            +-----+
+             
+              
+              
+              
+Olimex Ice4040HX8K-EVB board, GPIO connector (IDC)
+
+-- view inside IDC connector (at back of panel)
+Olimex board uses CT256 package
+
+                         +-----+
+IOL_1B/B2 - #7     R1  1 | o o | 2  G1   #28 - IOL_10A/H6
+IOL_2A/F5 - #9     B1  3 | o o | 4  GND  #2  - GND       
+IOL_2B/B1 - #11    R2  5 | o o | 6  G2   #26 - IOL_10B/F1
+IOL_3A/C1 - #13    B2  7   o o | 8  E    #24 - IOL_11A/H4
+IOL_3B/C2 - #15     A  9   o o | 10 B    #22 - IOL_11B/G2
+IOL_4A/F4 - #17     C 11 | o o | 12 D    #20 - IOL_12A/J4
+IOL_4B/D2 - #19   CLK 13 | o o | 14 LAT  #18 - IOL_12B/H2
+IOL_5A/G5 - #21    OE 15 | o o | 16 GND  #8  - GND       
+                         +-----+
+
+
+sram connected according to pin description in iCE40HX8K-EVB_Rev_B.pdf                      
+https://github.com/OLIMEX/iCE40HX8K-EVB/blob/master/HARDWARE/REV-B/iCE40HX8K-EVB_Rev_B.pdf
+
+temporary sram to output:
+#23 - IOL_5B/D1  - A0
+#25 - IOL_6A/G4  - A1
+#27 - IOL_6B/E3  - A2
+#29 - IOL_7A/H5  - A3
+#31 - IOL_7B/E2  - A4
+#33 - IOL_8A/G3  - A5
+
+#10 - IOL_15A/J2 - A6
+#12 - IOL_14B/H1 - A7
+#14 - IOL_13B/G1 - A8
+#16 - IOL_13A/J5 - A9
+#30 - IOL_9B/F2  - CS
+#32 - IOL_9A/H3  - WE
+#34 - IOL_8B/F3  - OE
+
+
+
+-- top view inside IDC connector (programming) ---
+          
+                        +-----+                  
+                      1 | o o | 2  GND     (BLK) 
+                      3 | o o | 4    
+        (WHT)  CDONE  5   o o | 6  RESET   (GRY)  
+       (IO12)   MISO  7 | o o | 8  MOSI    (WHI)  (IO13)
+       (IO14)    SCK  9 | o o | 10 CS   SS (YEL)  (IO15)
+                        +-----+
+         
+         orange mosi
+         geel miso
+         wit clk
+         geel2 = ss

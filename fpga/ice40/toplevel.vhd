@@ -6,22 +6,22 @@ use IEEE.NUMERIC_STD.all;
 --- This allows us to simulate the ledpanel_controller isolated from the PLL.
 entity toplevel is
    port (    
-      clk100M     : in std_logic;
-      reset       : in std_logic;
-      uart_rx     : in std_logic;
+      i_clk100M     : in std_logic;
+      i_reset       : in std_logic;
+      i_uart_rx     : in std_logic;
       --
-      dsp_clk     : out std_logic;
-      dsp_latch   : out std_logic;
-      dsp_oe      : out std_logic;
-      dsp_addr    : out std_logic_vector (4 downto 0);
-      dsp_rgbs    : out std_logic_vector (11 downto 0);
-      test1       : out std_logic;
+      o_dsp_clk     : out std_logic;
+      o_dsp_latch   : out std_logic;
+      o_dsp_oe      : out std_logic;
+      o_dsp_addr    : out std_logic_vector (4 downto 0);
+      o_dsp_rgbs    : out std_logic_vector (11 downto 0);
+      o_test1       : out std_logic;
       -- sram pins
-      sram_oe     : out std_logic;
-      sram_wr     : out std_logic;
-      sram_cs     : out std_logic;
-      sram_addr   : out std_logic_vector(14 downto 0);
-      sram_data   : inout std_logic_vector(11 downto 0)
+      o_sram_oe     : out std_logic;
+      o_sram_wr     : out std_logic;
+      o_sram_cs     : out std_logic;
+      o_sram_addr   : out std_logic_vector(14 downto 0);
+      io_sram_data  : inout std_logic_vector(11 downto 0)
    );
 end entity toplevel;
 
@@ -39,55 +39,55 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
-      clk180M     : in std_logic;
-      reset       : in std_logic;
-      uart_rx     : in std_logic;
+      i_clk180M     : in std_logic;
+      i_reset       : in std_logic;
+      i_uart_rx     : in std_logic;
       --
-      dsp_clk     : out std_logic;
-      dsp_latch   : out std_logic;
-      dsp_oe      : out std_logic;
-      dsp_addr    : out std_logic_vector (4 downto 0);
-      dsp_rgbs    : out std_logic_vector (11 downto 0);
-      test1       : out std_logic;
+      o_dsp_clk     : out std_logic;
+      o_dsp_latch   : out std_logic;
+      o_dsp_oe      : out std_logic;
+      o_dsp_addr    : out std_logic_vector (4 downto 0);
+      o_dsp_rgbs    : out std_logic_vector (11 downto 0);
+      o_test1       : out std_logic;
       -- sram pins
-      sram_oe     : out std_logic;
-      sram_wr     : out std_logic;
-      sram_cs     : out std_logic;
-      sram_addr   : out std_logic_vector(14 downto 0);
-      sram_data   : inout std_logic_vector(11 downto 0)
+      o_sram_oe     : out std_logic;
+      o_sram_wr     : out std_logic;
+      o_sram_cs     : out std_logic;
+      o_sram_addr   : out std_logic_vector(14 downto 0);
+      io_sram_data  : inout std_logic_vector(11 downto 0)
    );
    end component;
 
-   signal clk180M : std_logic;
+   signal s_clk180M : std_logic;
 
 begin  
    clock_generator : pll
    port map (
-      REFERENCECLK  => clk100M,
-      RESET => reset,
+      REFERENCECLK  => i_clk100M,
+      RESET => i_reset,
       --
-      PLLOUTGLOBAL => clk180M,
+      PLLOUTGLOBAL => s_clk180M,
       plloutcore => open
    );
       
    panel_controller : ledpanel_controller
    port map (
-      clk180M     => clk180M,
-      reset       => reset,
-      uart_rx     => uart_rx,
+      i_clk180M     => s_clk180M,
+      i_reset       => i_reset,
+      i_uart_rx     => i_uart_rx,
 
-      dsp_clk     => dsp_clk,
-      dsp_latch   => dsp_latch,
-      dsp_oe      => dsp_oe,
-      dsp_addr    => dsp_addr,
-      dsp_rgbs    => dsp_rgbs,
-      test1       => test1,
-
-      sram_oe     => sram_oe,
-      sram_wr     => sram_wr,
-      sram_cs     => sram_cs,
-      sram_addr   => sram_addr,
-      sram_data   => sram_data
+      o_dsp_clk     => o_dsp_clk,
+      o_dsp_latch   => o_dsp_latch,
+      o_dsp_oe      => o_dsp_oe,
+      o_dsp_addr    => o_dsp_addr,
+      o_dsp_rgbs    => o_dsp_rgbs,
+      o_test1       => o_test1,
+      
+      o_sram_oe     => o_sram_oe,
+      o_sram_wr     => o_sram_wr,
+      o_sram_cs     => o_sram_cs,
+      o_sram_addr   => o_sram_addr,
+      io_sram_data  => io_sram_data
    );  
       
 

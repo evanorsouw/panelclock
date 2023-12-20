@@ -23,7 +23,6 @@ architecture fifo_arch of fifo is
 
   signal wr_index    : integer range 0 to 2**FIFO_DEPTH-1 := 0;
   signal rd_index    : integer range 0 to 2**FIFO_DEPTH-1 := 0;
-  signal wr_clk      : std_logic;
   signal full        : std_logic;
   signal empty       : std_logic;
   signal fillcount   : integer range 0 to (2**FIFO_DEPTH);
@@ -35,7 +34,7 @@ begin
    process (i_reset, i_clk)
    variable tmp : integer;
    begin
-      if i_reset = '1' then
+      if i_reset = '0' then
          wr_index   <= 0;
          rd_index   <= 0;
          fillcount  <= 0;        

@@ -37,7 +37,7 @@ namespace WhiteMagic.PanelClock.Components
             };
         }
 
-        public Ticker(string id, ILogger logger) : base(id, logger)
+        public Ticker(string id, EnvironmentSource environment, ILogger logger) : base(id, environment, logger)
         {
             ShowOrHideTime = 1.0f;
             Bars = 13;

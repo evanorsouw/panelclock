@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Writer": {
+      "commandName": "Project",
+      "commandLineArgs": "--port com10"
+    }
+  }
+}

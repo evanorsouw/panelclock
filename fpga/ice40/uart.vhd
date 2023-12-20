@@ -4,59 +4,59 @@ use IEEE.NUMERIC_STD.all;
 
 entity UART is
    port (   
-      clkx8         : in std_logic;
-      reset         : in std_logic;
-      rx            : in std_logic;
+      i_clkx8        : in std_logic;
+      i_reset        : in std_logic;
+      i_rx           : in std_logic;
       --
-      datain        : out std_logic_vector (7 downto 0);
-      datain_clk   : out std_logic
+      o_datain       : out std_logic_vector (7 downto 0);
+      o_datain_clk   : out std_logic
    );
 end entity UART;
 
 architecture UART_arch of UART is   
 
 begin
-   clock_proc: process (clkx8, reset)
-   variable clk_count    : unsigned (3 downto 0);
-   variable state        : unsigned (3 downto 0);
-   variable shift_data   : std_logic_vector (7 downto 0);
-   variable data_clk     : std_logic;
+   clock_proc: process (i_clkx8, i_reset)
+   variable v_clk_count    : unsigned (3 downto 0);
+   variable v_state        : unsigned (3 downto 0);
+   variable v_shift_data   : std_logic_vector (7 downto 0);
+   variable v_data_clk     : std_logic;
    begin
-      if reset = '1' then
-         state     := to_unsigned(0, state'length);
-         data_clk  := '0';
+      if i_reset = '0' then
+         v_state     := to_unsigned(0, v_state'length);
+         v_data_clk  := '0';
             
-      elsif rising_edge(clkx8) then
-         data_clk  := '0';
-         if (state = 0) then
-            data_clk := '0';
-            if (rx = '0') then
-               state     := state + 1;
-               clk_count := to_unsigned(12, clk_count'length);
+      elsif rising_edge(i_clkx8) then
+         v_data_clk  := '0';
+         if (v_state = 0) then
+            v_data_clk := '0';
+            if (i_rx = '0') then
+               v_state     := v_state + 1;
+               v_clk_count := to_unsigned(12, v_clk_count'length);
             end if;
          
          else
-            clk_count := clk_count - 1;            
-            if (clk_count = 0) then
-               clk_count := to_unsigned(8, clk_count'length);
-               if (state <= 8) then
-                  shift_data := rx & shift_data (7 downto 1);
-                  state      := state + 1;               
+            v_clk_count := v_clk_count - 1;            
+            if (v_clk_count = 0) then
+               v_clk_count := to_unsigned(8, v_clk_count'length);
+               if (v_state <= 8) then
+                  v_shift_data := i_rx & v_shift_data (7 downto 1);
+                  v_state      := v_state + 1;               
                   
-               elsif (rx = '1') then
-                  state     := to_unsigned(0, state'length);
-                  data_clk  := '1';
+               elsif (i_rx = '1') then
+                  v_state     := to_unsigned(0, v_state'length);
+                  v_data_clk  := '1';
                                  
                else
-                  state     := to_unsigned(0, state'length);
+                  v_state     := to_unsigned(0, v_state'length);
                   
                end if;      
             end if;
          end if;
       end if;      
       
-      datain     <= shift_data;
-      datain_clk <= data_clk;
+      o_datain     <= v_shift_data;
+      o_datain_clk <= v_data_clk;
 
    end process;   
 end architecture UART_arch;

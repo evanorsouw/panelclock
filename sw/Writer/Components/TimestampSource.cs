@@ -12,7 +12,7 @@ namespace WhiteMagic.PanelClock.Components
         {
         }
 
-        public TimestampSource(string name, ILogger logger, Func<DateTime> whenGetter) : base(name)
+        public TimestampSource(string name, ILogger logger, Func<DateTime> whenGetter) : base(name, () => whenGetter())
         {
             _whenGetter = whenGetter;
             _logger = logger;

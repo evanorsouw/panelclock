@@ -11,13 +11,15 @@ namespace WhiteMagic.PanelClock
     public class ConfigurationParser
     {
         private IConfiguration _config;
+        private EnvironmentSource _environment;
         private ILogger _logger;
         private IFunctionFactory _factory;
 
-        public ConfigurationParser(IConfiguration config, IFunctionFactory factory, ILogger logger)
+        public ConfigurationParser(IConfiguration config, IFunctionFactory factory, EnvironmentSource environment, ILogger logger)
         {
             _config = config;
             _factory = factory;
+            _environment = environment;
             _logger = logger;
         }
 
@@ -154,7 +156,7 @@ namespace WhiteMagic.PanelClock
             Component item = null;
             if (type == "label")
             {
-                item = new Label(id, _logger);
+                item = new Label(id, _environment, _logger);
             }
             else if (type == "analogclock-modern")
             {
@@ -162,7 +164,7 @@ namespace WhiteMagic.PanelClock
             }
             else if (type == "ticker")
             {
-                item = new Ticker(id, _logger);
+                item = new Ticker(id, _environment, _logger);
             }
             else if (type == "icon")
             {

@@ -9,22 +9,22 @@ architecture Behavioral of ledpanel_controller_tb is
   
    component ledpanel_controller is
    port (    
-      clk180M     : in std_logic;
-      reset       : in std_logic;
-      uart_rx     : in std_logic;
+      i_clk180M     : in std_logic;
+      i_reset       : in std_logic;
+      i_uart_rx     : in std_logic;
       --
-      dsp_clk     : out std_logic;
-      dsp_latch   : out std_logic;
-      dsp_oe      : out std_logic;
-      dsp_addr    : out std_logic_vector (4 downto 0);
-      dsp_rgbs    : out std_logic_vector (11 downto 0);
-      dsp_vbl     : out std_logic;
+      o_dsp_clk     : out std_logic;
+      o_dsp_latch   : out std_logic;
+      o_dsp_oe      : out std_logic;
+      o_dsp_addr    : out std_logic_vector (4 downto 0);
+      o_dsp_rgbs    : out std_logic_vector (11 downto 0);
+      o_dsp_vbl     : out std_logic;
       -- sram pins
-      sram_oe     : out std_logic;
-      sram_wr     : out std_logic;
-      sram_cs     : out std_logic;
-      sram_addr   : out std_logic_vector(14 downto 0);
-      sram_data   : inout std_logic_vector(11 downto 0);
+      o_sram_oe     : out std_logic;
+      o_sram_wr     : out std_logic;
+      o_sram_cs     : out std_logic;
+      o_sram_addr   : out std_logic_vector(14 downto 0);
+      io_sram_data  : inout std_logic_vector(11 downto 0);
       -- test
       tst_fifo_ren    : out std_logic;
       tst_fifo_dataout: out std_logic_vector(7 downto 0);
@@ -54,8 +54,8 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_wr    : std_logic;
    signal tb_sram_cs    : std_logic;
    signal tb_sram_addr  : std_logic_vector(14 downto 0);
+   signal tb_sram_data_instant  : std_logic_vector(11 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
-   signal tb_sram_data_delayed  : std_logic_vector(11 downto 0);
    signal tb_fifo_ren   : std_logic;
    signal tb_fifo_dataout:std_logic_vector(7 downto 0);
    signal tb_fifo_wen   : std_logic;
@@ -63,49 +63,72 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_ram_wr_data:std_logic_vector(7 downto 0);
    signal tb_ram_wr_mask:std_logic_vector(11 downto 0);
    signal tb_color_update_done:std_logic;
-   
+   signal tb_test       : std_logic_vector(11 downto 0);
+  
+  type t_RAM is array (0 to 32767) of std_logic_vector(11 downto 0);
+  signal ram : t_RAM := (others => (others => '1'));
+  
    begin
    MUT: ledpanel_controller
    port map (
-      clk180M    => tb_clk,
-      reset      => tb_reset,
-      uart_rx    => tb_uart_rx,
-                    
-      dsp_clk    => tb_dsp_clk,
-      dsp_latch  => tb_dsp_latch,
-      dsp_oe     => tb_dsp_oe,
-      dsp_addr   => tb_dsp_addr,
-      dsp_rgbs   => tb_dsp_rgbs,
-      dsp_vbl    => tb_dsp_vbl,
-      sram_oe    => tb_sram_oe,
-      sram_wr    => tb_sram_wr,
-      sram_cs    => tb_sram_cs,
-      sram_addr  => tb_sram_addr,
-      sram_data  => tb_sram_data_delayed,
-      tst_fifo_ren   => tb_fifo_ren,
-      tst_fifo_dataout   => tb_fifo_dataout,
-      tst_fifo_wen   => tb_fifo_wen,
-      tst_ram_wr_clk => tb_ram_wr_clk,
-      tst_ram_wr_data=> tb_ram_wr_data,
-      tst_ram_wr_mask=> tb_ram_wr_mask,
+      i_clk180M             => tb_clk,
+      i_reset               => tb_reset,
+      i_uart_rx             => tb_uart_rx,
+                             
+      o_dsp_clk             => tb_dsp_clk,
+      o_dsp_latch           => tb_dsp_latch,
+      o_dsp_oe              => tb_dsp_oe,
+      o_dsp_addr            => tb_dsp_addr,
+      o_dsp_rgbs            => tb_dsp_rgbs,
+      o_dsp_vbl             => tb_dsp_vbl,
+                       
+      o_sram_oe             => tb_sram_oe,
+      o_sram_wr             => tb_sram_wr,
+      o_sram_cs             => tb_sram_cs,
+      o_sram_addr           => tb_sram_addr,
+      io_sram_data          => tb_sram_data,
+      
+      tst_fifo_ren          => tb_fifo_ren,
+      tst_fifo_dataout      => tb_fifo_dataout,
+      tst_fifo_wen          => tb_fifo_wen,
+      tst_ram_wr_clk        => tb_ram_wr_clk,
+      tst_ram_wr_data       => tb_ram_wr_data,
+      tst_ram_wr_mask       => tb_ram_wr_mask,
       tst_color_update_done => tb_color_update_done      
    );
      
    tb_clk <= '0' after HALF_PERIOD when tb_clk = '1' else
              '1' after HALF_PERIOD;
 
-   tb_sram_data <= tb_sram_addr(11 downto 0) 
-      when tb_sram_oe = '0' and tb_sram_wr = '1' and tb_sram_cs = '0' 
-      else (others => 'Z');
-   tb_sram_data_delayed <= transport tb_sram_data after 10 ns;
+   p_ram : process(tb_clk)
+   begin
+      if tb_clk'event then
+         if tb_sram_cs = '1' then
+            tb_sram_data_instant <= (others => 'Z');
+            tb_sram_data <= (others => 'Z');
+         elsif tb_sram_wr = '0' then 
+            -- writing
+            tb_sram_data <= (others => 'Z');
+            tb_sram_data_instant <= (others => 'Z');
+            ram(to_integer(unsigned(tb_sram_addr))) <= tb_sram_data;
+         elsif tb_sram_oe = '1' then
+            tb_sram_data_instant <= (others => 'Z');
+            tb_sram_data <= (others => 'Z');
+         else
+            -- reading
+            tb_sram_data_instant <= ram(to_integer(unsigned(tb_sram_addr)));
+            tb_sram_data <= ram(to_integer(unsigned(tb_sram_addr)));
+         end if;
+      end if;
+   end process;
    
    reset_gen : process
    begin
       for i in 1 to 5 loop
          if (i < 4) then
-            tb_reset <= '1';
-         else
             tb_reset <= '0';
+         else
+            tb_reset <= '1';
          end if;
          wait until falling_edge(tb_clk);
        end loop;

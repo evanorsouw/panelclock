@@ -32,6 +32,12 @@ namespace WhiteMagic.PanelClock.Components
             _properties = properties.ToList();
         }
 
+        protected ValueSource(string name, Func<Value> getter)
+        {
+            Id = name;
+            _getter = getter;
+        }
+
         public static ValueSource Create(string name, ValueSource expression)
         {
             var expr = new ValueSource(name);

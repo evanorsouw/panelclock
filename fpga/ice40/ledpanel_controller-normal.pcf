@@ -13,30 +13,30 @@
 # ##############################################################################
 
 ###MergeFF List 24
-set_io_ff dsp_rgbs[0] -out ON -oe ON
-set_io_ff dsp_rgbs[2] -out ON -oe ON
-set_io_ff sram_data[4] -in ON
-set_io_ff sram_data[5] -in ON
-set_io_ff dsp_rgbs[11] -out ON -oe ON
-set_io_ff sram_data[8] -in ON
-set_io_ff dsp_rgbs[7] -out ON -oe ON
-set_io_ff dsp_rgbs[8] -out ON -oe ON
-set_io_ff dsp_rgbs[9] -out ON -oe ON
 set_io_ff sram_data[0] -in ON
+set_io_ff sram_data[1] -in ON
 set_io_ff sram_data[2] -in ON
 set_io_ff sram_data[3] -in ON
-set_io_ff dsp_rgbs[10] -out ON -oe ON
-set_io_ff sram_data[1] -in ON
+set_io_ff sram_data[4] -in ON
+set_io_ff sram_data[5] -in ON
 set_io_ff sram_data[6] -in ON
 set_io_ff sram_data[7] -in ON
-set_io_ff dsp_rgbs[1] -out ON -oe ON
-set_io_ff dsp_rgbs[3] -out ON -oe ON
-set_io_ff dsp_rgbs[4] -out ON -oe ON
-set_io_ff dsp_rgbs[5] -out ON -oe ON
-set_io_ff dsp_rgbs[6] -out ON -oe ON
+set_io_ff sram_data[8] -in ON
+set_io_ff sram_data[9] -in ON
 set_io_ff sram_data[10] -in ON
 set_io_ff sram_data[11] -in ON
-set_io_ff sram_data[9] -in ON
+set_io_ff dsp_rgbs[0] -out ON 
+set_io_ff dsp_rgbs[1] -out ON 
+set_io_ff dsp_rgbs[2] -out ON 
+set_io_ff dsp_rgbs[3] -out ON 
+set_io_ff dsp_rgbs[4] -out ON 
+set_io_ff dsp_rgbs[5] -out ON 
+set_io_ff dsp_rgbs[6] -out ON 
+set_io_ff dsp_rgbs[7] -out ON 
+set_io_ff dsp_rgbs[8] -out ON 
+set_io_ff dsp_rgbs[9] -out ON 
+set_io_ff dsp_rgbs[10] -out ON 
+set_io_ff dsp_rgbs[11] -out ON 
 
 ###IOSet List 47
 set_io dsp_addr[4] H4

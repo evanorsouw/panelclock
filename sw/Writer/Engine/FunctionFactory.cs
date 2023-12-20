@@ -20,7 +20,7 @@ namespace WhiteMagic.PanelClock
         {
             if (functionname == "color")
                 return new ColorSource(arguments, _logger);
-            if (functionname == "environment")
+            if (functionname == "env")
                 return _environment;
             return null;
         }

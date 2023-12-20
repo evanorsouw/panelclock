@@ -118,6 +118,12 @@ namespace WhiteMagic.PanelClock
         [Description("wolkennacht")]
         public static Func<Graphics, float, float> CloudedNight => CloudWithMoon();
 
+        [Description("sunrise")]
+        public static Func<Graphics, float, float> SunRise => DrawSunSetRise(Color.LightYellow, true);
+
+        [Description("sunset")]
+        public static Func<Graphics, float, float> SunSet => DrawSunSetRise(Color.OrangeRed, true);
+
         private static Func<Graphics, float, float> DoubleClouds(Color lineColor, Color fillColor)
         {
             return (Graphics g, float w) =>
@@ -233,7 +239,7 @@ namespace WhiteMagic.PanelClock
                     g.TranslateTransform(w * 0.2f * Phase(29000, true), 0, MatrixOrder.Append);
                     DrawSun(g, w, h, true);
                     g.Transform = tmp;
-                    g.TranslateTransform(w * (0.1f + 0.1f * Phase(27000,true)), w*0.1f);
+                    g.TranslateTransform(w * (0.1f + 0.1f * Phase(27000, true)), w * 0.1f);
                     g.ScaleTransform(1f, 0.8f);
                     DrawCloud(g, w * 0.8f, Color.White, Color.Black);
                     DrawRain(g, w, h, false);
@@ -242,7 +248,7 @@ namespace WhiteMagic.PanelClock
             };
         }
 
-        private static Func<Graphics,float,float> CloudWithSnow()
+        private static Func<Graphics, float, float> CloudWithSnow()
         {
             return (Graphics g, float w) =>
             {
@@ -278,6 +284,42 @@ namespace WhiteMagic.PanelClock
                     }
                 }
                 return h;
+            };
+        }
+
+        private static Func<Graphics, float, float> DrawSunSetRise(Color color, bool animated)
+        {
+            return (Graphics g, float w) =>
+            {
+                var h = w * 0.5f;
+                var phase = Phase(3000, false);
+                var pw = Math.Max(1f, w / 22f);
+
+                var pen = new Pen(color, pw);
+                pen.EndCap = LineCap.Round;
+                pen.StartCap = LineCap.Round;
+
+                var dia = (Math.Min(w, h) - pw) * 1.3f;
+                //for (var i = 0; i < 8; ++i)
+                //{
+                //    var angle = Math.PI / 4 * i;
+                //    if (animated)
+                //    {
+                //        angle += phase * Math.PI;
+                //    }
+                //    var dx = max * 0.7f * (float)Math.Cos(angle);
+                //    var dy = max * 0.7f * (float)Math.Sin(angle);
+                //    g.DrawLine(pen, x1 + dx * 0.75f, y1 + dy * 0.75f, x1 + dx, y1 + dy);
+                //}
+                g.DrawArc(pen, new RectangleF((w - dia) / 2, h - dia / 3, dia, dia), 170, 200);
+                var len = (dia / 4) * (0.5f + phase / 3);
+                g.DrawLine(pen, w / 2, h - len, w / 2, h);
+                g.DrawPolygon(pen, new PointF[] { 
+                    new PointF(w / 2, h - len),
+                    new PointF(w / 2 -pw/2, h-len+pw/2),
+                    new PointF(w / 2 +pw/2, h-len+pw/2)
+                });
+                return 0.0f;
             };
         }
 
