@@ -5,7 +5,7 @@ use IEEE.NUMERIC_STD.all;
 entity UART is
    port (   
       i_clkx8        : in std_logic;
-      i_reset        : in std_logic;
+      i_reset_n        : in std_logic;
       i_rx           : in std_logic;
       --
       o_datain       : out std_logic_vector (7 downto 0);
@@ -16,13 +16,13 @@ end entity UART;
 architecture UART_arch of UART is   
 
 begin
-   clock_proc: process (i_clkx8, i_reset)
+   clock_proc: process (i_clkx8, i_reset_n)
    variable v_clk_count    : unsigned (3 downto 0);
    variable v_state        : unsigned (3 downto 0);
    variable v_shift_data   : std_logic_vector (7 downto 0);
    variable v_data_clk     : std_logic;
    begin
-      if i_reset = '0' then
+      if i_reset_n = '0' then
          v_state     := to_unsigned(0, v_state'length);
          v_data_clk  := '0';
             

@@ -5,7 +5,7 @@ use IEEE.NUMERIC_STD.all;
 entity ledpanel_controller is
    port (    
       i_clk180M     : in std_logic;
-      i_reset       : in std_logic;
+      i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_dsp_clk     : out std_logic;
@@ -36,14 +36,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    component FM6124
    port (    
       i_clk60M    : in std_logic;
-      i_reset     : in std_logic;
+      i_reset_n   : in std_logic;
       --
       o_addr      : out std_logic_vector (14 downto 0);
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
       o_dsp_oe    : out std_logic;
       o_dsp_addr  : out std_logic_vector (4 downto 0);
-      o_vbl       : out std_logic
+      o_dsp_vbl   : out std_logic
    );
    end component;
  
@@ -59,7 +59,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    port
    (
       i_clkx8       : in std_logic;
-      i_reset       : in std_logic;
+      i_reset_n     : in std_logic;
       i_rx          : in std_logic;
       o_datain      : out std_logic_vector (7 downto 0);
       o_datain_clk  : out std_logic
@@ -72,7 +72,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       FIFO_WIDTH : natural := 8
    );
    port (    
-      i_reset   : in std_logic;
+      i_reset_n : in std_logic;
       i_clk     : in std_logic;
       i_wen     : in std_logic;
       i_ren     : in std_logic;
@@ -109,14 +109,14 @@ begin
    LEDChip : FM6124
    port map (
       i_clk60M    => s_clk60M,
-      i_reset     => i_reset,
+      i_reset_n   => i_reset_n,
       --
       o_addr      => s_ram_rd_addr,
       o_dsp_clk   => o_dsp_clk,
       o_dsp_latch => s_dsp_latch,
       o_dsp_addr  => o_dsp_addr,
       o_dsp_oe    => o_dsp_oe,
-      o_vbl       => o_dsp_vbl
+      o_dsp_vbl   => o_dsp_vbl
    );
         
    color_correct : linear2logarithmic
@@ -128,7 +128,7 @@ begin
    PC : UART
    port map (
       i_clkx8       => s_clk24M,
-      i_reset       => i_reset,
+      i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --
       o_datain      => s_uart_datain,
@@ -137,7 +137,7 @@ begin
    
    PCFIFO : FIFO 
    port map (
-      i_reset   => i_reset,
+      i_reset_n => i_reset_n,
       i_clk     => i_clk180M,
       i_wen     => s_fifo_wen,
       i_ren     => s_fifo_ren,
@@ -318,14 +318,14 @@ begin
       end if;
    end process;
    
-   p_receive_api: process(i_reset, i_clk180M)
+   p_receive_api: process(i_reset_n, i_clk180M)
    variable v_rcv_data         : std_logic_vector (7 downto 0);
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_fill_delay  : integer;
    variable v_init_fill_state  : integer; 
    begin
-      if i_reset = '0' then
+      if i_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
          v_init_fill_state  := 0;
@@ -369,7 +369,7 @@ begin
       end if;   
    end process;
       
-   p_handleapi: process (i_reset, i_clk180M)
+   p_handleapi: process (i_reset_n, i_clk180M)
    type T_APISTATE is ( START, ADDRHI, ADDRLO, PIXCOUNTHI, PIXCOUNTLO, WRITE_R, WRITE_G, WRITE_B ); 
    type T_READFIFOSTATE is ( PREPARE, GET, EXECUTE, WRITING_COLOR ); 
    variable v_readfifostate       : T_READFIFOSTATE;
@@ -378,7 +378,7 @@ begin
    variable v_pixel_addr          : std_logic_vector(12 downto 0);
    variable v_mapped_address      : unsigned(13 downto 0);      
    begin   
-      if i_reset = '0' then
+      if i_reset_n = '0' then
          v_readfifostate   := PREPARE;
          v_apistate        := START;  
          s_fifo_ren        <= '0';

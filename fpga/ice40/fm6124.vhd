@@ -5,14 +5,14 @@ use IEEE.NUMERIC_STD.all;
 entity FM6124 is
    port (    
       i_clk60M    : in std_logic;
-      i_reset     : in std_logic;
+      i_reset_n   : in std_logic;
       --
       o_addr      : out std_logic_vector (14 downto 0);
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
       o_dsp_oe    : out std_logic;
       o_dsp_addr  : out std_logic_vector (4 downto 0);
-      o_vbl       : out std_logic
+      o_dsp_vbl   : out std_logic
    );
 end entity FM6124;
 
@@ -20,7 +20,7 @@ architecture FM6124_arch of FM6124 is
    signal s_pixel_clk    : std_logic; 
    
 begin
-   process (i_clk60M, i_reset)
+   process (i_clk60M, i_reset_n)
    variable v_clk30M       : std_logic;
    variable v_column_count : unsigned (6 downto 0);
    variable v_row_count    : unsigned (4 downto 0);
@@ -33,7 +33,7 @@ begin
    variable v_depth_delay  : unsigned (7 downto 0);
    
    begin
-      if i_reset = '0' then
+      if i_reset_n = '0' then
          v_clk30M       := '0';
          v_column_count := to_unsigned(0, v_column_count'Length);
          v_row_count    := to_unsigned(0, v_row_count'Length);
@@ -44,7 +44,7 @@ begin
          v_waiting      := '0';
          v_depth_count  := to_unsigned(1, v_depth_count'Length);
          v_depth_delay  := "10000000";
-         o_vbl          <= '1';
+         o_dsp_vbl      <= '1';
          
       elsif rising_edge(i_clk60M) then
          
@@ -54,7 +54,7 @@ begin
             s_pixel_clk  <= '0';
                         
          else
-            o_vbl <= '0';
+            o_dsp_vbl <= '0';
             if (v_waiting = '1') then
                v_depth_count := v_depth_count - 1;
                if (v_depth_count = 0) then
@@ -85,7 +85,7 @@ begin
                         v_depth_delay := "10000000";
                         v_pixel_addr := to_unsigned(0, v_pixel_addr'Length);
                         v_row_count := to_unsigned(0, v_row_count'Length);
-                        o_vbl <= '1';
+                        o_dsp_vbl <= '1';
                      end if;
                   end if;
                end if;

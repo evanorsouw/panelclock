@@ -7,9 +7,9 @@ use IEEE.NUMERIC_STD.all;
 entity toplevel is
    port (    
       i_clk100M     : in std_logic;
-      i_reset       : in std_logic;
+      i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
-      --
+      -- --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe      : out std_logic;
@@ -30,17 +30,17 @@ architecture toplevel_arch of toplevel is
    component pll
    port (
       REFERENCECLK: in std_logic;
-      RESET: in std_logic;
+      RESET:        in std_logic;
       --
-      PLLOUTCORE: out std_logic;
+      PLLOUTCORE:   out std_logic;
       PLLOUTGLOBAL: out std_logic
    );
    end component;
    
    component ledpanel_controller
    port (    
-      i_clk180M     : in std_logic;
-      i_reset       : in std_logic;
+      i_clk180m     : in std_logic;
+      i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_dsp_clk     : out std_logic;
@@ -59,21 +59,21 @@ architecture toplevel_arch of toplevel is
    end component;
 
    signal s_clk180M : std_logic;
-
+   
 begin  
    clock_generator : pll
    port map (
-      REFERENCECLK  => i_clk100M,
-      RESET => i_reset,
+      REFERENCECLK   => i_clk100M,
+      RESET          => i_reset_n,
       --
-      PLLOUTGLOBAL => s_clk180M,
-      plloutcore => open
+      PLLOUTGLOBAL   => s_clk180M,
+      plloutcore     => open
    );
       
    panel_controller : ledpanel_controller
    port map (
       i_clk180M     => s_clk180M,
-      i_reset       => i_reset,
+      i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
 
       o_dsp_clk     => o_dsp_clk,
@@ -90,7 +90,6 @@ begin
       io_sram_data  => io_sram_data
    );  
       
-
 end architecture toplevel_arch;
             
             

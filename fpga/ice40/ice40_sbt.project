@@ -4,7 +4,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Bui
 ProjectName=ice40
 Vendor=SiliconBlue
 Synthesis=synplify
-ProjectVFiles=brightness_control.vhd=work,bytedemux.vhd=work,fm6124.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work,pll.vhd=work,toplevel.vhd=work,fifo.vhd=work
+ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,bytedemux.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work
 ProjectCFiles=
 CurImplementation=ice40_Implmnt
 Implementations=ice40_Implmnt
@@ -25,7 +25,7 @@ DesignCell=toplevel
 SynthesisSDCFile=ice40_Implmnt/ice40.scf
 UserPinConstraintFile=
 UserSDCFile=
-PhysicalConstraintFile=ledpanel_controller-normal.pcf
+PhysicalConstraintFile=ledpanel_controller.pcf
 BackendImplPathName=
 Devicevoltage=1.14
 DevicevoltagePerformance=+/-5%(datasheet default)

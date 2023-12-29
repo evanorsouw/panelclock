@@ -8,10 +8,11 @@ entity fifo is
       FIFO_WIDTH : natural := 8  -- number of bits per entry
    );
    port (    
-      i_reset   : in std_logic;
+      i_reset_n : in std_logic;
       i_clk     : in std_logic;
       i_wen     : in std_logic;
       i_ren     : in std_logic;
+      
       i_data    : in std_logic_vector(FIFO_WIDTH-1 downto 0);
       o_data    : out std_logic_vector(FIFO_WIDTH-1 downto 0);
       o_full    : out std_logic;
@@ -28,13 +29,13 @@ architecture fifo_arch of fifo is
   signal fillcount   : integer range 0 to (2**FIFO_DEPTH);
   
   type t_FIFO_DATA is array (0 to 2**FIFO_DEPTH-1) of std_logic_vector(FIFO_WIDTH-1 downto 0);
-  signal fifo_data : t_FIFO_DATA := (others => (others => '0'));
+  signal fifo_data : t_FIFO_DATA; -- do we need initialization ??? := (others => (others => '0'));
   
 begin
-   process (i_reset, i_clk)
+   process (i_reset_n, i_clk)
    variable tmp : integer;
    begin
-      if i_reset = '0' then
+      if i_reset_n = '0' then
          wr_index   <= 0;
          rd_index   <= 0;
          fillcount  <= 0;        

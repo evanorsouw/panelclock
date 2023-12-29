@@ -8,15 +8,15 @@
 
 
 
+add_file -vhdl -lib work "pll.vhd" 
 add_file -vhdl -lib work "brightness_control.vhd" 
 add_file -vhdl -lib work "bytedemux.vhd" 
+add_file -vhdl -lib work "fifo.vhd" 
 add_file -vhdl -lib work "fm6124.vhd" 
+add_file -vhdl -lib work "toplevel.vhd" 
 add_file -vhdl -lib work "ledpanel_controller.vhd" 
 add_file -vhdl -lib work "linear2logarithmic.vhd" 
 add_file -vhdl -lib work "uart.vhd" 
-add_file -vhdl -lib work "pll.vhd" 
-add_file -vhdl -lib work "toplevel.vhd" 
-add_file -vhdl -lib work "fifo.vhd" 
 #implementation: "ice40_Implmnt"
 impl -add ice40_Implmnt -type fpga
 
