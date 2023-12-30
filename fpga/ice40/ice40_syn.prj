@@ -10,7 +10,6 @@
 
 add_file -vhdl -lib work "pll.vhd" 
 add_file -vhdl -lib work "brightness_control.vhd" 
-add_file -vhdl -lib work "bytedemux.vhd" 
 add_file -vhdl -lib work "fifo.vhd" 
 add_file -vhdl -lib work "fm6124.vhd" 
 add_file -vhdl -lib work "toplevel.vhd" 

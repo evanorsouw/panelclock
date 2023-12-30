@@ -3,3 +3,4 @@
 sim*.mti
 sim*.mpf
 stdout.log
+*.tcl

@@ -10,7 +10,7 @@ architecture Behavioral of ledpanel_controller_tb is
    component ledpanel_controller is
    port (    
       i_clk180M     : in std_logic;
-      i_reset       : in std_logic;
+      i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_dsp_clk     : out std_logic;
@@ -72,7 +72,7 @@ architecture Behavioral of ledpanel_controller_tb is
    MUT: ledpanel_controller
    port map (
       i_clk180M             => tb_clk,
-      i_reset               => tb_reset,
+      i_reset_n             => tb_reset,
       i_uart_rx             => tb_uart_rx,
                              
       o_dsp_clk             => tb_dsp_clk,
