@@ -58,8 +58,8 @@ begin
             if (v_waiting = '1') then
                v_depth_count := v_depth_count - 1;
                if (v_depth_count = 0) then
-                  v_waiting := '0';
                   v_latch := '0';
+                  v_waiting := '0';
                end if;
             else
                if (v_column_count < 64) then 

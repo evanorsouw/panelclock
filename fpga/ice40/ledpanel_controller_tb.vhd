@@ -24,15 +24,7 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
       o_sram_addr   : out std_logic_vector(14 downto 0);
-      io_sram_data  : inout std_logic_vector(11 downto 0);
-      -- test
-      tst_fifo_ren    : out std_logic;
-      tst_fifo_dataout: out std_logic_vector(7 downto 0);
-      tst_fifo_wen    : out std_logic;
-      tst_ram_wr_clk  : out std_logic;
-      tst_ram_wr_data : out std_logic_vector(7 downto 0);
-      tst_ram_wr_mask  : out std_logic_vector(11 downto 0);
-      tst_color_update_done : out std_logic
+      io_sram_data  : inout std_logic_vector(11 downto 0)
    );
    end component ledpanel_controller;
 
@@ -86,15 +78,7 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_wr             => tb_sram_wr,
       o_sram_cs             => tb_sram_cs,
       o_sram_addr           => tb_sram_addr,
-      io_sram_data          => tb_sram_data,
-      
-      tst_fifo_ren          => tb_fifo_ren,
-      tst_fifo_dataout      => tb_fifo_dataout,
-      tst_fifo_wen          => tb_fifo_wen,
-      tst_ram_wr_clk        => tb_ram_wr_clk,
-      tst_ram_wr_data       => tb_ram_wr_data,
-      tst_ram_wr_mask       => tb_ram_wr_mask,
-      tst_color_update_done => tb_color_update_done      
+      io_sram_data          => tb_sram_data
    );
      
    tb_clk <= '0' after HALF_PERIOD when tb_clk = '1' else
