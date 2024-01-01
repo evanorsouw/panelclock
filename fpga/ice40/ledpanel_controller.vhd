@@ -97,6 +97,12 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_api_colordata    : std_logic_vector (7 downto 0);
    signal s_dsp_latch        : std_logic;
 
+   signal s_rect_x            : unsigned(7 downto 0);
+   signal s_rect_px           : unsigned(7 downto 0);
+   signal s_rect_py           : unsigned(7 downto 0);
+   signal s_rect_dx           : unsigned(7 downto 0);
+   signal s_rect_dy           : unsigned(7 downto 0);
+
    signal s_rmw_step         : integer := 0;
    signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
    signal s_rmw_readbits     : std_logic_vector(11 downto 0);
@@ -321,7 +327,7 @@ begin
          v_init_fill_delay  := 1;
       
       elsif rising_edge(i_clk180M) then      
-         if v_init_fill_state = 5 + 16#0400# * 3 then
+         if v_init_fill_state = 100 then
             v_rcv_data    := s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
          else
@@ -329,11 +335,30 @@ begin
             if v_init_fill_delay = 0 then
                v_init_fill_delay := 2;
                case v_init_fill_state is
-               when 0 => v_rcv_data := X"01"; -- write #count pixels @start
-               when 1 => v_rcv_data := X"00"; -- start hi
-               when 2 => v_rcv_data := X"02"; -- start lo
-               when 3 => v_rcv_data := X"04"; -- count hi
-               when 4 => v_rcv_data := X"00"; -- count lo
+               when 0 => v_rcv_data := X"02"; -- fill rect
+               when 1 => v_rcv_data := X"00"; -- x
+               when 2 => v_rcv_data := X"00"; -- y
+               when 3 => v_rcv_data := X"80"; -- dx
+               when 4 => v_rcv_data := X"40"; -- dy
+               when 5 => v_rcv_data := X"00"; -- R
+               when 6 => v_rcv_data := X"00"; -- G
+               when 7 => v_rcv_data := X"00"; -- B
+               when 8 => v_rcv_data := X"02"; -- fill rect
+               when 9 => v_rcv_data := X"02"; -- x
+               when 10 => v_rcv_data := X"02"; -- y
+               when 11 => v_rcv_data := X"03"; -- dx
+               when 12 => v_rcv_data := X"03"; -- dy
+               when 13 => v_rcv_data := X"20"; -- R
+               when 14 => v_rcv_data := X"20"; -- G
+               when 15 => v_rcv_data := X"00"; -- B
+               when 16 => v_rcv_data := X"02"; -- fill rect
+               when 17 => v_rcv_data := X"05"; -- x
+               when 18 => v_rcv_data := X"05"; -- y
+               when 19 => v_rcv_data := X"05"; -- dx
+               when 20 => v_rcv_data := X"03"; -- dy
+               when 21 => v_rcv_data := X"FF"; -- R
+               when 22 => v_rcv_data := X"00"; -- G
+               when 23 => v_rcv_data := X"00"; -- B
                when others => v_rcv_data := X"00";
                end case;
                v_init_fill_state := v_init_fill_state + 1;
@@ -355,17 +380,16 @@ begin
    end process;
       
    p_handleapi: process (i_reset_n, i_clk180M)
-   type T_APISTATE is ( WAIT_CMD, ADDRHI, ADDRLO, PIXCOUNTHI, PIXCOUNTLO, RECEIVE_RED, RECEIVE_GREEN, RECEIVE_BLUE, WRITE_COLOR, WAIT_COLOR_WRITE_START, WAIT_COLOR_WRITE_DONE ); 
+   type T_APISTATE is ( 
+      WAIT_CMD, 
+      BLTX, BLTY, BLTDX, BLTDY, BLT_RED, BLT_GRN, BLT_BLU, BLT_PIXEL, BLT_WAIT_PIXEL_START, BLT_WAIT_PIXEL_END, 
+      FILLX, FILLY, FILLDX, FILLDY, FILL_RED, FILL_GRN, FILL_BLU, FILL_PIXEL, FILL_WAIT_PIXEL_START, FILL_WAIT_PIXEL_END
+   ); 
    type T_READFIFOSTATE is ( PREPARE, GET, EXECUTE ); 
    variable v_readfifostate       : T_READFIFOSTATE;
-   variable v_apistate            : T_APISTATE;
-   variable v_pixel_count         : std_logic_vector(12 downto 0);
-   variable v_pixel_addr          : std_logic_vector(12 downto 0);
-   variable v_mapped_address      : unsigned(13 downto 0);      
+   variable v_apistate            : T_APISTATE;   
    begin   
       if i_reset_n = '0' then
-         v_readfifostate   := PREPARE;
-         v_apistate        := WAIT_CMD;  
          s_fifo_ren        <= '0';
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
@@ -385,74 +409,134 @@ begin
             s_fifo_ren      <= '0';
             v_readfifostate := EXECUTE;
          when EXECUTE =>
+            v_readfifostate := PREPARE;
             case v_apistate is
             when WAIT_CMD =>            
                if (unsigned(s_fifo_dataout) = X"01") then
-                  v_apistate := ADDRHI;
+                  v_apistate := BLTX;
                end if;
-               v_readfifostate := PREPARE;
-            when ADDRHI =>
-               v_pixel_addr(12 downto 8) := s_fifo_dataout(4 downto 0);
-               v_apistate := ADDRLO;
-               v_readfifostate := PREPARE;
-            when ADDRLO =>
-               v_pixel_addr(7 downto 0) := s_fifo_dataout;
-               v_pixel_addr := std_logic_vector(unsigned(v_pixel_addr) - 1);
-               v_apistate := PIXCOUNTHI;            
-               v_readfifostate := PREPARE;
-            when PIXCOUNTHI =>
-               v_pixel_count(12 downto 8) := s_fifo_dataout(4 downto 0);
-               v_apistate := PIXCOUNTLO;            
-               v_readfifostate := PREPARE;
-            when PIXCOUNTLO =>
-               v_pixel_count(7 downto 0) := s_fifo_dataout;
-               v_apistate := RECEIVE_RED;            
-               v_readfifostate := PREPARE;
-            when RECEIVE_RED =>
-               s_ram_wr_bitsR <= s_api_colordata;   -- fifodata lin->log in case it is a colorbyte
-               v_apistate := RECEIVE_GREEN;
-               v_readfifostate := PREPARE;              
-            when RECEIVE_GREEN =>
+               if (unsigned(s_fifo_dataout) = X"02") then
+                  v_apistate := FILLX;
+               end if;
+            when BLTX =>
+               s_rect_x <= unsigned(s_fifo_dataout(7 downto 0));
+               s_rect_px <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := BLTY;
+            when BLTY =>
+               s_rect_py <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := BLTDX; 
+            when BLTDX =>
+               s_rect_dx <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := BLTDY;
+            when BLTDY =>
+               s_rect_dy <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := BLT_RED;            
+            when BLT_RED =>
+               s_ram_wr_bitsR <= s_api_colordata;
+               v_apistate := BLT_GRN;
+            when BLT_GRN =>
                s_ram_wr_bitsG <= s_api_colordata;
-               v_apistate := RECEIVE_BLUE;
-               v_readfifostate := PREPARE;
-            when RECEIVE_BLUE =>
+               v_apistate := BLT_BLU;
+            when BLT_BLU =>
                s_ram_wr_bitsB <= s_api_colordata;
-               v_apistate := WRITE_COLOR;
+               v_apistate := BLT_PIXEL;
                v_readfifostate := EXECUTE;
-            when WRITE_COLOR => 
-               v_pixel_addr := std_logic_vector(unsigned(v_pixel_addr) + 1);
-               s_ram_wr_addr <= unsigned("0000" & v_pixel_addr(11 downto 7) & v_pixel_addr(5 downto 0));
-               case std_logic_vector'(v_pixel_addr(6) & v_pixel_addr(12)) is
-               when "00" =>
-                   s_ram_wr_mask <= "000000000111";
-               when "01" =>
-                   s_ram_wr_mask <= "000000111000";
-               when "10" =>
-                   s_ram_wr_mask <= "000111000000";
-               when "11" =>
-                   s_ram_wr_mask <= "111000000000";
-               when others =>
-               end case;
-               if (v_pixel_count = "0000000000000") then
+            when BLT_PIXEL =>
+               if s_rect_dy = 0 or s_rect_dx = 0 then
                   v_apistate      := WAIT_CMD;
-                  v_readfifostate := PREPARE;
                else
+                  s_ram_wr_addr <= "0000" & s_rect_py(4 downto 0) & s_rect_px(5 downto 0);
+                  case std_logic_vector'(s_rect_px(6) & s_rect_py(5)) is
+                  when "00" =>
+                      s_ram_wr_mask <= "000000000111";
+                  when "01" =>
+                      s_ram_wr_mask <= "000000111000";
+                  when "10" =>
+                      s_ram_wr_mask <= "000111000000";
+                  when "11" =>
+                      s_ram_wr_mask <= "111000000000";
+                  when others =>
+                  end case;
                   s_ram_wr_clk    <= '1';
-                  v_apistate      := WAIT_COLOR_WRITE_START;
+                  v_apistate      := BLT_WAIT_PIXEL_START;
                   v_readfifostate := EXECUTE;
+                  -- prepare next pixel
+                  s_rect_px <= s_rect_px + 1;
+                  if s_rect_px = s_rect_x + s_rect_dx - 1 then
+                     s_rect_px <= s_rect_x;
+                     s_rect_py <= s_rect_py + 1;
+                     s_rect_dy <= s_rect_dy - 1;
+                  end if;                                     
                end if;
-               v_pixel_count := std_logic_vector(unsigned(v_pixel_count) - 1);
-            when WAIT_COLOR_WRITE_START =>
+            when BLT_WAIT_PIXEL_START =>
                if s_rmw_in_progress = '1' then
-                  v_apistate      := WAIT_COLOR_WRITE_DONE;
+                  v_apistate := BLT_WAIT_PIXEL_END;
                   v_readfifostate := EXECUTE;
                end if;
-            when WAIT_COLOR_WRITE_DONE =>
+            when BLT_WAIT_PIXEL_END =>
                if s_rmw_in_progress = '0' then
-                  v_apistate      := RECEIVE_RED;
-                  v_readfifostate := PREPARE;
+                  v_apistate := BLT_RED;
                end if;
+            when FILLX =>
+               s_rect_x <= unsigned(s_fifo_dataout(7 downto 0));
+               s_rect_px <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := FILLY;
+            when FILLY =>
+               s_rect_py <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := FILLDX; 
+            when FILLDX =>
+               s_rect_dx <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := FILLDY;
+            when FILLDY =>
+               s_rect_dy <= unsigned(s_fifo_dataout(7 downto 0));
+               v_apistate := FILL_RED;            
+            when FILL_RED =>
+               s_ram_wr_bitsR <= s_api_colordata;
+               v_apistate := FILL_GRN;
+            when FILL_GRN =>
+               s_ram_wr_bitsG <= s_api_colordata;
+               v_apistate := FILL_BLU;
+            when FILL_BLU =>
+               s_ram_wr_bitsB <= s_api_colordata;
+               v_apistate := FILL_PIXEL;
+               v_readfifostate := EXECUTE;
+            when FILL_PIXEL =>
+               if s_rect_dy = 0 or s_rect_dx = 0 then
+                  v_apistate := WAIT_CMD;
+               else
+                  s_ram_wr_addr <= "0000" & s_rect_py(4 downto 0) & s_rect_px(5 downto 0);
+                  case std_logic_vector'(s_rect_px(6) & s_rect_py(5)) is
+                  when "00" =>
+                      s_ram_wr_mask <= "000000000111";
+                  when "01" =>
+                      s_ram_wr_mask <= "000000111000";
+                  when "10" =>
+                      s_ram_wr_mask <= "000111000000";
+                  when "11" =>
+                      s_ram_wr_mask <= "111000000000";
+                  when others =>
+                  end case;
+                  s_ram_wr_clk    <= '1';
+                  v_apistate      := FILL_WAIT_PIXEL_START;
+                  v_readfifostate := EXECUTE;
+                  -- prepare next pixel
+                  s_rect_px <= s_rect_px + 1;
+                  if s_rect_px = s_rect_x + s_rect_dx - 1 then
+                     s_rect_px <= s_rect_x;
+                     s_rect_py <= s_rect_py + 1;
+                     s_rect_dy <= s_rect_dy - 1;
+                  end if;                                     
+               end if;
+            when FILL_WAIT_PIXEL_START =>
+               if s_rmw_in_progress = '1' then
+                  v_apistate := FILL_WAIT_PIXEL_END;
+               end if;
+               v_readfifostate := EXECUTE;
+            when FILL_WAIT_PIXEL_END =>
+               if s_rmw_in_progress = '0' then
+                  v_apistate := FILL_PIXEL;
+               end if;
+               v_readfifostate := EXECUTE;
             end case;      
          end case;   
       end if;      
