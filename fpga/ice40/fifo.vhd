@@ -45,12 +45,12 @@ begin
          if i_wen = '1' and full = '0' then
             tmp := tmp + 1;
             fifo_data(wr_index) <= i_data;
-            wr_index <= wr_index + 1;
+            wr_index <= (wr_index + 1) mod 2**FIFO_DEPTH;
          end if;
          if i_ren = '1' and empty = '0' then
             tmp := tmp - 1;
             o_data   <= fifo_data(rd_index);
-            rd_index <= rd_index + 1;
+            rd_index <= (rd_index + 1) mod 2**FIFO_DEPTH;
          end if;
          fillcount <= tmp;
       end if;

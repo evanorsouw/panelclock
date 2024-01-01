@@ -48,14 +48,6 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_addr  : std_logic_vector(14 downto 0);
    signal tb_sram_data_instant  : std_logic_vector(11 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
-   signal tb_fifo_ren   : std_logic;
-   signal tb_fifo_dataout:std_logic_vector(7 downto 0);
-   signal tb_fifo_wen   : std_logic;
-   signal tb_ram_wr_clk : std_logic;
-   signal tb_ram_wr_data:std_logic_vector(7 downto 0);
-   signal tb_ram_wr_mask:std_logic_vector(11 downto 0);
-   signal tb_color_update_done:std_logic;
-   signal tb_test       : std_logic_vector(11 downto 0);
   
   type t_RAM is array (0 to 32767) of std_logic_vector(11 downto 0);
   signal ram : t_RAM := (others => (others => '1'));

@@ -16,15 +16,6 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity FM6124
 -- Compiling architecture FM6124_arch of FM6124
 
-} {} {}} D:/projects/fpgaclock/fpga/ice40/linear2logarithmic.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/linear2logarithmic.vhd
-Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
--- Loading package STANDARD
--- Loading package TEXTIO
--- Loading package std_logic_1164
--- Loading package NUMERIC_STD
--- Compiling entity linear2logarithmic
--- Compiling architecture linear2logarithmic_arch of linear2logarithmic
-
 } {} {}} D:/projects/fpgaclock/fpga/ice40/uart.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/uart.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
@@ -34,14 +25,14 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity UART
 -- Compiling architecture UART_arch of UART
 
-} {} {}} D:/projects/fpgaclock/fpga/ice40/brightness_control.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/brightness_control.vhd
+} {} {}} D:/projects/fpgaclock/fpga/ice40/linear2logarithmic.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/linear2logarithmic.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
 -- Loading package std_logic_1164
--- Loading package std_logic_arith
--- Compiling entity brightness_control
--- Compiling architecture brightness_control_arch of brightness_control
+-- Loading package NUMERIC_STD
+-- Compiling entity linear2logarithmic
+-- Compiling architecture linear2logarithmic_arch of linear2logarithmic
 
 } {} {}} D:/projects/fpgaclock/fpga/ice40/ledpanel_controller_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/ledpanel_controller_tb.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
@@ -51,5 +42,14 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Loading package NUMERIC_STD
 -- Compiling entity ledpanel_controller_tb
 -- Compiling architecture Behavioral of ledpanel_controller_tb
+
+} {} {}} D:/projects/fpgaclock/fpga/ice40/brightness_control.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/ice40/brightness_control.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Compiling entity brightness_control
+-- Compiling architecture brightness_control_arch of brightness_control
 
 } {} {}}

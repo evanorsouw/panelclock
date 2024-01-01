@@ -84,8 +84,9 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(14 downto 0);
-   signal s_ram_wr_colorbits : std_logic_vector(7 downto 0);
-   signal s_rmw_readbits     : std_logic_vector(11 downto 0);
+   signal s_ram_wr_bitsR     : std_logic_vector(7 downto 0);
+   signal s_ram_wr_bitsG     : std_logic_vector(7 downto 0);
+   signal s_ram_wr_bitsB     : std_logic_vector(7 downto 0);
    
    signal s_fifo_empty       : std_logic;
    signal s_fifo_wen         : std_logic;
@@ -98,7 +99,8 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 
    signal s_rmw_step         : integer := 0;
    signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
-   signal s_rmw_colorbit     : std_logic_vector(7 downto 0);
+   signal s_rmw_readbits     : std_logic_vector(11 downto 0);
+   signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic := '0';
 
 begin
@@ -241,6 +243,7 @@ begin
    --   s_ram_wr_addr
    --   s_ram_wr_mask
    --   s_ram_wr_clk
+   variable v_updated_bits   : std_logic_vector (11 downto 0);
    begin    
       if i_reset_n = '0' then      
          o_sram_cs         <= '1'; 
@@ -252,7 +255,7 @@ begin
          
          if s_ram_wr_clk = '1' then -- will remain high only 1 clock
             s_rmw_in_progress  <= '1';
-            s_rmw_colorbit     <= "10000000";
+            s_rmw_bitmask      <= "10000000";
             s_rmw_address      <= s_ram_wr_addr;
             s_rmw_step         <= 0;  -- an interrupted read-modify-write cycle is restarted
          end if;
@@ -270,7 +273,7 @@ begin
             s_rmw_step  <= s_rmw_step + 1;     
             case s_rmw_step is
             when 0 | 1 | 2 => -- set address to read pixelbits
-               if s_rmw_colorbit = "00000000" then
+               if s_rmw_bitmask = "00000000" then
                   -- all bits written, we're done
                   s_rmw_in_progress   <= '0';
                end if;
@@ -280,15 +283,22 @@ begin
             when 3 | 4 => -- read pixelbits
                s_rmw_readbits <= io_sram_data and not s_ram_wr_mask; 
             when 5 | 6 | 7 => -- write modified pixel bits
-               io_sram_data <= s_rmw_readbits;
-               if ((s_ram_wr_colorbits and s_rmw_colorbit) /= "00000000") then
-                  io_sram_data <= s_rmw_readbits or s_ram_wr_mask;
+               v_updated_bits := s_rmw_readbits;
+               if ((s_ram_wr_bitsR and s_rmw_bitmask) /= "00000000") then
+                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "001001001001");
                end if;            
+               if ((s_ram_wr_bitsG and s_rmw_bitmask) /= "00000000") then
+                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "010010010010");
+               end if;            
+               if ((s_ram_wr_bitsB and s_rmw_bitmask) /= "00000000") then
+                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "100100100100");
+               end if;            
+               io_sram_data <= v_updated_bits;
                o_sram_addr <= std_logic_vector(s_rmw_address);
                o_sram_wr   <= '0'; 
             when 8 =>
                -- prepare for next bit
-               s_rmw_colorbit  <= '0' & s_rmw_colorbit(7 downto 1);
+               s_rmw_bitmask  <= '0' & s_rmw_bitmask(7 downto 1);
                s_rmw_address   <= s_rmw_address + 16#0800#;
             when others =>
                s_rmw_step <= 0;
@@ -311,19 +321,19 @@ begin
          v_init_fill_delay  := 1;
       
       elsif rising_edge(i_clk180M) then      
-         if v_init_fill_state = 5 + 16#10# * 3 then
+         if v_init_fill_state = 5 + 16#0400# * 3 then
             v_rcv_data    := s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
          else
             v_init_fill_delay := v_init_fill_delay - 1;
             if v_init_fill_delay = 0 then
-               v_init_fill_delay := 10000;
+               v_init_fill_delay := 2;
                case v_init_fill_state is
                when 0 => v_rcv_data := X"01"; -- write #count pixels @start
                when 1 => v_rcv_data := X"00"; -- start hi
-               when 2 => v_rcv_data := X"01"; -- start lo
-               when 3 => v_rcv_data := X"00"; -- count hi
-               when 4 => v_rcv_data := X"10"; -- count lo
+               when 2 => v_rcv_data := X"02"; -- start lo
+               when 3 => v_rcv_data := X"04"; -- count hi
+               when 4 => v_rcv_data := X"00"; -- count lo
                when others => v_rcv_data := X"00";
                end case;
                v_init_fill_state := v_init_fill_state + 1;
@@ -345,8 +355,8 @@ begin
    end process;
       
    p_handleapi: process (i_reset_n, i_clk180M)
-   type T_APISTATE is ( START, ADDRHI, ADDRLO, PIXCOUNTHI, PIXCOUNTLO, WRITE_R, WRITE_G, WRITE_B ); 
-   type T_READFIFOSTATE is ( PREPARE, GET, EXECUTE, WRITING_COLOR ); 
+   type T_APISTATE is ( WAIT_CMD, ADDRHI, ADDRLO, PIXCOUNTHI, PIXCOUNTLO, RECEIVE_RED, RECEIVE_GREEN, RECEIVE_BLUE, WRITE_COLOR, WAIT_COLOR_WRITE_START, WAIT_COLOR_WRITE_DONE ); 
+   type T_READFIFOSTATE is ( PREPARE, GET, EXECUTE ); 
    variable v_readfifostate       : T_READFIFOSTATE;
    variable v_apistate            : T_APISTATE;
    variable v_pixel_count         : std_logic_vector(12 downto 0);
@@ -355,8 +365,9 @@ begin
    begin   
       if i_reset_n = '0' then
          v_readfifostate   := PREPARE;
-         v_apistate        := START;  
+         v_apistate        := WAIT_CMD;  
          s_fifo_ren        <= '0';
+         s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
          s_ram_wr_addr     <= (others => '0');               
       
@@ -374,9 +385,8 @@ begin
             s_fifo_ren      <= '0';
             v_readfifostate := EXECUTE;
          when EXECUTE =>
-            s_ram_wr_colorbits <= s_api_colordata;   -- fifodata lin->log in case it is a colorbyte
             case v_apistate is
-            when START =>            
+            when WAIT_CMD =>            
                if (unsigned(s_fifo_dataout) = X"01") then
                   v_apistate := ADDRHI;
                end if;
@@ -387,6 +397,7 @@ begin
                v_readfifostate := PREPARE;
             when ADDRLO =>
                v_pixel_addr(7 downto 0) := s_fifo_dataout;
+               v_pixel_addr := std_logic_vector(unsigned(v_pixel_addr) - 1);
                v_apistate := PIXCOUNTHI;            
                v_readfifostate := PREPARE;
             when PIXCOUNTHI =>
@@ -395,66 +406,55 @@ begin
                v_readfifostate := PREPARE;
             when PIXCOUNTLO =>
                v_pixel_count(7 downto 0) := s_fifo_dataout;
-               v_apistate := WRITE_R;            
-               s_ram_wr_addr <= unsigned(v_pixel_addr(11 downto 7) & v_pixel_addr(5 downto 0) & "0000") - 1;
+               v_apistate := RECEIVE_RED;            
                v_readfifostate := PREPARE;
-            when WRITE_R =>
+            when RECEIVE_RED =>
+               s_ram_wr_bitsR <= s_api_colordata;   -- fifodata lin->log in case it is a colorbyte
+               v_apistate := RECEIVE_GREEN;
+               v_readfifostate := PREPARE;              
+            when RECEIVE_GREEN =>
+               s_ram_wr_bitsG <= s_api_colordata;
+               v_apistate := RECEIVE_BLUE;
+               v_readfifostate := PREPARE;
+            when RECEIVE_BLUE =>
+               s_ram_wr_bitsB <= s_api_colordata;
+               v_apistate := WRITE_COLOR;
+               v_readfifostate := EXECUTE;
+            when WRITE_COLOR => 
+               v_pixel_addr := std_logic_vector(unsigned(v_pixel_addr) + 1);
+               s_ram_wr_addr <= unsigned("0000" & v_pixel_addr(11 downto 7) & v_pixel_addr(5 downto 0));
                case std_logic_vector'(v_pixel_addr(6) & v_pixel_addr(12)) is
                when "00" =>
-                   s_ram_wr_mask <= "000000000001";
+                   s_ram_wr_mask <= "000000000111";
                when "01" =>
-                   s_ram_wr_mask <= "000000001000";
+                   s_ram_wr_mask <= "000000111000";
                when "10" =>
-                   s_ram_wr_mask <= "000001000000";
+                   s_ram_wr_mask <= "000111000000";
                when "11" =>
-                   s_ram_wr_mask <= "001000000000";
+                   s_ram_wr_mask <= "111000000000";
                when others =>
                end case;
-               s_ram_wr_clk  <= '1';
-               s_ram_wr_addr <= s_ram_wr_addr + 1;
-               v_apistate := WRITE_G;
-               v_readfifostate := WRITING_COLOR;
-            when WRITE_G =>
-               case std_logic_vector'(v_pixel_addr(6) & v_pixel_addr(12)) is
-               when "00" =>
-                   s_ram_wr_mask <= "000000000010";
-               when "01" =>
-                   s_ram_wr_mask <= "000000010000";
-               when "10" =>
-                   s_ram_wr_mask <= "000010000000";
-               when "11" =>
-                   s_ram_wr_mask <= "010000000000";
-               when others =>
-               end case;
-               s_ram_wr_clk <= '1';
-               v_apistate := WRITE_B;
-               v_readfifostate := WRITING_COLOR;
-            when WRITE_B =>
-               case std_logic_vector'(v_pixel_addr(6) & v_pixel_addr(12)) is
-               when "00" =>
-                   s_ram_wr_mask <= "000000000100";
-               when "01" =>
-                   s_ram_wr_mask <= "000000100000";
-               when "10" =>
-                   s_ram_wr_mask <= "000100000000";
-               when "11" =>
-                   s_ram_wr_mask <= "100000000000";
-               when others =>
-               end case;
-               s_ram_wr_clk <= '1';
-               v_pixel_count := std_logic_vector(unsigned(v_pixel_count) - 1);
                if (v_pixel_count = "0000000000000") then
-                  v_apistate := START;
+                  v_apistate      := WAIT_CMD;
+                  v_readfifostate := PREPARE;
                else
-                  v_apistate := WRITE_R;
+                  s_ram_wr_clk    <= '1';
+                  v_apistate      := WAIT_COLOR_WRITE_START;
+                  v_readfifostate := EXECUTE;
                end if;
-               v_readfifostate := WRITING_COLOR;
-            end case;   
-         when WRITING_COLOR =>
-            if s_rmw_in_progress = '0' then
-               v_readfifostate := PREPARE;
-            end if;
-         end case;      
+               v_pixel_count := std_logic_vector(unsigned(v_pixel_count) - 1);
+            when WAIT_COLOR_WRITE_START =>
+               if s_rmw_in_progress = '1' then
+                  v_apistate      := WAIT_COLOR_WRITE_DONE;
+                  v_readfifostate := EXECUTE;
+               end if;
+            when WAIT_COLOR_WRITE_DONE =>
+               if s_rmw_in_progress = '0' then
+                  v_apistate      := RECEIVE_RED;
+                  v_readfifostate := PREPARE;
+               end if;
+            end case;      
+         end case;   
       end if;      
    end process;
    
