@@ -4,7 +4,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Bui
 ProjectName=ice40
 Vendor=SiliconBlue
 Synthesis=synplify
-ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work
+ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work,init_data.vhd=work
 ProjectCFiles=
 CurImplementation=ice40_Implmnt
 Implementations=ice40_Implmnt

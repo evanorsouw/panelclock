@@ -16,6 +16,7 @@ add_file -vhdl -lib work "toplevel.vhd"
 add_file -vhdl -lib work "ledpanel_controller.vhd" 
 add_file -vhdl -lib work "linear2logarithmic.vhd" 
 add_file -vhdl -lib work "uart.vhd" 
+add_file -vhdl -lib work "init_data.vhd" 
 #implementation: "ice40_Implmnt"
 impl -add ice40_Implmnt -type fpga
 

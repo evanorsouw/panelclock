@@ -74,12 +74,24 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       o_empty   : out std_logic
    );
    end component;
+
+   component whitemagic_init_screen
+   port (
+      i_idx   : in  unsigned(7 downto 0);
+      o_count : out unsigned(7 downto 0);
+      o_data  : out std_logic_vector(7 downto 0)
+   );
+   end component;
    
    signal s_clk60M           : std_logic;
    signal s_clk24M           : std_logic;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
+
+   signal s_init_data_idx    : unsigned(7 downto 0);
+   signal s_init_data_size   : unsigned(7 downto 0);
+   signal s_init_data_out    : std_logic_vector(7 downto 0);
                            
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
@@ -149,6 +161,13 @@ begin
       o_data    => s_fifo_dataout,
       o_full    => open,
       o_empty   => s_fifo_empty
+   );
+
+   init_data : whitemagic_init_screen
+   port map (
+      i_idx   => s_init_data_idx,
+      o_count => s_init_data_size,
+      o_data  => s_init_data_out
    );
    
    o_dsp_latch <= s_dsp_latch;
@@ -314,54 +333,29 @@ begin
    end process;
    
    p_receive_api: process(i_reset_n, i_clk180M)
-   variable v_rcv_data         : std_logic_vector (7 downto 0);
-   variable v_rcv_dataclk      : std_logic;
-   variable v_last_rcv_dataclk : std_logic;
-   variable v_init_fill_delay  : integer;
-   variable v_init_fill_state  : integer; 
+   variable v_rcv_dataclk      : std_logic := '0';
+   variable v_last_rcv_dataclk : std_logic := '0';
+   variable v_init_delay       : integer := 1;
+   variable v_init_idx         : unsigned(7 downto 0) := 0; 
    begin
       if i_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
-         v_init_fill_state  := 0;
-         v_init_fill_delay  := 1;
+         v_init_idx         := 0;
+         v_init_delay       := 2;
       
       elsif rising_edge(i_clk180M) then      
-         if v_init_fill_state = 100 then
-            v_rcv_data    := s_uart_datain;
+         if v_init_idx = s_init_data_size then
+            s_fifo_datain <= s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
          else
-            v_init_fill_delay := v_init_fill_delay - 1;
-            if v_init_fill_delay = 0 then
-               v_init_fill_delay := 2;
-               case v_init_fill_state is
-               when 0 => v_rcv_data := X"02"; -- fill rect
-               when 1 => v_rcv_data := X"00"; -- x
-               when 2 => v_rcv_data := X"00"; -- y
-               when 3 => v_rcv_data := X"80"; -- dx
-               when 4 => v_rcv_data := X"40"; -- dy
-               when 5 => v_rcv_data := X"00"; -- R
-               when 6 => v_rcv_data := X"00"; -- G
-               when 7 => v_rcv_data := X"00"; -- B
-               when 8 => v_rcv_data := X"02"; -- fill rect
-               when 9 => v_rcv_data := X"02"; -- x
-               when 10 => v_rcv_data := X"02"; -- y
-               when 11 => v_rcv_data := X"03"; -- dx
-               when 12 => v_rcv_data := X"03"; -- dy
-               when 13 => v_rcv_data := X"20"; -- R
-               when 14 => v_rcv_data := X"20"; -- G
-               when 15 => v_rcv_data := X"00"; -- B
-               when 16 => v_rcv_data := X"02"; -- fill rect
-               when 17 => v_rcv_data := X"05"; -- x
-               when 18 => v_rcv_data := X"05"; -- y
-               when 19 => v_rcv_data := X"05"; -- dx
-               when 20 => v_rcv_data := X"03"; -- dy
-               when 21 => v_rcv_data := X"FF"; -- R
-               when 22 => v_rcv_data := X"00"; -- G
-               when 23 => v_rcv_data := X"00"; -- B
-               when others => v_rcv_data := X"00";
-               end case;
-               v_init_fill_state := v_init_fill_state + 1;
+            s_init_data_idx <= v_init_idx;
+            s_fifo_datain   <= s_init_data_out;
+            
+            v_init_delay := v_init_delay - 1;
+            if v_init_delay = 0 then
+               v_init_delay := 2;
+               v_init_idx := v_init_idx + 1;
                v_rcv_dataclk := '1';
             else
                v_rcv_dataclk := '0';
@@ -370,7 +364,6 @@ begin
          
          -- write received data into fifo.
          if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
-            s_fifo_datain <= v_rcv_data;
             s_fifo_wen    <= v_rcv_dataclk;
          else
             s_fifo_wen    <= '0';
@@ -393,7 +386,8 @@ begin
          s_fifo_ren        <= '0';
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
-         s_ram_wr_addr     <= (others => '0');               
+         s_ram_wr_addr     <= (others => '0');   
+         v_readfifostate   := PREPARE;        
       
       elsif rising_edge(i_clk180M) then
          -- s_ram_wr_mask indicates that a colorbyte is currently being written (this

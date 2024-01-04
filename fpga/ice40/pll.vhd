@@ -55,11 +55,11 @@ component SB_PLL40_CORE
 end component;
 begin
 pll_inst: SB_PLL40_CORE
--- Fin=100, Fout=180
+-- Fin=100, Fout=120
 generic map(
              DIVR => "0100",
-             DIVF => "0100011",
-             DIVQ => "010",
+             DIVF => "0101111",
+             DIVQ => "011",
              FILTER_RANGE => "010",
              FEEDBACK_PATH => "SIMPLE",
              DELAY_ADJUSTMENT_MODE_FEEDBACK => "FIXED",
@@ -92,8 +92,8 @@ end BEHAVIOR;
 --PllModuleName: pll
 --PllInstanceName: pll_inst
 --DIVR: 0100
---DIVF: 0100011
---DIVQ: 010
+--DIVF: 0101111
+--DIVQ: 011
 --FILTER_RANGE: 010
 --FEEDBACK_PATH: SIMPLE
 --EXTERNAL_DIVIDE_FACTOR: 1
@@ -114,4 +114,4 @@ end BEHAVIOR;
 --LATCHINPUTVALUE: false
 --LOCK: false
 --InputFrequency: 100
---OutputFrequency: 180
+--OutputFrequency: 120
