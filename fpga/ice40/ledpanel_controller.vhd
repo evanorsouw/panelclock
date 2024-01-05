@@ -4,13 +4,13 @@ use IEEE.NUMERIC_STD.all;
 
 entity ledpanel_controller is
    port (    
-      i_clk180M     : in std_logic;
+      i_clk120M     : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe      : out std_logic;
+      o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_dsp_vbl     : out std_logic;
@@ -27,13 +27,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
   
    component FM6124
    port (    
-      i_clk60M    : in std_logic;
+      i_clk30M    : in std_logic;
       i_reset_n   : in std_logic;
       --
       o_addr      : out std_logic_vector (14 downto 0);
+      o_read      : out std_logic;
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
-      o_dsp_oe    : out std_logic;
+      o_dsp_oe_n  : out std_logic;
       o_dsp_addr  : out std_logic_vector (4 downto 0);
       o_dsp_vbl   : out std_logic
    );
@@ -83,16 +84,17 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
    
-   signal s_clk60M           : std_logic;
+   signal s_clk30M           : std_logic;
    signal s_clk24M           : std_logic;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
-   signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
 
    signal s_init_data_idx    : unsigned(7 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
    signal s_init_data_out    : std_logic_vector(7 downto 0);
                            
+   signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
+   signal s_ram_rd           : std_logic;
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(14 downto 0);
@@ -107,13 +109,12 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
 
    signal s_api_colordata    : std_logic_vector (7 downto 0);
-   signal s_dsp_latch        : std_logic;
 
-   signal s_rect_x            : unsigned(7 downto 0);
-   signal s_rect_px           : unsigned(7 downto 0);
-   signal s_rect_py           : unsigned(7 downto 0);
-   signal s_rect_dx           : unsigned(7 downto 0);
-   signal s_rect_dy           : unsigned(7 downto 0);
+   signal s_rect_x           : unsigned(7 downto 0);
+   signal s_rect_px          : unsigned(7 downto 0);
+   signal s_rect_py          : unsigned(7 downto 0);
+   signal s_rect_dx          : unsigned(7 downto 0);
+   signal s_rect_dy          : unsigned(7 downto 0);
 
    signal s_rmw_step         : integer := 0;
    signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
@@ -124,14 +125,15 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 begin
    LEDChip : FM6124
    port map (
-      i_clk60M    => s_clk60M,
+      i_clk30M    => s_clk30M,
       i_reset_n   => i_reset_n,
       --
       o_addr      => s_ram_rd_addr,
+      o_read      => s_ram_rd,
       o_dsp_clk   => o_dsp_clk,
-      o_dsp_latch => s_dsp_latch,
+      o_dsp_latch => o_dsp_latch,
       o_dsp_addr  => o_dsp_addr,
-      o_dsp_oe    => o_dsp_oe,
+      o_dsp_oe_n    => o_dsp_oe_n,
       o_dsp_vbl   => o_dsp_vbl
    );
         
@@ -154,7 +156,7 @@ begin
    PCFIFO : FIFO 
    port map (
       i_reset_n => i_reset_n,
-      i_clk     => i_clk180M,
+      i_clk     => i_clk120M,
       i_wen     => s_fifo_wen,
       i_ren     => s_fifo_ren,
       i_data    => s_fifo_datain,
@@ -169,51 +171,49 @@ begin
       o_count => s_init_data_size,
       o_data  => s_init_data_out
    );
-   
-   o_dsp_latch <= s_dsp_latch;
       
-   p_clocks: process (i_clk180M)
+   p_clocks: process (i_clk120M)
    variable clk_scaler  : integer := 0;
    variable uart_scaler : integer := 0;
    begin
-      if rising_edge(i_clk180M) then
+      if rising_edge(i_clk120M) then
                  
          case clk_scaler is
          when 0 => 
-            s_clk60M <= '1';                      
+            s_clk30M <= '1';                      
             clk_scaler := 1;
          when 1 => 
-            s_clk60M <= '0';
             clk_scaler := 2;
          when 2 => 
-            clk_scaler := 0;
+            s_clk30M <= '0';
+            clk_scaler := 3;
          when others =>         
             clk_scaler := 0;
          end case;
          
-         -- convert 180MHz to 24MHZ: divide by 7.5 (alternating 8 cycles + 7 cycles)
-         --    ___     ___    ___     ___    __
-         -- __| 4 |_4_| 4 |_3| 4 |_4_| 4 |_3| 
-         -- 11012345678911111012345678911111101
-         -- 34          01234          01234
+         -- convert 120MHz to 24MHZ: divide by 5
+         --   _   _   _   _   _   _   _   _   _   _   _   _   
+         -- _| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_ @120MHz
+         --   0   1   2   3   4   0   1   2   3   4   0   1 
+         --   _______             _______             _______
+         -- _|       |___________|       |___________|        @24MHz
+         --      0                   1                   2
          case uart_scaler is
          when 0 => 
-         when 8 => 
+         when 1 => 
             s_clk24M <= '1';
             uart_scaler := uart_scaler + 1;
-         when 4 => 
-         when 12 => 
+         when 2 => 
+         when 3 => 
             s_clk24M <= '0';
             uart_scaler := uart_scaler + 1;
-         when 15 =>
-            uart_scaler := 0;
          when others =>         
-            uart_scaler := uart_scaler + 1;
+            uart_scaler := 0;
          end case;
       end if;
    end process;
 
-   p_sram: process(i_reset_n, i_clk180M)   
+   p_sram: process(i_reset_n, i_clk120M)   
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
    --  +-------++-------+
@@ -274,7 +274,7 @@ begin
          o_sram_cs         <= '1'; 
          s_rmw_in_progress <= '0';
                
-      elsif rising_edge(i_clk180M) then      
+      elsif rising_edge(i_clk120M) then      
          o_sram_cs    <= '0';
          o_sram_oe    <= '0';
          
@@ -285,7 +285,7 @@ begin
             s_rmw_step         <= 0;  -- an interrupted read-modify-write cycle is restarted
          end if;
             
-         if s_dsp_latch = '0' then           
+         if s_ram_rd = '1' then           
             -- read pixel values during a row refresh cycle.
             o_sram_wr     <= '1';
             o_sram_addr   <= s_ram_rd_addr;
@@ -332,19 +332,19 @@ begin
       end if;
    end process;
    
-   p_receive_api: process(i_reset_n, i_clk180M)
+   p_receive_api: process(i_reset_n, i_clk120M)
    variable v_rcv_dataclk      : std_logic := '0';
    variable v_last_rcv_dataclk : std_logic := '0';
    variable v_init_delay       : integer := 1;
-   variable v_init_idx         : unsigned(7 downto 0) := 0; 
+   variable v_init_idx         : unsigned(7 downto 0) := to_unsigned(0, 8);
    begin
       if i_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
-         v_init_idx         := 0;
+         v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := 2;
       
-      elsif rising_edge(i_clk180M) then      
+      elsif rising_edge(i_clk120M) then      
          if v_init_idx = s_init_data_size then
             s_fifo_datain <= s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
@@ -372,7 +372,7 @@ begin
       end if;   
    end process;
       
-   p_handleapi: process (i_reset_n, i_clk180M)
+   p_handleapi: process (i_reset_n, i_clk120M)
    type T_APISTATE is ( 
       WAIT_CMD, 
       BLTX, BLTY, BLTDX, BLTDY, BLT_RED, BLT_GRN, BLT_BLU, BLT_PIXEL, BLT_WAIT_PIXEL_START, BLT_WAIT_PIXEL_END, 
@@ -389,7 +389,7 @@ begin
          s_ram_wr_addr     <= (others => '0');   
          v_readfifostate   := PREPARE;        
       
-      elsif rising_edge(i_clk180M) then
+      elsif rising_edge(i_clk120M) then
          -- s_ram_wr_mask indicates that a colorbyte is currently being written (this
          -- takes 8 read-modify-write cycles. It is cleared by process p_sram when completed.
          s_ram_wr_clk <= '0';         
