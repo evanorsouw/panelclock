@@ -39,7 +39,7 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
-      i_clk180m     : in std_logic;
+      i_clk120M     : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
@@ -58,7 +58,7 @@ architecture toplevel_arch of toplevel is
    );
    end component;
 
-   signal s_clk180M : std_logic;
+   signal s_clk120M : std_logic;
    
 begin  
    clock_generator : pll
@@ -66,13 +66,13 @@ begin
       REFERENCECLK   => i_clk100M,
       RESET          => i_reset_n,
       --
-      PLLOUTGLOBAL   => s_clk180M,
+      PLLOUTGLOBAL   => s_clk120M,
       plloutcore     => open
    );
       
    panel_controller : ledpanel_controller
    port map (
-      i_clk180M     => s_clk180M,
+      i_clk120M     => s_clk120M,
       i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
 

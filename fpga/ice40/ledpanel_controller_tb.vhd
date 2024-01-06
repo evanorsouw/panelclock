@@ -9,7 +9,7 @@ architecture Behavioral of ledpanel_controller_tb is
   
    component ledpanel_controller is
    port (    
-      i_clk180M     : in std_logic;
+      i_clk120M     : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
@@ -28,7 +28,7 @@ architecture Behavioral of ledpanel_controller_tb is
    );
    end component ledpanel_controller;
 
-   constant HALF_PERIOD : time := 2.78 ns;  -- 180MHz = 5.56ns
+   constant HALF_PERIOD : time := 4.16 ns;  -- 120MHz = 8.33ns
 
    -- module under test inputs
    signal tb_clk        : std_logic;
@@ -55,7 +55,7 @@ architecture Behavioral of ledpanel_controller_tb is
    begin
    MUT: ledpanel_controller
    port map (
-      i_clk180M             => tb_clk,
+      i_clk120M             => tb_clk,
       i_reset_n             => tb_reset,
       i_uart_rx             => tb_uart_rx,
                              
