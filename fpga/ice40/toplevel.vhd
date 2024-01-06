@@ -39,7 +39,7 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
-      i_clk120m     : in std_logic;
+      i_clk120M     : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --

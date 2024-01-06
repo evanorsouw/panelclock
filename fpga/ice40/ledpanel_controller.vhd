@@ -10,7 +10,7 @@ entity ledpanel_controller is
       --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe_n    : out std_logic;
+      o_dsp_oe      : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_dsp_vbl     : out std_logic;
@@ -88,13 +88,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_clk24M           : std_logic;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
-
+   signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
+   signal s_ram_read         : std_logic;
+   signal s_panel_reset_n    : std_logic := '0';
+   
    signal s_init_data_idx    : unsigned(7 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
    signal s_init_data_out    : std_logic_vector(7 downto 0);
                            
-   signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
-   signal s_ram_rd           : std_logic;
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(14 downto 0);
@@ -109,12 +110,13 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
 
    signal s_api_colordata    : std_logic_vector (7 downto 0);
+   signal s_dsp_latch        : std_logic;
 
-   signal s_rect_x           : unsigned(7 downto 0);
-   signal s_rect_px          : unsigned(7 downto 0);
-   signal s_rect_py          : unsigned(7 downto 0);
-   signal s_rect_dx          : unsigned(7 downto 0);
-   signal s_rect_dy          : unsigned(7 downto 0);
+   signal s_rect_x            : unsigned(7 downto 0);
+   signal s_rect_px           : unsigned(7 downto 0);
+   signal s_rect_py           : unsigned(7 downto 0);
+   signal s_rect_dx           : unsigned(7 downto 0);
+   signal s_rect_dy           : unsigned(7 downto 0);
 
    signal s_rmw_step         : integer := 0;
    signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
@@ -126,14 +128,14 @@ begin
    LEDChip : FM6124
    port map (
       i_clk30M    => s_clk30M,
-      i_reset_n   => i_reset_n,
+      i_reset_n   => s_panel_reset_n,
       --
       o_addr      => s_ram_rd_addr,
-      o_read      => s_ram_rd,
+      o_read      => s_ram_read,
       o_dsp_clk   => o_dsp_clk,
-      o_dsp_latch => o_dsp_latch,
+      o_dsp_latch => s_dsp_latch,
       o_dsp_addr  => o_dsp_addr,
-      o_dsp_oe_n    => o_dsp_oe_n,
+      o_dsp_oe_n  => o_dsp_oe,
       o_dsp_vbl   => o_dsp_vbl
    );
         
@@ -171,6 +173,8 @@ begin
       o_count => s_init_data_size,
       o_data  => s_init_data_out
    );
+   
+   o_dsp_latch <= s_dsp_latch;
       
    p_clocks: process (i_clk120M)
    variable clk_scaler  : integer := 0;
@@ -285,7 +289,7 @@ begin
             s_rmw_step         <= 0;  -- an interrupted read-modify-write cycle is restarted
          end if;
             
-         if s_ram_rd = '1' then           
+         if s_ram_read = '1' then           
             -- read pixel values during a row refresh cycle.
             o_sram_wr     <= '1';
             o_sram_addr   <= s_ram_rd_addr;
@@ -335,17 +339,19 @@ begin
    p_receive_api: process(i_reset_n, i_clk120M)
    variable v_rcv_dataclk      : std_logic := '0';
    variable v_last_rcv_dataclk : std_logic := '0';
-   variable v_init_delay       : integer := 1;
-   variable v_init_idx         : unsigned(7 downto 0) := to_unsigned(0, 8);
+   variable v_init_delay       : unsigned(15 downto 0) := to_unsigned(65535, 16);
+   variable v_init_idx         : unsigned(7 downto 0) := to_unsigned(0, 8); 
    begin
       if i_reset_n = '0' then
+         s_panel_reset_n    <= '0';
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
-         v_init_delay       := 2;
+         v_init_delay       := to_unsigned(2, v_init_delay'length);
       
       elsif rising_edge(i_clk120M) then      
          if v_init_idx = s_init_data_size then
+            s_panel_reset_n    <= '1';
             s_fifo_datain <= s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
          else
@@ -354,7 +360,7 @@ begin
             
             v_init_delay := v_init_delay - 1;
             if v_init_delay = 0 then
-               v_init_delay := 2;
+               v_init_delay := to_unsigned(2, v_init_delay'length);
                v_init_idx := v_init_idx + 1;
                v_rcv_dataclk := '1';
             else

@@ -15,7 +15,7 @@ architecture Behavioral of ledpanel_controller_tb is
       --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe_n    : out std_logic;
+      o_dsp_oe      : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_dsp_vbl     : out std_logic;
@@ -28,7 +28,7 @@ architecture Behavioral of ledpanel_controller_tb is
    );
    end component ledpanel_controller;
 
-   constant HALF_PERIOD : time := 4.17 ns;  -- 120MHz = 8.333ns
+   constant HALF_PERIOD : time := 4.16 ns;  -- 120MHz = 8.33ns
 
    -- module under test inputs
    signal tb_clk        : std_logic;
@@ -61,7 +61,7 @@ architecture Behavioral of ledpanel_controller_tb is
                              
       o_dsp_clk             => tb_dsp_clk,
       o_dsp_latch           => tb_dsp_latch,
-      o_dsp_oe_n            => tb_dsp_oe,
+      o_dsp_oe              => tb_dsp_oe,
       o_dsp_addr            => tb_dsp_addr,
       o_dsp_rgbs            => tb_dsp_rgbs,
       o_dsp_vbl             => tb_dsp_vbl,
