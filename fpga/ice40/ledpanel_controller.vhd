@@ -83,14 +83,46 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       o_data  : out std_logic_vector(7 downto 0)
    );
    end component;
+
+   component cmd_fill
+   port (   
+      i_reset_n        : in std_logic;
+      i_clk            : in std_logic;
+      i_data           : in std_logic_vector(7 downto 0);
+      i_data_rdy       : in std_logic; 
+      i_writing        : in std_logic; 
+      --
+      o_busy           : out std_logic;
+      o_need_more_data : out std_logic;
+      o_address        : out unsigned(15 downto 0);
+      o_rgb            : out std_logic_vector(23 downto 0);
+      o_write_clk      : out std_logic
+   );
+   end component cmd_fill;
    
+   component cmd_blit
+   port (   
+      i_reset_n        : in std_logic;
+      i_clk            : in std_logic;
+      i_data           : in std_logic_vector(7 downto 0);
+      i_data_rdy       : in std_logic; 
+      i_writing        : in std_logic; 
+      --
+      o_busy           : out std_logic;
+      o_need_more_data : out std_logic;
+      o_address        : out unsigned(15 downto 0);
+      o_rgb            : out std_logic_vector(23 downto 0);
+      o_write_clk      : out std_logic
+   );
+   end component cmd_blit;
+  
    signal s_clk30M           : std_logic;
    signal s_clk24M           : std_logic;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
    signal s_ram_read         : std_logic;
-   signal s_panel_reset_n    : std_logic := '0';
+   signal s_internal_reset_n : std_logic := '0';
    
    signal s_init_data_idx    : unsigned(7 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
@@ -112,23 +144,40 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_api_colordata    : std_logic_vector (7 downto 0);
    signal s_dsp_latch        : std_logic;
 
-   signal s_rect_x            : unsigned(7 downto 0);
-   signal s_rect_px           : unsigned(7 downto 0);
-   signal s_rect_py           : unsigned(7 downto 0);
-   signal s_rect_dx           : unsigned(7 downto 0);
-   signal s_rect_dy           : unsigned(7 downto 0);
+   signal s_rect_x           : unsigned(7 downto 0);
+   signal s_rect_px          : unsigned(7 downto 0);
+   signal s_rect_py          : unsigned(7 downto 0);
+   signal s_rect_dx          : unsigned(7 downto 0);
+   signal s_rect_dy          : unsigned(7 downto 0);
 
    signal s_rmw_step         : integer := 0;
    signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
    signal s_rmw_readbits     : std_logic_vector(11 downto 0);
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic := '0';
+   
+   type T_FIFOSTATE is ( REQUEST, AVAILABLE );
+   signal s_fifostate : T_FIFOSTATE := REQUEST;
+
+   signal s_cmd_fill_data_rdy       : std_logic;
+   signal s_cmd_fill_busy           : std_logic;
+   signal s_cmd_fill_need_more_data : std_logic;
+   signal s_cmd_fill_adress         : unsigned(15 downto 0);
+   signal s_cmd_fill_rgb            : std_logic_vector(23 downto 0);
+   signal s_cmd_fill_write_clk      : std_logic;
+
+   signal s_cmd_blit_data_rdy       : std_logic;
+   signal s_cmd_blit_busy           : std_logic;
+   signal s_cmd_blit_need_more_data : std_logic;
+   signal s_cmd_blit_adress         : unsigned(15 downto 0);
+   signal s_cmd_blit_rgb            : std_logic_vector(23 downto 0);
+   signal s_cmd_blit_write_clk      : std_logic;
 
 begin
    LEDChip : FM6124
    port map (
       i_clk30M    => s_clk30M,
-      i_reset_n   => s_panel_reset_n,
+      i_reset_n   => s_internal_reset_n,
       --
       o_addr      => s_ram_rd_addr,
       o_read      => s_ram_read,
@@ -157,7 +206,7 @@ begin
    
    PCFIFO : FIFO 
    port map (
-      i_reset_n => i_reset_n,
+      i_reset_n => s_internal_reset_n,
       i_clk     => i_clk120M,
       i_wen     => s_fifo_wen,
       i_ren     => s_fifo_ren,
@@ -172,6 +221,34 @@ begin
       i_idx   => s_init_data_idx,
       o_count => s_init_data_size,
       o_data  => s_init_data_out
+   );
+   
+   cmd_fill_impl : cmd_fill
+   port map (
+      i_reset_n        => s_internal_reset_n,
+      i_clk            => i_clk120M,
+      i_data           => s_fifo_dataout,
+      i_data_rdy       => s_cmd_fill_data_rdy,
+      i_writing        => s_rmw_in_progress,
+      o_busy           => s_cmd_fill_busy,
+      o_need_more_data => s_cmd_fill_need_more_data,
+      o_address        => s_cmd_fill_adress,
+      o_rgb            => s_cmd_fill_rgb,
+      o_write_clk      => s_cmd_fill_write_clk
+   );
+
+   cmd_blit_impl : cmd_blit
+   port map (
+      i_reset_n        => s_internal_reset_n,
+      i_clk            => i_clk120M,
+      i_data           => s_fifo_dataout,
+      i_data_rdy       => s_cmd_fill_data_rdy,
+      i_writing        => s_rmw_in_progress,
+      o_busy           => s_cmd_blit_busy,
+      o_need_more_data => s_cmd_blit_need_more_data,
+      o_address        => s_cmd_blit_adress,
+      o_rgb            => s_cmd_blit_rgb,
+      o_write_clk      => s_cmd_blit_write_clk
    );
    
    o_dsp_latch <= s_dsp_latch;
@@ -274,7 +351,7 @@ begin
    --   s_ram_wr_clk
    variable v_updated_bits   : std_logic_vector (11 downto 0);
    begin    
-      if i_reset_n = '0' then      
+      if s_internal_reset_n = '0' then      
          o_sram_cs         <= '1'; 
          s_rmw_in_progress <= '0';
                
@@ -336,14 +413,33 @@ begin
       end if;
    end process;
    
-   p_receive_api: process(i_reset_n, i_clk120M)
-   variable v_rcv_dataclk      : std_logic := '0';
-   variable v_last_rcv_dataclk : std_logic := '0';
-   variable v_init_delay       : unsigned(15 downto 0) := to_unsigned(65535, 16);
-   variable v_init_idx         : unsigned(7 downto 0) := to_unsigned(0, 8); 
+   p_reset : process(i_reset_n, i_clk120M)
+   variable v_reset_countdown : unsigned(15 downto 0) := to_unsigned(65536, 16);
+   variable v_reset_n         : std_logic := '0';
    begin
       if i_reset_n = '0' then
-         s_panel_reset_n    <= '0';
+         s_internal_reset_n    <= '0';
+         v_reset_countdown  := to_unsigned(1000, v_reset_countdown'length);
+      elsif rising_edge(i_clk120M) then
+         if v_reset_countdown = 0 then
+            v_reset_n := '1';
+         else
+            v_reset_countdown := v_reset_countdown - 1;
+         end if;
+      end if;
+      s_internal_reset_n <= i_reset_n and v_reset_n;
+   end process;
+
+   -- receive API date (byte), initially from internal storage (init_data)
+   -- after that from external UART.
+   -- received data is stored in a FIFO to decouple reception from processing.
+   p_receive_api: process(s_internal_reset_n, i_clk120M)
+   variable v_rcv_dataclk      : std_logic;
+   variable v_last_rcv_dataclk : std_logic;
+   variable v_init_delay       : unsigned(15 downto 0);
+   variable v_init_idx         : unsigned(7 downto 0); 
+   begin
+      if s_internal_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
@@ -351,7 +447,6 @@ begin
       
       elsif rising_edge(i_clk120M) then      
          if v_init_idx = s_init_data_size then
-            s_panel_reset_n    <= '1';
             s_fifo_datain <= s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
          else
@@ -378,167 +473,64 @@ begin
       end if;   
    end process;
       
-   p_handleapi: process (i_reset_n, i_clk120M)
-   type T_APISTATE is ( 
-      WAIT_CMD, 
-      BLTX, BLTY, BLTDX, BLTDY, BLT_RED, BLT_GRN, BLT_BLU, BLT_PIXEL, BLT_WAIT_PIXEL_START, BLT_WAIT_PIXEL_END, 
-      FILLX, FILLY, FILLDX, FILLDY, FILL_RED, FILL_GRN, FILL_BLU, FILL_PIXEL, FILL_WAIT_PIXEL_START, FILL_WAIT_PIXEL_END
-   ); 
-   type T_READFIFOSTATE is ( PREPARE, GET, EXECUTE ); 
-   variable v_readfifostate       : T_READFIFOSTATE;
-   variable v_apistate            : T_APISTATE;   
+   p_handleapi: process (s_internal_reset_n, i_clk120M)
    begin   
-      if i_reset_n = '0' then
+      if s_internal_reset_n = '0' then
          s_fifo_ren        <= '0';
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
          s_ram_wr_addr     <= (others => '0');   
-         v_readfifostate   := PREPARE;        
+         s_fifostate       <= REQUEST;         
       
       elsif rising_edge(i_clk120M) then
-         -- s_ram_wr_mask indicates that a colorbyte is currently being written (this
-         -- takes 8 read-modify-write cycles. It is cleared by process p_sram when completed.
-         s_ram_wr_clk <= '0';         
-         case v_readfifostate is
-         when PREPARE =>
+
+         case s_fifostate is
+         when REQUEST =>
             if s_fifo_empty = '0' then
-               s_fifo_ren      <= '1';
-               v_readfifostate := GET;
+               s_fifo_ren <= '1';
+               s_fifostate <= AVAILABLE;
             end if;
-         when GET =>
-            s_fifo_ren      <= '0';
-            v_readfifostate := EXECUTE;
-         when EXECUTE =>
-            v_readfifostate := PREPARE;
-            case v_apistate is
-            when WAIT_CMD =>            
-               if (unsigned(s_fifo_dataout) = X"01") then
-                  v_apistate := BLTX;
-               end if;
-               if (unsigned(s_fifo_dataout) = X"02") then
-                  v_apistate := FILLX;
-               end if;
-            when BLTX =>
-               s_rect_x <= unsigned(s_fifo_dataout(7 downto 0));
-               s_rect_px <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := BLTY;
-            when BLTY =>
-               s_rect_py <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := BLTDX; 
-            when BLTDX =>
-               s_rect_dx <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := BLTDY;
-            when BLTDY =>
-               s_rect_dy <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := BLT_RED;            
-            when BLT_RED =>
-               s_ram_wr_bitsR <= s_api_colordata;
-               v_apistate := BLT_GRN;
-            when BLT_GRN =>
-               s_ram_wr_bitsG <= s_api_colordata;
-               v_apistate := BLT_BLU;
-            when BLT_BLU =>
-               s_ram_wr_bitsB <= s_api_colordata;
-               v_apistate := BLT_PIXEL;
-               v_readfifostate := EXECUTE;
-            when BLT_PIXEL =>
-               if s_rect_dy = 0 or s_rect_dx = 0 then
-                  v_apistate      := WAIT_CMD;
-               else
-                  s_ram_wr_addr <= "0000" & s_rect_py(4 downto 0) & s_rect_px(5 downto 0);
-                  case std_logic_vector'(s_rect_px(6) & s_rect_py(5)) is
-                  when "00" =>
-                      s_ram_wr_mask <= "000000000111";
-                  when "01" =>
-                      s_ram_wr_mask <= "000000111000";
-                  when "10" =>
-                      s_ram_wr_mask <= "000111000000";
-                  when "11" =>
-                      s_ram_wr_mask <= "111000000000";
-                  when others =>
-                  end case;
-                  s_ram_wr_clk    <= '1';
-                  v_apistate      := BLT_WAIT_PIXEL_START;
-                  v_readfifostate := EXECUTE;
-                  -- prepare next pixel
-                  s_rect_px <= s_rect_px + 1;
-                  if s_rect_px = s_rect_x + s_rect_dx - 1 then
-                     s_rect_px <= s_rect_x;
-                     s_rect_py <= s_rect_py + 1;
-                     s_rect_dy <= s_rect_dy - 1;
-                  end if;                                     
-               end if;
-            when BLT_WAIT_PIXEL_START =>
-               if s_rmw_in_progress = '1' then
-                  v_apistate := BLT_WAIT_PIXEL_END;
-                  v_readfifostate := EXECUTE;
-               end if;
-            when BLT_WAIT_PIXEL_END =>
-               if s_rmw_in_progress = '0' then
-                  v_apistate := BLT_RED;
-               end if;
-            when FILLX =>
-               s_rect_x <= unsigned(s_fifo_dataout(7 downto 0));
-               s_rect_px <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := FILLY;
-            when FILLY =>
-               s_rect_py <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := FILLDX; 
-            when FILLDX =>
-               s_rect_dx <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := FILLDY;
-            when FILLDY =>
-               s_rect_dy <= unsigned(s_fifo_dataout(7 downto 0));
-               v_apistate := FILL_RED;            
-            when FILL_RED =>
-               s_ram_wr_bitsR <= s_api_colordata;
-               v_apistate := FILL_GRN;
-            when FILL_GRN =>
-               s_ram_wr_bitsG <= s_api_colordata;
-               v_apistate := FILL_BLU;
-            when FILL_BLU =>
-               s_ram_wr_bitsB <= s_api_colordata;
-               v_apistate := FILL_PIXEL;
-               v_readfifostate := EXECUTE;
-            when FILL_PIXEL =>
-               if s_rect_dy = 0 or s_rect_dx = 0 then
-                  v_apistate := WAIT_CMD;
-               else
-                  s_ram_wr_addr <= "0000" & s_rect_py(4 downto 0) & s_rect_px(5 downto 0);
-                  case std_logic_vector'(s_rect_px(6) & s_rect_py(5)) is
-                  when "00" =>
-                      s_ram_wr_mask <= "000000000111";
-                  when "01" =>
-                      s_ram_wr_mask <= "000000111000";
-                  when "10" =>
-                      s_ram_wr_mask <= "000111000000";
-                  when "11" =>
-                      s_ram_wr_mask <= "111000000000";
-                  when others =>
-                  end case;
-                  s_ram_wr_clk    <= '1';
-                  v_apistate      := FILL_WAIT_PIXEL_START;
-                  v_readfifostate := EXECUTE;
-                  -- prepare next pixel
-                  s_rect_px <= s_rect_px + 1;
-                  if s_rect_px = s_rect_x + s_rect_dx - 1 then
-                     s_rect_px <= s_rect_x;
-                     s_rect_py <= s_rect_py + 1;
-                     s_rect_dy <= s_rect_dy - 1;
-                  end if;                                     
-               end if;
-            when FILL_WAIT_PIXEL_START =>
-               if s_rmw_in_progress = '1' then
-                  v_apistate := FILL_WAIT_PIXEL_END;
-               end if;
-               v_readfifostate := EXECUTE;
-            when FILL_WAIT_PIXEL_END =>
-               if s_rmw_in_progress = '0' then
-                  v_apistate := FILL_PIXEL;
-               end if;
-               v_readfifostate := EXECUTE;
-            end case;      
-         end case;   
+         when AVAILABLE =>
+            s_fifo_ren <= '0';
+         end case;
+           
+         s_ram_wr_clk <= '0';         
+         s_cmd_fill_data_rdy <= '0';                  
+         s_cmd_blit_data_rdy <= '0';
+                  
+         if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' then
+            if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' then
+               if s_fifostate = AVAILABLE then
+                  s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
+                  s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
+                  s_fifostate <= REQUEST;
+               end if;                  
+            end if;
+            
+            if s_cmd_fill_write_clk = '1' or s_cmd_fill_write_clk = '1' then
+               s_ram_wr_addr <= "0000" & s_cmd_fill_adress(12 downto 8) & s_cmd_fill_adress(5 downto 0);
+               s_ram_wr_bitsR <= s_cmd_fill_rgb(7 downto 0);
+               s_ram_wr_bitsG <= s_cmd_fill_rgb(15 downto 8);
+               s_ram_wr_bitsB <= s_cmd_fill_rgb(23 downto 16);               
+               case std_logic_vector'(s_cmd_fill_adress(13) & s_cmd_fill_adress(6)) is
+               when "00" =>
+                   s_ram_wr_mask <= "000000000111";  -- panel1 top
+               when "10" =>
+                   s_ram_wr_mask <= "000000111000";  -- panel1 bottom 
+               when "01" =>
+                   s_ram_wr_mask <= "000111000000";  -- panel2 top
+               when "11" =>
+                   s_ram_wr_mask <= "111000000000";  -- panel2 bottom
+               when others =>
+               end case;
+               s_ram_wr_clk <= '1';    -- initiate a RGB pixel write cycle
+            end if;
+            
+         elsif s_fifostate = AVAILABLE then         
+            s_cmd_fill_data_rdy <= '1';
+            s_cmd_blit_data_rdy <= '1';
+            s_fifostate <= REQUEST;
+         end if;
       end if;      
    end process;
    
