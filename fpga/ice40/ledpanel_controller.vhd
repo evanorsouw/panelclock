@@ -51,7 +51,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    component UART
    port
    (
-      i_clkx8       : in std_logic;
+      i_clkx        : in std_logic;
       i_reset_n     : in std_logic;
       i_rx          : in std_logic;
       o_datain      : out std_logic_vector (7 downto 0);
@@ -122,6 +122,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
    signal s_ram_read         : std_logic;
+
    signal s_internal_reset_n : std_logic := '0';
    
    signal s_init_data_idx    : unsigned(7 downto 0);
@@ -144,14 +145,8 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_api_colordata    : std_logic_vector (7 downto 0);
    signal s_dsp_latch        : std_logic;
 
-   signal s_rect_x           : unsigned(7 downto 0);
-   signal s_rect_px          : unsigned(7 downto 0);
-   signal s_rect_py          : unsigned(7 downto 0);
-   signal s_rect_dx          : unsigned(7 downto 0);
-   signal s_rect_dy          : unsigned(7 downto 0);
-
    signal s_rmw_step         : integer := 0;
-   signal s_rmw_address      : unsigned(14 downto 0) := "000000000000000";
+   signal s_rmw_address      : unsigned(14 downto 0);
    signal s_rmw_readbits     : std_logic_vector(11 downto 0);
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic := '0';
@@ -196,7 +191,7 @@ begin
    
    PC : UART
    port map (
-      i_clkx8       => s_clk24M,
+      i_clkx        => s_clk24M,
       i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --
@@ -242,7 +237,7 @@ begin
       i_reset_n        => s_internal_reset_n,
       i_clk            => i_clk120M,
       i_data           => s_fifo_dataout,
-      i_data_rdy       => s_cmd_fill_data_rdy,
+      i_data_rdy       => s_cmd_blit_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_blit_busy,
       o_need_more_data => s_cmd_blit_need_more_data,
@@ -254,8 +249,8 @@ begin
    o_dsp_latch <= s_dsp_latch;
       
    p_clocks: process (i_clk120M)
-   variable clk_scaler  : integer := 0;
-   variable uart_scaler : integer := 0;
+   variable clk_scaler  : integer;
+   variable uart_scaler : integer;
    begin
       if rising_edge(i_clk120M) then
                  
@@ -294,7 +289,7 @@ begin
       end if;
    end process;
 
-   p_sram: process(i_reset_n, i_clk120M)   
+   p_sram: process(s_internal_reset_n, i_clk120M)   
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
    --  +-------++-------+
@@ -414,17 +409,18 @@ begin
    end process;
    
    p_reset : process(i_reset_n, i_clk120M)
-   variable v_reset_countdown : unsigned(15 downto 0) := to_unsigned(65536, 16);
-   variable v_reset_n         : std_logic := '0';
+   variable v_reset_countup    : integer;
+   variable v_reset_n          : std_logic := '0';
    begin
       if i_reset_n = '0' then
-         s_internal_reset_n    <= '0';
-         v_reset_countdown  := to_unsigned(1000, v_reset_countdown'length);
+         s_internal_reset_n <= '0';
+         v_reset_n := '0';
+         v_reset_countup := 0;
       elsif rising_edge(i_clk120M) then
-         if v_reset_countdown = 0 then
+         if v_reset_countup = 100000 then
             v_reset_n := '1';
          else
-            v_reset_countdown := v_reset_countdown - 1;
+            v_reset_countup := v_reset_countup + 1;
          end if;
       end if;
       s_internal_reset_n <= i_reset_n and v_reset_n;
@@ -437,7 +433,7 @@ begin
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_delay       : unsigned(15 downto 0);
-   variable v_init_idx         : unsigned(7 downto 0); 
+   variable v_init_idx         : unsigned(7 downto 0);
    begin
       if s_internal_reset_n = '0' then
          v_rcv_dataclk      := '0';
@@ -451,7 +447,7 @@ begin
             v_rcv_dataclk := s_uart_dataclk;
          else
             s_init_data_idx <= v_init_idx;
-            s_fifo_datain   <= s_init_data_out;
+            s_fifo_datain <= s_init_data_out;
             
             v_init_delay := v_init_delay - 1;
             if v_init_delay = 0 then
