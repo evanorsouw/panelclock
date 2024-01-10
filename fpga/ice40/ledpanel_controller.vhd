@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity ledpanel_controller is
    port (    
-      i_clk120M     : in std_logic;
+      i_clk30M      : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
@@ -18,7 +18,7 @@ entity ledpanel_controller is
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(14 downto 0);
+      o_sram_addr   : out std_logic_vector(13 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0)
    );
 end entity ledpanel_controller;
@@ -27,10 +27,10 @@ architecture ledpanel_controller_arch of ledpanel_controller is
   
    component FM6124
    port (    
-      i_clk30M    : in std_logic;
+      i_clk       : in std_logic;
       i_reset_n   : in std_logic;
       --
-      o_addr      : out std_logic_vector (14 downto 0);
+      o_addr      : out std_logic_vector (13 downto 0);
       o_read      : out std_logic;
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
@@ -116,11 +116,9 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component cmd_blit;
   
-   signal s_clk30M           : std_logic;
-   signal s_clk24M           : std_logic;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
-   signal s_ram_rd_addr      : std_logic_vector (14 downto 0);
+   signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
    signal s_ram_read         : std_logic;
 
    signal s_internal_reset_n : std_logic := '0';
@@ -131,7 +129,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
                            
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
-   signal s_ram_wr_addr      : unsigned(14 downto 0);
+   signal s_ram_wr_addr      : unsigned(13 downto 0);
    signal s_ram_wr_bitsR     : std_logic_vector(7 downto 0);
    signal s_ram_wr_bitsG     : std_logic_vector(7 downto 0);
    signal s_ram_wr_bitsB     : std_logic_vector(7 downto 0);
@@ -145,14 +143,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_api_colordata    : std_logic_vector (7 downto 0);
    signal s_dsp_latch        : std_logic;
 
-   signal s_rmw_step         : integer := 0;
-   signal s_rmw_address      : unsigned(14 downto 0);
+   signal s_rmw_step         : integer;
+   signal s_rmw_address      : unsigned(13 downto 0);
    signal s_rmw_readbits     : std_logic_vector(11 downto 0);
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
-   signal s_rmw_in_progress  : std_logic := '0';
+   signal s_rmw_in_progress  : std_logic;
    
    type T_FIFOSTATE is ( REQUEST, AVAILABLE );
-   signal s_fifostate : T_FIFOSTATE := REQUEST;
+   signal s_fifostate : T_FIFOSTATE;
 
    signal s_cmd_fill_data_rdy       : std_logic;
    signal s_cmd_fill_busy           : std_logic;
@@ -171,7 +169,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 begin
    LEDChip : FM6124
    port map (
-      i_clk30M    => s_clk30M,
+      i_clk       => i_clk30M,
       i_reset_n   => s_internal_reset_n,
       --
       o_addr      => s_ram_rd_addr,
@@ -191,7 +189,7 @@ begin
    
    PC : UART
    port map (
-      i_clkx        => s_clk24M,
+      i_clkx        => i_clk30M,
       i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --
@@ -202,7 +200,7 @@ begin
    PCFIFO : FIFO 
    port map (
       i_reset_n => s_internal_reset_n,
-      i_clk     => i_clk120M,
+      i_clk     => i_clk30M,
       i_wen     => s_fifo_wen,
       i_ren     => s_fifo_ren,
       i_data    => s_fifo_datain,
@@ -221,7 +219,7 @@ begin
    cmd_fill_impl : cmd_fill
    port map (
       i_reset_n        => s_internal_reset_n,
-      i_clk            => i_clk120M,
+      i_clk            => i_clk30M,
       i_data           => s_fifo_dataout,
       i_data_rdy       => s_cmd_fill_data_rdy,
       i_writing        => s_rmw_in_progress,
@@ -235,7 +233,7 @@ begin
    cmd_blit_impl : cmd_blit
    port map (
       i_reset_n        => s_internal_reset_n,
-      i_clk            => i_clk120M,
+      i_clk            => i_clk30M,
       i_data           => s_fifo_dataout,
       i_data_rdy       => s_cmd_blit_data_rdy,
       i_writing        => s_rmw_in_progress,
@@ -246,50 +244,9 @@ begin
       o_write_clk      => s_cmd_blit_write_clk
    );
    
-   o_dsp_latch <= s_dsp_latch;
-      
-   p_clocks: process (i_clk120M)
-   variable clk_scaler  : integer;
-   variable uart_scaler : integer;
-   begin
-      if rising_edge(i_clk120M) then
-                 
-         case clk_scaler is
-         when 0 => 
-            s_clk30M <= '1';                      
-            clk_scaler := 1;
-         when 1 => 
-            clk_scaler := 2;
-         when 2 => 
-            s_clk30M <= '0';
-            clk_scaler := 3;
-         when others =>         
-            clk_scaler := 0;
-         end case;
-         
-         -- convert 120MHz to 24MHZ: divide by 5
-         --   _   _   _   _   _   _   _   _   _   _   _   _   
-         -- _| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_| |_ @120MHz
-         --   0   1   2   3   4   0   1   2   3   4   0   1 
-         --   _______             _______             _______
-         -- _|       |___________|       |___________|        @24MHz
-         --      0                   1                   2
-         case uart_scaler is
-         when 0 => 
-         when 1 => 
-            s_clk24M <= '1';
-            uart_scaler := uart_scaler + 1;
-         when 2 => 
-         when 3 => 
-            s_clk24M <= '0';
-            uart_scaler := uart_scaler + 1;
-         when others =>         
-            uart_scaler := 0;
-         end case;
-      end if;
-   end process;
+   o_dsp_latch <= s_dsp_latch;     
 
-   p_sram: process(s_internal_reset_n, i_clk120M)   
+   p_sram: process(s_internal_reset_n, i_clk30M)   
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
    --  +-------++-------+
@@ -350,7 +307,7 @@ begin
          o_sram_cs         <= '1'; 
          s_rmw_in_progress <= '0';
                
-      elsif rising_edge(i_clk120M) then      
+      elsif rising_edge(i_clk30M) then      
          o_sram_cs    <= '0';
          o_sram_oe    <= '0';
          
@@ -373,7 +330,7 @@ begin
             -- update external display ram during periods where display is idle showing a row.
             s_rmw_step  <= s_rmw_step + 1;     
             case s_rmw_step is
-            when 0 | 1 | 2 => -- set address to read pixelbits
+            when 0 => -- set address to read pixelbits
                if s_rmw_bitmask = "00000000" then
                   -- all bits written, we're done
                   s_rmw_in_progress   <= '0';
@@ -381,9 +338,9 @@ begin
                o_sram_addr  <= std_logic_vector(s_rmw_address);
                o_sram_wr    <= '1';
                io_sram_data <= (others => 'Z'); 
-            when 3 | 4 => -- read pixelbits
+            when 1 => -- read pixelbits
                s_rmw_readbits <= io_sram_data and not s_ram_wr_mask; 
-            when 5 | 6 | 7 => -- write modified pixel bits
+            when 2 => -- write modified pixel bits
                v_updated_bits := s_rmw_readbits;
                if ((s_ram_wr_bitsR and s_rmw_bitmask) /= "00000000") then
                   v_updated_bits := v_updated_bits or (s_ram_wr_mask and "001001001001");
@@ -397,7 +354,7 @@ begin
                io_sram_data <= v_updated_bits;
                o_sram_addr <= std_logic_vector(s_rmw_address);
                o_sram_wr   <= '0'; 
-            when 8 =>
+            when 3 =>
                -- prepare for next bit
                s_rmw_bitmask  <= '0' & s_rmw_bitmask(7 downto 1);
                s_rmw_address   <= s_rmw_address + 16#0800#;
@@ -408,16 +365,19 @@ begin
       end if;
    end process;
    
-   p_reset : process(i_reset_n, i_clk120M)
+   -- generate an internal reset signal
+   -- you cannot initialize variables or signals with explicit values, they all start at 0
+   -- we count upwards to some value and while doing so we keep reset asserted.
+   p_reset : process(i_reset_n, i_clk30M)
    variable v_reset_countup    : integer;
-   variable v_reset_n          : std_logic := '0';
+   variable v_reset_n          : std_logic;
    begin
       if i_reset_n = '0' then
          s_internal_reset_n <= '0';
          v_reset_n := '0';
          v_reset_countup := 0;
-      elsif rising_edge(i_clk120M) then
-         if v_reset_countup = 100000 then
+      elsif rising_edge(i_clk30M) then
+         if v_reset_countup = 10000 then
             v_reset_n := '1';
          else
             v_reset_countup := v_reset_countup + 1;
@@ -429,7 +389,7 @@ begin
    -- receive API date (byte), initially from internal storage (init_data)
    -- after that from external UART.
    -- received data is stored in a FIFO to decouple reception from processing.
-   p_receive_api: process(s_internal_reset_n, i_clk120M)
+   p_receive_api: process(s_internal_reset_n, i_clk30M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_delay       : unsigned(15 downto 0);
@@ -441,7 +401,7 @@ begin
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
       
-      elsif rising_edge(i_clk120M) then      
+      elsif rising_edge(i_clk30M) then      
          if v_init_idx = s_init_data_size then
             s_fifo_datain <= s_uart_datain;
             v_rcv_dataclk := s_uart_dataclk;
@@ -469,7 +429,8 @@ begin
       end if;   
    end process;
       
-   p_handleapi: process (s_internal_reset_n, i_clk120M)
+   p_handleapi: process (s_internal_reset_n, i_clk30M)
+   variable halveselect : unsigned(1 downto 0);
    begin   
       if s_internal_reset_n = '0' then
          s_fifo_ren        <= '0';
@@ -478,7 +439,7 @@ begin
          s_ram_wr_addr     <= (others => '0');   
          s_fifostate       <= REQUEST;         
       
-      elsif rising_edge(i_clk120M) then
+      elsif rising_edge(i_clk30M) then
 
          case s_fifostate is
          when REQUEST =>
@@ -504,19 +465,17 @@ begin
             end if;
             
             if s_cmd_fill_write_clk = '1' or s_cmd_fill_write_clk = '1' then
-               s_ram_wr_addr <= "0000" & s_cmd_fill_adress(12 downto 8) & s_cmd_fill_adress(5 downto 0);
+               s_ram_wr_addr <= "000" & s_cmd_fill_adress(12 downto 8) & s_cmd_fill_adress(5 downto 0);
                s_ram_wr_bitsR <= s_cmd_fill_rgb(7 downto 0);
                s_ram_wr_bitsG <= s_cmd_fill_rgb(15 downto 8);
                s_ram_wr_bitsB <= s_cmd_fill_rgb(23 downto 16);               
-               case std_logic_vector'(s_cmd_fill_adress(13) & s_cmd_fill_adress(6)) is
-               when "00" =>
-                   s_ram_wr_mask <= "000000000111";  -- panel1 top
-               when "10" =>
-                   s_ram_wr_mask <= "000000111000";  -- panel1 bottom 
-               when "01" =>
-                   s_ram_wr_mask <= "000111000000";  -- panel2 top
-               when "11" =>
-                   s_ram_wr_mask <= "111000000000";  -- panel2 bottom
+               halveselect(1) := s_cmd_fill_adress(13);
+               halveselect(0) := s_cmd_fill_adress(6);
+               case halveselect is               
+               when "00" => s_ram_wr_mask <= "000000000111";  -- panel1 top
+               when "01" => s_ram_wr_mask <= "000111000000";  -- panel2 top
+               when "10" => s_ram_wr_mask <= "000000111000";  -- panel1 bottom 
+               when "11" => s_ram_wr_mask <= "111000000000";  -- panel2 bottom
                when others =>
                end case;
                s_ram_wr_clk <= '1';    -- initiate a RGB pixel write cycle

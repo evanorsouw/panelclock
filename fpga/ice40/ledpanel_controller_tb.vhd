@@ -9,7 +9,7 @@ architecture Behavioral of ledpanel_controller_tb is
   
    component ledpanel_controller is
    port (    
-      i_clk120M     : in std_logic;
+      i_clk30M      : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
@@ -23,12 +23,12 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(14 downto 0);
+      o_sram_addr   : out std_logic_vector(13 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0)
    );
    end component ledpanel_controller;
 
-   constant HALF_PERIOD : time := 4.16 ns;  -- 120MHz = 8.33ns
+   constant HALF_PERIOD : time := 16.67 ns;  -- 30MHz = 33.33ns
 
    -- module under test inputs
    signal tb_clk        : std_logic;
@@ -45,17 +45,17 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_oe    : std_logic;
    signal tb_sram_wr    : std_logic;
    signal tb_sram_cs    : std_logic;
-   signal tb_sram_addr  : std_logic_vector(14 downto 0);
+   signal tb_sram_addr  : std_logic_vector(13 downto 0);
    signal tb_sram_data_instant  : std_logic_vector(11 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
   
-  type t_RAM is array (0 to 32767) of std_logic_vector(11 downto 0);
+  type t_RAM is array (0 to 16383) of std_logic_vector(11 downto 0);
   signal ram : t_RAM := (others => (others => '1'));
   
    begin
    MUT: ledpanel_controller
    port map (
-      i_clk120M             => tb_clk,
+      i_clk30M              => tb_clk,
       i_reset_n             => tb_reset,
       i_uart_rx             => tb_uart_rx,
                              

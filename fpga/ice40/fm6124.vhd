@@ -2,12 +2,15 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+-- latch is too late when starting a new row,
+-- when writing, the first address is wrong
+
 entity FM6124 is
    port (    
-      i_clk30M    : in std_logic;
+      i_clk       : in std_logic;   -- max 30MHz
       i_reset_n   : in std_logic;
       --
-      o_addr      : out std_logic_vector (14 downto 0);
+      o_addr      : out std_logic_vector (13 downto 0);
       o_read      : out std_logic;
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
@@ -19,12 +22,12 @@ end entity FM6124;
 
 architecture FM6124_arch of FM6124 is   
 begin
-   process (i_clk30M, i_reset_n)
+   process (i_clk, i_reset_n)
    variable v_clk_enable     : std_logic;
    variable v_column_count   : unsigned (6 downto 0);
    variable v_row_count      : unsigned (4 downto 0);
    variable v_row_count_next : unsigned (4 downto 0);
-   variable v_pixel_addr     : unsigned (14 downto 0);
+   variable v_pixel_addr     : unsigned (13 downto 0);
    variable v_oe_n           : std_logic;
    variable v_latch          : std_logic;
    variable v_read           : std_logic;
@@ -48,7 +51,7 @@ begin
          v_depth_delay     := "10000000";
          o_dsp_vbl         <= '1';
          
-      elsif rising_edge(i_clk30M) then
+      elsif rising_edge(i_clk) then
          
          v_clk_enable := '0';
          v_read := '0';
@@ -102,7 +105,7 @@ begin
 
       o_addr       <= std_logic_vector(v_pixel_addr);
       o_read       <= v_read;
-      o_dsp_clk    <= i_clk30M and v_clk_enable;
+      o_dsp_clk    <= i_clk and v_clk_enable;
       o_dsp_oe_n   <= v_oe_n;
       o_dsp_latch  <= v_latch;
       o_dsp_addr   <= std_logic_vector(v_row_count);

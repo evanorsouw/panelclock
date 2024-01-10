@@ -22,8 +22,8 @@ end entity;
 
 architecture fifo_arch of fifo is
 
-  signal wr_index    : integer range 0 to 2**FIFO_DEPTH-1 := 0;
-  signal rd_index    : integer range 0 to 2**FIFO_DEPTH-1 := 0;
+  signal wr_index    : integer range 0 to 2**FIFO_DEPTH-1;
+  signal rd_index    : integer range 0 to 2**FIFO_DEPTH-1;
   signal full        : std_logic;
   signal empty       : std_logic;
   signal fillcount   : integer range 0 to (2**FIFO_DEPTH);

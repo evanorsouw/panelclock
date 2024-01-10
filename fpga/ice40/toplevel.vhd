@@ -15,7 +15,6 @@ entity toplevel is
       o_dsp_oe      : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
-      o_test1       : out std_logic;
       -- sram pins
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
@@ -39,7 +38,7 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
-      i_clk120M     : in std_logic;
+      i_clk30M      : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
@@ -48,31 +47,32 @@ architecture toplevel_arch of toplevel is
       o_dsp_oe      : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
-      o_test1       : out std_logic;
+      o_dsp_vbl     : out std_logic;
       -- sram pins
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(14 downto 0);
+      o_sram_addr   : out std_logic_vector(13 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0)
    );
    end component;
 
-   signal s_clk120M : std_logic;
+   signal s_clk30M     : std_logic;
+   signal s_panel_addr : std_logic_vector(13 downto 0);
    
 begin  
    clock_generator : pll
    port map (
-      REFERENCECLK   => i_clk100M,
-      RESET          => i_reset_n,
+      REFERENCECLK  => i_clk100M,
+      RESET         => i_reset_n,
       --
-      PLLOUTGLOBAL   => s_clk120M,
-      plloutcore     => open
+      PLLOUTGLOBAL  => s_clk30M,
+      plloutcore    => open
    );
       
    panel_controller : ledpanel_controller
    port map (
-      i_clk120M     => s_clk120M,
+      i_clk30M      => s_clk30M,
       i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
 
@@ -81,14 +81,15 @@ begin
       o_dsp_oe      => o_dsp_oe,
       o_dsp_addr    => o_dsp_addr,
       o_dsp_rgbs    => o_dsp_rgbs,
-      o_test1       => o_test1,
       
       o_sram_oe     => o_sram_oe,
       o_sram_wr     => o_sram_wr,
       o_sram_cs     => o_sram_cs,
-      o_sram_addr   => o_sram_addr,
+      o_sram_addr   => s_panel_addr,
       io_sram_data  => io_sram_data
-   );  
+   ); 
+
+   o_sram_addr <= "0" & s_panel_addr;
       
 end architecture toplevel_arch;
             
