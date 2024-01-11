@@ -3,11 +3,12 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity whitemagic_init_screen is
-   port (         
-      i_idx   : in  unsigned(7 downto 0);
-      o_count : out unsigned(7 downto 0);
-      o_data  : out std_logic_vector(7 downto 0)
-   );
+port (         
+   i_idx   : in  unsigned(15 downto 0);
+   --
+   o_count : out unsigned(7 downto 0);
+   o_data  : out std_logic_vector(7 downto 0)
+);
 end entity;
 
 architecture whitemagic_init_screen_arch of whitemagic_init_screen is
@@ -15,7 +16,7 @@ architecture whitemagic_init_screen_arch of whitemagic_init_screen is
    constant Size : integer := 17*8;
    type t_Data is array (0 to Size-1) of std_logic_vector(7 downto 0);
    constant s_lookup : t_Data := (
-      X"02", X"00", X"1C", X"40", X"40", X"2f", X"2f", X"2f",  -- white background
+      X"02", X"00", X"00", X"40", X"40", X"2f", X"2f", X"2f",  -- white background
       
       X"02", X"06", X"27", X"13", X"01", X"00", X"00", X"00",  -- black top line
       X"02", X"05", X"28", X"15", X"13", X"00", X"00", X"00",  -- black centre

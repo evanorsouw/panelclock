@@ -24,7 +24,16 @@ entity ledpanel_controller is
 end entity ledpanel_controller;
 
 architecture ledpanel_controller_arch of ledpanel_controller is
-  
+
+   component reset_controller 
+   port (    
+      i_clk              : in std_logic;
+      i_external_reset_n : in std_logic;
+      --
+      o_reset_n          : out std_logic
+   );
+   end component;
+
    component FM6124
    port (    
       i_clk       : in std_logic;
@@ -121,9 +130,9 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
    signal s_ram_read         : std_logic;
 
-   signal s_internal_reset_n : std_logic := '0';
+   signal s_reset_n          : std_logic;
    
-   signal s_init_data_idx    : unsigned(7 downto 0);
+   signal s_init_data_idx    : unsigned(15 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
    signal s_init_data_out    : std_logic_vector(7 downto 0);
                            
@@ -167,10 +176,18 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_cmd_blit_write_clk      : std_logic;
 
 begin
+  reset : reset_controller
+  port map (    
+      i_clk              => i_clk30M,
+      i_external_reset_n => i_reset_n,
+      --
+      o_reset_n          => s_reset_n
+   );
+
    LEDChip : FM6124
    port map (
       i_clk       => i_clk30M,
-      i_reset_n   => s_internal_reset_n,
+      i_reset_n   => s_reset_n,
       --
       o_addr      => s_ram_rd_addr,
       o_read      => s_ram_read,
@@ -199,7 +216,7 @@ begin
    
    PCFIFO : FIFO 
    port map (
-      i_reset_n => s_internal_reset_n,
+      i_reset_n => s_reset_n,
       i_clk     => i_clk30M,
       i_wen     => s_fifo_wen,
       i_ren     => s_fifo_ren,
@@ -218,7 +235,7 @@ begin
    
    cmd_fill_impl : cmd_fill
    port map (
-      i_reset_n        => s_internal_reset_n,
+      i_reset_n        => s_reset_n,
       i_clk            => i_clk30M,
       i_data           => s_fifo_dataout,
       i_data_rdy       => s_cmd_fill_data_rdy,
@@ -232,7 +249,7 @@ begin
 
    cmd_blit_impl : cmd_blit
    port map (
-      i_reset_n        => s_internal_reset_n,
+      i_reset_n        => s_reset_n,
       i_clk            => i_clk30M,
       i_data           => s_fifo_dataout,
       i_data_rdy       => s_cmd_blit_data_rdy,
@@ -246,7 +263,7 @@ begin
    
    o_dsp_latch <= s_dsp_latch;     
 
-   p_sram: process(s_internal_reset_n, i_clk30M)   
+   p_sram: process(s_reset_n, i_clk30M)   
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
    --  +-------++-------+
@@ -303,7 +320,7 @@ begin
    --   s_ram_wr_clk
    variable v_updated_bits   : std_logic_vector (11 downto 0);
    begin    
-      if s_internal_reset_n = '0' then      
+      if s_reset_n = '0' then      
          o_sram_cs         <= '1'; 
          s_rmw_in_progress <= '0';
                
@@ -365,37 +382,16 @@ begin
       end if;
    end process;
    
-   -- generate an internal reset signal
-   -- you cannot initialize variables or signals with explicit values, they all start at 0
-   -- we count upwards to some value and while doing so we keep reset asserted.
-   p_reset : process(i_reset_n, i_clk30M)
-   variable v_reset_countup    : integer;
-   variable v_reset_n          : std_logic;
-   begin
-      if i_reset_n = '0' then
-         s_internal_reset_n <= '0';
-         v_reset_n := '0';
-         v_reset_countup := 0;
-      elsif rising_edge(i_clk30M) then
-         if v_reset_countup = 10000 then
-            v_reset_n := '1';
-         else
-            v_reset_countup := v_reset_countup + 1;
-         end if;
-      end if;
-      s_internal_reset_n <= i_reset_n and v_reset_n;
-   end process;
-
    -- receive API date (byte), initially from internal storage (init_data)
    -- after that from external UART.
    -- received data is stored in a FIFO to decouple reception from processing.
-   p_receive_api: process(s_internal_reset_n, i_clk30M)
+   p_receive_api: process(s_reset_n, i_clk30M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_delay       : unsigned(15 downto 0);
-   variable v_init_idx         : unsigned(7 downto 0);
+   variable v_init_idx         : unsigned(15 downto 0);
    begin
-      if s_internal_reset_n = '0' then
+      if s_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
@@ -429,10 +425,10 @@ begin
       end if;   
    end process;
       
-   p_handleapi: process (s_internal_reset_n, i_clk30M)
+   p_handleapi: process (s_reset_n, i_clk30M)
    variable halveselect : unsigned(1 downto 0);
    begin   
-      if s_internal_reset_n = '0' then
+      if s_reset_n = '0' then
          s_fifo_ren        <= '0';
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    

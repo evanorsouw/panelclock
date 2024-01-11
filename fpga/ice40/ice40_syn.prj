@@ -19,6 +19,7 @@ add_file -vhdl -lib work "uart.vhd"
 add_file -vhdl -lib work "init_data.vhd" 
 add_file -vhdl -lib work "cmd_fill.vhd" 
 add_file -vhdl -lib work "cmd_blit.vhd" 
+add_file -vhdl -lib work "reset.vhd" 
 #implementation: "ice40_Implmnt"
 impl -add ice40_Implmnt -type fpga
 
