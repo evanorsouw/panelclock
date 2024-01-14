@@ -61,8 +61,10 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    port
    (
       i_clkx        : in std_logic;
+      i_idle_ticks  : integer;
       i_reset_n     : in std_logic;
       i_rx          : in std_logic;
+      --
       o_datain      : out std_logic_vector (7 downto 0);
       o_datain_clk  : out std_logic
    );
@@ -87,7 +89,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 
    component whitemagic_init_screen
    port (
-      i_idx   : in  unsigned(7 downto 0);
+      i_idx   : in  unsigned(15 downto 0);
       o_count : out unsigned(7 downto 0);
       o_data  : out std_logic_vector(7 downto 0)
    );
@@ -207,6 +209,7 @@ begin
    PC : UART
    port map (
       i_clkx        => i_clk30M,
+      i_idle_ticks  => 10000,
       i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --

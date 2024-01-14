@@ -23,7 +23,7 @@ begin
          v_reset_n := '0';
          v_reset_countup := 0;
       elsif rising_edge(i_clk) then
-         if v_reset_countup = 1000 then
+         if v_reset_countup = 10000 then
             v_reset_n := '1';
          else
             v_reset_countup := v_reset_countup + 1;
