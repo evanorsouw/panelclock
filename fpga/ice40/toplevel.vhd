@@ -15,6 +15,8 @@ entity toplevel is
       o_dsp_oe      : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
+      o_led1        : out std_logic;
+      o_led2        : out std_logic;
       -- sram pins
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
@@ -59,7 +61,9 @@ architecture toplevel_arch of toplevel is
 
    signal s_clk30M     : std_logic;
    signal s_panel_addr : std_logic_vector(13 downto 0);
-   
+   signal s_uart_rx    : std_logic;
+   signal s_reset_n    : std_logic;
+     
 begin  
    clock_generator : pll
    port map (
@@ -90,7 +94,11 @@ begin
    ); 
 
    o_sram_addr <= "0" & s_panel_addr;
-      
+   s_uart_rx      <= i_uart_rx;
+   s_reset_n      <= i_reset_n;
+   o_led1 <= s_uart_rx;
+   o_led2 <= s_reset_n;
+
 end architecture toplevel_arch;
             
             

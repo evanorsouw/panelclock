@@ -10,14 +10,14 @@ entity ledpanel_controller is
       --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe      : out std_logic;
+      o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_dsp_vbl     : out std_logic;
       -- sram pins
-      o_sram_oe     : out std_logic;
-      o_sram_wr     : out std_logic;
-      o_sram_cs     : out std_logic;
+      o_sram_oe_n   : out std_logic;
+      o_sram_wr_n   : out std_logic;
+      o_sram_cs_n   : out std_logic;
       o_sram_addr   : out std_logic_vector(13 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0)
    );
@@ -131,6 +131,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
    signal s_ram_read         : std_logic;
+   signal s_uart_idle_ticks  : integer;
 
    signal s_reset_n          : std_logic;
    
@@ -152,7 +153,16 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
 
    signal s_api_colordata    : std_logic_vector (7 downto 0);
+   signal s_dsp_clk          : std_logic;
    signal s_dsp_latch        : std_logic;
+   signal s_dsp_addr         : std_logic_vector(4 downto 0);
+   signal s_dsp_oe_n         : std_logic;
+   signal s_dsp_vbl          : std_logic;
+   signal s_dsp_clk_delay    : std_logic;
+   signal s_dsp_latch_delay  : std_logic;
+   signal s_dsp_addr_delay   : std_logic_vector(4 downto 0);
+   signal s_dsp_oe_n_delay   : std_logic;
+   signal s_dsp_vbl_delay    : std_logic;
 
    signal s_rmw_step         : integer;
    signal s_rmw_address      : unsigned(13 downto 0);
@@ -193,11 +203,11 @@ begin
       --
       o_addr      => s_ram_rd_addr,
       o_read      => s_ram_read,
-      o_dsp_clk   => o_dsp_clk,
+      o_dsp_clk   => s_dsp_clk,
       o_dsp_latch => s_dsp_latch,
-      o_dsp_addr  => o_dsp_addr,
-      o_dsp_oe_n  => o_dsp_oe,
-      o_dsp_vbl   => o_dsp_vbl
+      o_dsp_addr  => s_dsp_addr,
+      o_dsp_oe_n  => s_dsp_oe_n,
+      o_dsp_vbl   => s_dsp_vbl
    );
         
    color_correct : linear2logarithmic
@@ -209,7 +219,7 @@ begin
    PC : UART
    port map (
       i_clkx        => i_clk30M,
-      i_idle_ticks  => 10000,
+      i_idle_ticks  => s_uart_idle_ticks,
       i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --
@@ -264,8 +274,6 @@ begin
       o_write_clk      => s_cmd_blit_write_clk
    );
    
-   o_dsp_latch <= s_dsp_latch;     
-
    p_sram: process(s_reset_n, i_clk30M)   
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
@@ -324,13 +332,14 @@ begin
    variable v_updated_bits   : std_logic_vector (11 downto 0);
    begin    
       if s_reset_n = '0' then      
-         o_sram_cs         <= '1'; 
+         o_sram_cs_n       <= '1'; 
          s_rmw_in_progress <= '0';
                
       elsif rising_edge(i_clk30M) then      
-         o_sram_cs    <= '0';
-         o_sram_oe    <= '0';
-         
+
+         o_sram_cs_n  <= '0';
+         o_sram_oe_n  <= '0';
+
          if s_ram_wr_clk = '1' then -- will remain high only 1 clock
             s_rmw_in_progress  <= '1';
             s_rmw_bitmask      <= "10000000";
@@ -340,7 +349,7 @@ begin
             
          if s_ram_read = '1' then           
             -- read pixel values during a row refresh cycle.
-            o_sram_wr     <= '1';
+            o_sram_wr_n   <= '1';
             o_sram_addr   <= s_ram_rd_addr;
             io_sram_data  <= (others => 'Z'); 
             o_dsp_rgbs    <= io_sram_data;          
@@ -356,7 +365,7 @@ begin
                   s_rmw_in_progress   <= '0';
                end if;
                o_sram_addr  <= std_logic_vector(s_rmw_address);
-               o_sram_wr    <= '1';
+               o_sram_wr_n  <= '1';
                io_sram_data <= (others => 'Z'); 
             when 1 => -- read pixelbits
                s_rmw_readbits <= io_sram_data and not s_ram_wr_mask; 
@@ -373,7 +382,7 @@ begin
                end if;            
                io_sram_data <= v_updated_bits;
                o_sram_addr <= std_logic_vector(s_rmw_address);
-               o_sram_wr   <= '0'; 
+               o_sram_wr_n <= '0'; 
             when 3 =>
                -- prepare for next bit
                s_rmw_bitmask  <= '0' & s_rmw_bitmask(7 downto 1);
@@ -383,6 +392,19 @@ begin
             end case;                   
          end if;
       end if;
+      
+      -- delay panel control lines 1 clock synchronous to the external reading of memory.
+      s_dsp_clk_delay   <= s_dsp_clk;
+      s_dsp_latch_delay <= s_dsp_latch;
+      s_dsp_addr_delay  <= s_dsp_addr;
+      s_dsp_oe_n_delay  <= s_dsp_oe_n;
+      s_dsp_vbl_delay   <= s_dsp_vbl;
+      o_dsp_clk         <= s_dsp_clk_delay;
+      o_dsp_latch       <= s_dsp_latch_delay;
+      o_dsp_addr        <= s_dsp_addr_delay;
+      o_dsp_oe_n        <= s_dsp_oe_n_delay;
+      o_dsp_vbl         <= s_dsp_vbl_delay;
+         
    end process;
    
    -- receive API date (byte), initially from internal storage (init_data)
@@ -399,32 +421,33 @@ begin
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
+         s_uart_idle_ticks  <= 30_000_000 * 20 / 9600;
       
       elsif rising_edge(i_clk30M) then      
-         if v_init_idx = s_init_data_size then
-            s_fifo_datain <= s_uart_datain;
-            v_rcv_dataclk := s_uart_dataclk;
-         else
-            s_init_data_idx <= v_init_idx;
-            s_fifo_datain <= s_init_data_out;
+         -- if v_init_idx = s_init_data_size then
+            -- s_fifo_datain <= s_uart_datain;
+            -- v_rcv_dataclk := s_uart_dataclk;
+         -- else
+            -- s_init_data_idx <= v_init_idx;
+            -- s_fifo_datain <= s_init_data_out;
             
-            v_init_delay := v_init_delay - 1;
-            if v_init_delay = 0 then
-               v_init_delay := to_unsigned(2, v_init_delay'length);
-               v_init_idx := v_init_idx + 1;
-               v_rcv_dataclk := '1';
-            else
-               v_rcv_dataclk := '0';
-            end if;
-         end if;
+            -- v_init_delay := v_init_delay - 1;
+            -- if v_init_delay = 0 then
+               -- v_init_delay := to_unsigned(2, v_init_delay'length);
+               -- v_init_idx := v_init_idx + 1;
+               -- v_rcv_dataclk := '1';
+            -- else
+               -- v_rcv_dataclk := '0';
+            -- end if;
+         -- end if;
          
-         -- write received data into fifo.
-         if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
-            s_fifo_wen    <= v_rcv_dataclk;
-         else
-            s_fifo_wen    <= '0';
-         end if;
-         v_last_rcv_dataclk := v_rcv_dataclk;
+         -- -- write received data into fifo.
+         -- if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
+            -- s_fifo_wen    <= v_rcv_dataclk;
+         -- else
+            -- s_fifo_wen    <= '0';
+         -- end if;
+         -- v_last_rcv_dataclk := v_rcv_dataclk;
       end if;   
    end process;
       

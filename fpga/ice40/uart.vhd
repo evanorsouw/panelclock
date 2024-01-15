@@ -5,7 +5,7 @@ use IEEE.NUMERIC_STD.all;
 entity UART is
    port (   
       i_clkx         : in std_logic;   -- clock at least 8x the required bitrate (e.g. 8*9600)
-      i_idle_ticks   : integer;        -- typically the number of ticks to sent 2 bytes at max baudrate
+      i_idle_ticks   : integer;        -- typically the number of ticks to sent 2 bytes at lowest baudrate
       i_reset_n      : in std_logic;
       i_rx           : in std_logic;   -- the nput uart signal
       --

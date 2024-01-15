@@ -4,7 +4,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Bui
 ProjectName=ice40
 Vendor=SiliconBlue
 Synthesis=synplify
-ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work,init_data.vhd=work,cmd_fill.vhd=work,cmd_blit.vhd=work,reset.vhd
+ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work,init_data.vhd=work,cmd_fill.vhd=work,cmd_blit.vhd=work,reset.vhd=work
 ProjectCFiles=
 CurImplementation=ice40_Implmnt
 Implementations=ice40_Implmnt
@@ -20,7 +20,7 @@ NetlistFile=ice40_Implmnt/ice40.edf
 AdditionalEDIFFile=
 IPEDIFFile=
 DesignLib=ice40_Implmnt/sbt/netlist/oadb-toplevel
-DesignView=_rt
+DesignView=_pk
 DesignCell=toplevel
 SynthesisSDCFile=ice40_Implmnt/ice40.scf
 UserPinConstraintFile=
