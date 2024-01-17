@@ -1,6 +1,10 @@
 **/*_Implmnt/**
-*.dsc
-sim*.mti
-sim*.mpf
-stdout.log
-*.tcl
+*_lse.*
+*.vdb
+*_syn.prj
+*_drc.*
+*_prim.v
+*_list
+*_file
+*.arearep
+dbStat.txt
