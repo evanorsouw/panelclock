@@ -12,7 +12,7 @@ entity toplevel is
       -- --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe      : out std_logic;
+      o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_led1        : out std_logic;
@@ -40,13 +40,13 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
-      i_clk30M      : in std_logic;
+      i_clk60M      : in std_logic;
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
-      o_dsp_oe      : out std_logic;
+      o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
       o_dsp_vbl     : out std_logic;
@@ -59,7 +59,7 @@ architecture toplevel_arch of toplevel is
    );
    end component;
 
-   signal s_clk30M     : std_logic;
+   signal s_clk60M     : std_logic;
    signal s_panel_addr : std_logic_vector(13 downto 0);
    signal s_uart_rx    : std_logic;
    signal s_reset_n    : std_logic;
@@ -70,19 +70,19 @@ begin
       REFERENCECLK  => i_clk100M,
       RESET         => i_reset_n,
       --
-      PLLOUTGLOBAL  => s_clk30M,
+      PLLOUTGLOBAL  => s_clk60M,
       plloutcore    => open
    );
       
    panel_controller : ledpanel_controller
    port map (
-      i_clk30M      => s_clk30M,
+      i_clk60M      => s_clk60M,
       i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
 
       o_dsp_clk     => o_dsp_clk,
       o_dsp_latch   => o_dsp_latch,
-      o_dsp_oe      => o_dsp_oe,
+      o_dsp_oe_n    => o_dsp_oe_n,
       o_dsp_addr    => o_dsp_addr,
       o_dsp_rgbs    => o_dsp_rgbs,
       
