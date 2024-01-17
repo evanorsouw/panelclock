@@ -4,7 +4,7 @@
 
 # Version:            2020.12.27943
 
-# File Generated:     Jan 16 2024 21:52:04
+# File Generated:     Jan 17 2024 20:29:36
 
 # Family & Device:    iCE40HX8K
 
@@ -60,6 +60,7 @@ set_io o_dsp_addr[1] G5
 set_io o_dsp_rgbs[0] E4
 set_io o_sram_addr[8] R5
 
-###ProDemote List 1
-demote_signal_unbuffered panel_controller.PC.N_1312_0_g
+###ProDemote List 2
+demote_signal_unbuffered panel_controller.PC.N_1577_0_g
+demote_signal_unbuffered panel_controller.PC.s_duratione_0_0_g
 

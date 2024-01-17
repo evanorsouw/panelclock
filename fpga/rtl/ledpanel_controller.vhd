@@ -333,66 +333,68 @@ begin
          o_sram_cs         <= '1'; 
          s_rmw_in_progress <= '0';
                
-      elsif s_ram_read = '1' then 
-         -- read pixel values during a row refresh cycle.
-         o_sram_wr     <= '1';
-         o_sram_addr   <= s_ram_rd_addr;
-         io_sram_data  <= (others => 'Z'); 
-         o_dsp_rgbs    <= io_sram_data;          
-         s_rmw_step    <= 0;  -- a possible interrupted read-modify-write cycle is restarted
-
-      elsif rising_edge(i_clk60M) then      
-
-         o_dsp_latch <= s_dsp_latch;
-         o_dsp_oe_n <= s_dsp_oe_n;
-         o_dsp_addr <= s_dsp_addr;
-         o_dsp_vbl <= s_dsp_vbl;
-
+      else
          o_sram_cs    <= '0';
          o_sram_oe    <= '0';
-         
-         if s_ram_wr_clk = '1' then -- will remain high only 1 clock
-            s_rmw_in_progress  <= '1';
-            s_rmw_bitmask      <= "10000000";
-            s_rmw_address      <= s_ram_wr_addr;
-            s_rmw_step         <= 0;  -- an interrupted read-modify-write cycle is restarted
-         end if;
-                       
-         if s_rmw_in_progress = '1' then
-            -- update external display ram during periods where display is idle showing a row.
-            s_rmw_step  <= s_rmw_step + 1;     
-            case s_rmw_step is
-            when 0 => -- set address to read pixelbits
-               if s_rmw_bitmask = "00000000" then
-                  -- all bits written, we're done
-                  s_rmw_in_progress   <= '0';
-               end if;
-               o_sram_addr  <= std_logic_vector(s_rmw_address);
-               o_sram_wr    <= '1';
-               io_sram_data <= (others => 'Z'); 
-            when 1 => -- read pixelbits
-               s_rmw_readbits <= io_sram_data and not s_ram_wr_mask; 
-            when 2 => -- write modified pixel bits
-               v_updated_bits := s_rmw_readbits;
-               if ((s_ram_wr_bitsR and s_rmw_bitmask) /= "00000000") then
-                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "001001001001");
-               end if;            
-               if ((s_ram_wr_bitsG and s_rmw_bitmask) /= "00000000") then
-                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "010010010010");
-               end if;            
-               if ((s_ram_wr_bitsB and s_rmw_bitmask) /= "00000000") then
-                  v_updated_bits := v_updated_bits or (s_ram_wr_mask and "100100100100");
-               end if;            
-               io_sram_data <= v_updated_bits;
-               o_sram_addr <= std_logic_vector(s_rmw_address);
-               o_sram_wr <= '0'; 
-            when 3 =>
-               -- prepare for next bit
-               s_rmw_bitmask <= '0' & s_rmw_bitmask(7 downto 1);
-               s_rmw_address <= s_rmw_address + 16#0800#;
-            when others =>
-               s_rmw_step <= 0;
-            end case;                   
+           
+         if s_ram_read = '1' then 
+            -- read pixel values during a row refresh cycle.
+            o_sram_wr     <= '1';
+            o_sram_addr   <= s_ram_rd_addr;
+            io_sram_data  <= (others => 'Z'); 
+            o_dsp_rgbs    <= io_sram_data;          
+            s_rmw_step    <= 0;  -- a possible interrupted read-modify-write cycle is restarted
+
+         elsif rising_edge(i_clk60M) then      
+
+            o_dsp_latch <= s_dsp_latch;
+            o_dsp_oe_n <= s_dsp_oe_n;
+            o_dsp_addr <= s_dsp_addr;
+            o_dsp_vbl <= s_dsp_vbl;
+            
+            if s_ram_wr_clk = '1' then -- will remain high only 1 clock
+               s_rmw_in_progress  <= '1';
+               s_rmw_bitmask      <= "10000000";
+               s_rmw_address      <= s_ram_wr_addr;
+               s_rmw_step         <= 0;  -- an interrupted read-modify-write cycle is restarted
+            end if;
+                          
+            if s_rmw_in_progress = '1' then
+               -- update external display ram during periods where display is idle showing a row.
+               s_rmw_step  <= s_rmw_step + 1;     
+               case s_rmw_step is
+               when 0 => -- set address to read pixelbits
+                  if s_rmw_bitmask = "00000000" then
+                     -- all bits written, we're done
+                     s_rmw_in_progress   <= '0';
+                  end if;
+                  o_sram_addr  <= std_logic_vector(s_rmw_address);
+                  o_sram_wr    <= '1';
+                  io_sram_data <= (others => 'Z'); 
+               when 1 => -- read pixelbits
+                  s_rmw_readbits <= io_sram_data and not s_ram_wr_mask; 
+               when 2 => -- write modified pixel bits
+                  v_updated_bits := s_rmw_readbits;
+                  if ((s_ram_wr_bitsR and s_rmw_bitmask) /= "00000000") then
+                     v_updated_bits := v_updated_bits or (s_ram_wr_mask and "001001001001");
+                  end if;            
+                  if ((s_ram_wr_bitsG and s_rmw_bitmask) /= "00000000") then
+                     v_updated_bits := v_updated_bits or (s_ram_wr_mask and "010010010010");
+                  end if;            
+                  if ((s_ram_wr_bitsB and s_rmw_bitmask) /= "00000000") then
+                     v_updated_bits := v_updated_bits or (s_ram_wr_mask and "100100100100");
+                  end if;            
+                  io_sram_data <= v_updated_bits;
+                  o_sram_addr <= std_logic_vector(s_rmw_address);
+                  o_sram_wr <= '0'; 
+               when 3 =>
+                  -- prepare for next bit
+                  s_rmw_bitmask <= '0' & s_rmw_bitmask(7 downto 1);
+                  s_rmw_address <= s_rmw_address + 16#0800#;
+               when others =>
+                  s_rmw_step <= 0;
+               end case;                   
+            end if;
          end if;
       end if;
    end process;

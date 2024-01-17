@@ -16,16 +16,16 @@ architecture whitemagic_init_screen_arch of whitemagic_init_screen is
    constant Size : integer := 17*8;
    type t_Data is array (0 to Size-1) of std_logic_vector(7 downto 0);
    constant s_lookup : t_Data := (
-      X"02", X"01", X"01", X"3E", X"3E", X"2f", X"2f", X"2f",  -- white background
+      X"02", X"00", X"00", X"40", X"40", X"1f", X"1f", X"1f",  -- white background
       
       X"02", X"06", X"27", X"13", X"01", X"00", X"00", X"00",  -- black top line
       X"02", X"05", X"28", X"15", X"13", X"00", X"00", X"00",  -- black centre
       X"02", X"06", X"3B", X"13", X"01", X"00", X"00", X"00",  -- black bottom line
       
       X"02", X"01", X"2D", X"04", X"04", X"00", X"00", X"00",  -- top connector
-      X"02", X"02", X"2E", X"06", X"02", X"2f", X"2f", X"2f",  -- top connector infill
+      X"02", X"02", X"2E", X"06", X"02", X"1f", X"1f", X"1f",  -- top connector infill
       X"02", X"01", X"34", X"04", X"04", X"00", X"00", X"00",  -- bottom connector      
-      X"02", X"02", X"35", X"06", X"02", X"2f", X"2f", X"2f",  -- bottom connector infill
+      X"02", X"02", X"35", X"06", X"02", X"1f", X"1f", X"1f",  -- bottom connector infill
 
       X"02", X"0A", X"32", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 1
       X"02", X"12", X"32", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 2

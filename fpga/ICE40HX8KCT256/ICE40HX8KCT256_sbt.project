@@ -1,31 +1,18 @@
-[Project]
-ProjectVersion=2.0
-Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Build Date: Dec 9 2020 18:31:09
-ProjectName=ice40
-Vendor=SiliconBlue
-Synthesis=synplify
-ProjectVFiles=pll.vhd=work,brightness_control.vhd=work,fifo.vhd=work,fm6124.vhd=work,toplevel.vhd=work,ledpanel_controller.vhd=work,linear2logarithmic.vhd=work,uart.vhd=work,init_data.vhd=work,cmd_fill.vhd=work,cmd_blit.vhd=work,reset.vhd=work
-ProjectCFiles=
-CurImplementation=ice40_Implmnt
-Implementations=ice40_Implmnt
-StartFromSynthesis=yes
-IPGeneration=false
-
-[ice40_Implmnt]
+[ICE40HX8KCT256_Implmnt]
 DeviceFamily=iCE40
 Device=HX8K
 DevicePackage=CT256
 DevicePower=
-NetlistFile=ice40_Implmnt/ice40.edf
+NetlistFile=ICE40HX8KCT256_Implmnt/ICE40HX8KCT256.edf
 AdditionalEDIFFile=
 IPEDIFFile=
-DesignLib=ice40_Implmnt/sbt/netlist/oadb-toplevel
-DesignView=_ep
+DesignLib=ICE40HX8KCT256_Implmnt/sbt/netlist/oadb-toplevel
+DesignView=_rt
 DesignCell=toplevel
-SynthesisSDCFile=ice40_Implmnt/ice40.scf
+SynthesisSDCFile=ICE40HX8KCT256_Implmnt/ICE40HX8KCT256.scf
 UserPinConstraintFile=
-UserSDCFile=toplevel.sdc
-PhysicalConstraintFile=toplevel_pcf_sbt.pcf
+UserSDCFile=
+PhysicalConstraintFile=toplevel.pcf
 BackendImplPathName=
 Devicevoltage=1.14
 DevicevoltagePerformance=+/-5%(datasheet default)
@@ -38,6 +25,19 @@ BestCustomTemperature=0
 IOBankVoltages=topBank,2.5 bottomBank,2.5 leftBank,2.5 rightBank,2.5
 derValue=0.701346
 TimingPathNumberStick=0
+
+[Project]
+ProjectVersion=2.0
+Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Build Date: Dec 9 2020 18:31:09
+ProjectName=ICE40HX8KCT256
+Vendor=SiliconBlue
+Synthesis=lse
+ProjectVFiles=../rtl/brightness_control.vhd=work,../rtl/cmd_blit.vhd=work,../rtl/cmd_fill.vhd=work,../rtl/fifo.vhd=work,../rtl/fm6124.vhd=work,../rtl/init_data.vhd=work,../rtl/ledpanel_controller.vhd=work,../rtl/linear2logarithmic.vhd=work,../rtl/reset.vhd=work,../rtl/toplevel.vhd=work,../rtl/uart.vhd=work,pll.vhd=work
+ProjectCFiles=toplevel.sdc
+CurImplementation=ICE40HX8KCT256_Implmnt
+Implementations=ICE40HX8KCT256_Implmnt
+StartFromSynthesis=yes
+IPGeneration=false
 
 [lse options]
 CarryChain=True
