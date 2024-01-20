@@ -13,6 +13,7 @@ architecture Behavioral of ledpanel_controller_tb is
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
+      o_uart_tx     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -30,6 +31,7 @@ architecture Behavioral of ledpanel_controller_tb is
 
    constant CLOCK       : time := 1000 ms / 60000000; -- 60MHz
    constant RAM_SPEED   : time := 10ns;
+   constant BAUD        : time := 1000ms / 115200;
 
    -- module under test inputs
    signal tb_clk        : std_logic;
@@ -37,6 +39,7 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_uart_rx    : std_logic;
    
    -- module under test outputs;
+   signal tb_uart_tx    : std_logic;
    signal tb_dsp_clk    : std_logic;
    signal tb_dsp_latch  : std_logic;
    signal tb_dsp_oe_n    : std_logic;
@@ -59,6 +62,7 @@ architecture Behavioral of ledpanel_controller_tb is
       i_reset_n             => tb_reset,
       i_uart_rx             => tb_uart_rx,
                              
+      o_uart_tx             => tb_uart_tx,
       o_dsp_clk             => tb_dsp_clk,
       o_dsp_latch           => tb_dsp_latch,
       o_dsp_oe_n            => tb_dsp_oe_n,
@@ -91,7 +95,28 @@ architecture Behavioral of ledpanel_controller_tb is
          tb_sram_data <= ram(to_integer(unsigned(tb_sram_addr))) after RAM_SPEED;
       end if;
    end process;
-   
+
+   uart_stimulate : process
+   variable v_byte : std_logic_vector(7 downto 0);
+   begin
+      tb_uart_rx <= '1';  -- stopbit
+      wait for 6 ms;
+
+      for j in 1 to 10 loop
+
+         v_byte := X"02";
+         tb_uart_rx <= '0';  -- start
+         wait for BAUD;
+         for k in 0 to 7 loop
+            tb_uart_rx <= v_byte(k);            
+            wait for BAUD;
+         end loop;           
+         tb_uart_rx <= '1';  -- stopbit
+         wait for BAUD;
+            
+      end loop;
+   end process uart_stimulate;
+  
    reset_gen : process
    begin
       for i in 1 to 5 loop

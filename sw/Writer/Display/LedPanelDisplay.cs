@@ -41,51 +41,24 @@ namespace WhiteMagic.PanelClock.Display
             }
             var bytes = _writeBuffer;
             var i = 0;
+
             bytes[i++] = 1;
             bytes[i++] = 0;
             bytes[i++] = 0;
+            bytes[i++] = 64;
+            bytes[i++] = 64;
             for (int y = 0; y < 64; ++y)
             {
-                bytes[i++] = 2;
-                bytes[i++] = (byte)128;
-                for (int x = 0; x < 128; ++x)
+                for (int x = 0; x < 64; ++x)
                 {
-                    var pix = bitmap.GetPixel(x, y);
-                    //bytes[i++] = (byte)(255 - pix.R);
-                    //bytes[i++] = (byte)(255 - pix.G);
-                    //bytes[i++] = (byte)(255 - pix.B);
+                    var pix = bitmap.GetPixel(32+x, y);
                     bytes[i++] = pix.R;
                     bytes[i++] = pix.G;
                     bytes[i++] = pix.B;
                 }
             }
+
             WriteBytes(_writeBuffer, i);
-        }
-
-        public void SetBrightness(int b)
-        {
-            WriteBytes(new byte[] { 4, (byte)b }, 2);
-        }
-
-        public void SetPixel(int x, int y, int color)
-        {
-            SetPixel(x * _hPanels * 64, y, color);
-        }
-
-        public void SetPixel(int addr, int color)
-        {
-            var bytes = new byte[20];
-
-            int i = 0;
-            bytes[i++] = 1;
-            bytes[i++] = (byte)(addr >> 8);
-            bytes[i++] = (byte)addr;
-            bytes[i++] = 2;
-            bytes[i++] = (byte)1;
-            bytes[i++] = (byte)((color >> 16) & 0xFF);
-            bytes[i++] = (byte)((color >> 8) & 0xFF);
-            bytes[i++] = (byte)((color >> 0) & 0xFF);
-            WriteBytes(bytes, i);
         }
 
         private void Initialize()
@@ -107,7 +80,7 @@ namespace WhiteMagic.PanelClock.Display
             Close();
             try
             {
-                _comm = new SerialPort(_port, 3000000, Parity.None, 8, StopBits.One);
+                _comm = new SerialPort(_port, 115200, Parity.None, 8, StopBits.One);
                 _comm.Open();
             }
             catch (Exception ex)

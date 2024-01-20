@@ -10,6 +10,7 @@ entity toplevel is
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       -- --
+      o_uart_tx     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -44,6 +45,7 @@ architecture toplevel_arch of toplevel is
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
+      o_uart_tx     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -55,14 +57,14 @@ architecture toplevel_arch of toplevel is
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
       o_sram_addr   : out std_logic_vector(13 downto 0);
-      io_sram_data  : inout std_logic_vector(11 downto 0)
+      io_sram_data  : inout std_logic_vector(11 downto 0);
+      --
+      o_test        : out std_logic
    );
    end component;
 
    signal s_clk60M     : std_logic;
    signal s_panel_addr : std_logic_vector(13 downto 0);
-   signal s_uart_rx    : std_logic;
-   signal s_reset_n    : std_logic;
      
 begin  
    clock_generator : pll
@@ -79,6 +81,7 @@ begin
       i_clk60M      => s_clk60M,
       i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
+      o_uart_tx     => o_uart_tx,
 
       o_dsp_clk     => o_dsp_clk,
       o_dsp_latch   => o_dsp_latch,
@@ -90,14 +93,13 @@ begin
       o_sram_wr     => o_sram_wr,
       o_sram_cs     => o_sram_cs,
       o_sram_addr   => s_panel_addr,
-      io_sram_data  => io_sram_data
+      io_sram_data  => io_sram_data,
+      
+      o_test       => o_led2
    ); 
 
    o_sram_addr <= "0" & s_panel_addr;
-   s_uart_rx      <= i_uart_rx;
-   s_reset_n      <= i_reset_n;
-   o_led1 <= s_uart_rx;
-   o_led2 <= s_reset_n;
+   o_led1      <= i_uart_rx;
 
 end architecture toplevel_arch;
             

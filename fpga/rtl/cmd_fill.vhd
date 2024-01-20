@@ -117,6 +117,7 @@ begin
                if s_dy = 0 then     -- check if done with rectangle
                   s_state <= CMD;
                   o_busy <= '0';
+                  o_need_more_data <= '0';                  
                else
                   s_state <= WRITE_PIXELS;
                end if;

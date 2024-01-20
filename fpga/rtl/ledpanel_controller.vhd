@@ -8,6 +8,7 @@ entity ledpanel_controller is
       i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
+      o_uart_tx     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -19,7 +20,9 @@ entity ledpanel_controller is
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
       o_sram_addr   : out std_logic_vector(13 downto 0);
-      io_sram_data  : inout std_logic_vector(11 downto 0)
+      io_sram_data  : inout std_logic_vector(11 downto 0);
+      --
+      o_test        : out std_logic
    );
 end entity ledpanel_controller;
 
@@ -61,7 +64,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    port
    (
       i_clkx        : in std_logic;
-      i_idle_ticks  : integer;
+      i_ticks       : integer;
       i_reset_n     : in std_logic;
       i_rx          : in std_logic;
       --
@@ -133,7 +136,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_read         : std_logic;
 
    signal s_reset_n          : std_logic;
-   signal s_uart_idle_ticks  : integer;
+   signal s_uart_ticks       : integer;
    
    signal s_init_data_idx    : unsigned(15 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
@@ -214,7 +217,7 @@ begin
    PC : UART
    port map (
       i_clkx        => i_clk60M,
-      i_idle_ticks  => s_uart_idle_ticks,
+      i_ticks       => s_uart_ticks,
       i_reset_n     => i_reset_n,
       i_rx          => i_uart_rx,
       --
@@ -270,6 +273,7 @@ begin
    );
 
    o_dsp_clk <= s_dsp_clk;
+   o_uart_tx <= i_uart_rx;
    
    
    p_sram: process(s_reset_n, i_clk60M, s_ram_rd_addr, s_ram_read)
@@ -405,7 +409,7 @@ begin
    p_receive_api: process(s_reset_n, i_clk60M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
-   variable v_init_delay       : unsigned(15 downto 0);
+   variable v_init_delay       : unsigned(31 downto 0);
    variable v_init_idx         : unsigned(15 downto 0);
    begin
       if s_reset_n = '0' then
@@ -413,7 +417,8 @@ begin
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
-         s_uart_idle_ticks  <= 60000000 * 20 / 9600;
+         -- s_uart_ticks       <= 60000000 * 20 / 9600;   -- smart uart
+         s_uart_ticks       <= 520; -- fixed  uart
       
       elsif rising_edge(i_clk60M) then      
          if v_init_idx = s_init_data_size then
@@ -444,7 +449,10 @@ begin
    end process;
       
    p_handleapi: process (s_reset_n, i_clk60M)
-   variable halveselect : unsigned(1 downto 0);
+   variable v_cmd_address : unsigned(15 downto 0);
+   variable v_cmd_rgbs    : std_logic_vector(23 downto 0);
+   variable v_cmd_write   : std_logic;
+   variable halveselect   : unsigned(1 downto 0);
    begin   
       if s_reset_n = '0' then
          s_fifo_ren        <= '0';
@@ -470,6 +478,7 @@ begin
          s_cmd_blit_data_rdy <= '0';
                   
          if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' then
+            o_test <= '0';
             if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' then
                if s_fifostate = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
@@ -477,14 +486,24 @@ begin
                   s_fifostate <= REQUEST;
                end if;                  
             end if;
-            
-            if s_cmd_fill_write_clk = '1' or s_cmd_fill_write_clk = '1' then
-               s_ram_wr_addr <= "000" & s_cmd_fill_adress(12 downto 8) & s_cmd_fill_adress(5 downto 0);
-               s_ram_wr_bitsR <= s_cmd_fill_rgb(7 downto 0);
-               s_ram_wr_bitsG <= s_cmd_fill_rgb(15 downto 8);
-               s_ram_wr_bitsB <= s_cmd_fill_rgb(23 downto 16);               
-               halveselect(1) := s_cmd_fill_adress(13);
-               halveselect(0) := s_cmd_fill_adress(6);
+
+            v_cmd_write := '0';            
+            if s_cmd_fill_write_clk = '1' then
+               v_cmd_address := s_cmd_fill_adress;
+               v_cmd_rgbs := s_cmd_fill_rgb;      
+               v_cmd_write := '1';               
+            elsif s_cmd_blit_write_clk = '1' then
+               v_cmd_address := s_cmd_blit_adress;
+               v_cmd_rgbs := s_cmd_blit_rgb;
+               v_cmd_write := '1';
+            end if;
+            if v_cmd_write = '1' then            
+               s_ram_wr_addr <= "000" & v_cmd_address(12 downto 8) & v_cmd_address(5 downto 0);
+               s_ram_wr_bitsR <= v_cmd_rgbs(7 downto 0);
+               s_ram_wr_bitsG <= v_cmd_rgbs(15 downto 8);
+               s_ram_wr_bitsB <= v_cmd_rgbs(23 downto 16);               
+               halveselect(1) := v_cmd_address(13);
+               halveselect(0) := v_cmd_address(6);
                case halveselect is               
                when "00" => s_ram_wr_mask <= "000000000111";  -- panel1 top
                when "01" => s_ram_wr_mask <= "000111000000";  -- panel2 top
@@ -495,10 +514,13 @@ begin
                s_ram_wr_clk <= '1';    -- initiate a RGB pixel write cycle
             end if;
             
-         elsif s_fifostate = AVAILABLE then         
-            s_cmd_fill_data_rdy <= '1';
-            s_cmd_blit_data_rdy <= '1';
-            s_fifostate <= REQUEST;
+         else
+            o_test <= '1';
+            if s_fifostate = AVAILABLE then         
+               s_cmd_fill_data_rdy <= '1';
+               s_cmd_blit_data_rdy <= '1';
+               s_fifostate <= REQUEST;
+            end if;
          end if;
       end if;      
    end process;

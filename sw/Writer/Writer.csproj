@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <Platforms>AnyCPU;x64</Platforms>
     <ApplicationIcon />
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;SIM_WEATHER;SIM_DISPLAY</DefineConstants>
+    <DefineConstants>TRACE;SIM_WEATHER</DefineConstants>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 

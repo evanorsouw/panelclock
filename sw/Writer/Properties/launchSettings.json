@@ -2,7 +2,7 @@
   "profiles": {
     "Writer": {
       "commandName": "Project",
-      "commandLineArgs": "--port com10"
+      "commandLineArgs": "--port com9"
     }
   }
 }

@@ -73,16 +73,14 @@ begin
          when ARG_DY =>
             if i_data_rdy = '1' then
                s_dy <= unsigned(i_data);
-               if s_dy = 0 or s_dx = 0 then     -- done when empty rectangle
-                  s_state <= CMD;
-                  o_busy <= '0';
-                  o_need_more_data <= '0';
-               else
-                  s_state <= ARG_RED;
-               end if;
+               s_state <= ARG_RED;
             end if;
          when ARG_RED =>
-            if i_data_rdy = '1' then
+            if s_dy = 0 or s_dx = 0 then     -- done when empty rectangle
+               s_state <= CMD;
+               o_busy <= '0';
+               o_need_more_data <= '0';
+            elsif i_data_rdy = '1' then
                s_rg(7 downto 0) <= i_data;
                s_state <= ARG_GRN;
             end if;
@@ -119,6 +117,7 @@ begin
                   o_busy <= '0';
                   o_need_more_data <= '0';
                else
+                  o_need_more_data <= '1';
                   s_state <= ARG_RED;
                end if;
             end if;

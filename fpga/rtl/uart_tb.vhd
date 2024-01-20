@@ -31,7 +31,7 @@ architecture Behavioral of uart_tb is
    end component;
 
    constant CLOCK       : time := 13 us;
-   constant BAUD        : time := 104 us;  -- 9600 baud
+   constant BAUD        : time := 10.4 us;  -- 9600 baud
    constant IDLE_TIME   : time := BAUD * 30;
 
    -- module under test inputs

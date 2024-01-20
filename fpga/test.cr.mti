@@ -1,0 +1,102 @@
+D:/projects/fpgaclock/fpga/rtl/toplevel.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/toplevel.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity toplevel
+-- Compiling architecture toplevel_arch of toplevel
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/reset.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/reset.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity reset_controller
+-- Compiling architecture reset_controller_arch of reset_controller
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity cmd_blit
+-- Compiling architecture cmd_blit_arch of cmd_blit
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/fm6124.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/fm6124.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity FM6124
+-- Compiling architecture FM6124_arch of FM6124
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity uart_tb
+-- Compiling architecture Behavioral of uart_tb
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/brightness_control.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/brightness_control.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package std_logic_arith
+-- Compiling entity brightness_control
+-- Compiling architecture brightness_control_arch of brightness_control
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_fill.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_fill.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity cmd_fill
+-- Compiling architecture cmd_fill_arch of cmd_fill
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/fifo.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/fifo.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity fifo
+-- Compiling architecture fifo_arch of fifo
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd {2 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity ledpanel_controller_tb
+-- Compiling architecture Behavioral of ledpanel_controller_tb
+** Warning: D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd(33): (vcom-1207) An abstract literal and an identifier must have a separator between them.
+** Warning: D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd(34): (vcom-1207) An abstract literal and an identifier must have a separator between them.
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/init_data.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/init_data.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity whitemagic_init_screen
+-- Compiling architecture whitemagic_init_screen_arch of whitemagic_init_screen
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/linear2logarithmic.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/linear2logarithmic.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity linear2logarithmic
+-- Compiling architecture linear2logarithmic_arch of linear2logarithmic
+
+} {} {}}
