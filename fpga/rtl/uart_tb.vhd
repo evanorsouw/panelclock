@@ -11,7 +11,7 @@ architecture Behavioral of uart_tb is
    port
    (
       i_clkx        : in std_logic;
-      i_idle_ticks  : integer;
+      i_ticks       : integer;
       i_reset_n     : in std_logic;
       i_rx          : in std_logic;
       --
@@ -30,13 +30,14 @@ architecture Behavioral of uart_tb is
    );
    end component;
 
-   constant CLOCK       : time := 13 us;
-   constant BAUD        : time := 10.4 us;  -- 9600 baud
+   constant XTAL        : integer := 60000000;
+   constant CLOCK       : time := 1000 ms / XTAL;
+   constant BAUD        : time := 1000 ms / 115200;
    constant IDLE_TIME   : time := BAUD * 30;
 
    -- module under test inputs
    signal tb_reset_n    : std_logic;
-   signal tb_idle_ticks : integer;
+   signal tb_ticks      : integer;
    signal tb_clk        : std_logic;
    signal tb_uart_rx    : std_logic;
    
@@ -57,7 +58,7 @@ architecture Behavioral of uart_tb is
    MUT: UART
    port map (
       i_clkx             => tb_clk,
-      i_idle_ticks       => tb_idle_ticks,
+      i_ticks            => tb_ticks,
       i_reset_n          => tb_reset_n,
       i_rx               => tb_uart_rx,
                              
@@ -78,7 +79,7 @@ architecture Behavioral of uart_tb is
    tb_clk <= '0' after CLOCK / 2 when tb_clk = '1' else
              '1' after CLOCK / 2;
              
-   tb_idle_ticks <= IDLE_TIME / CLOCK;
+   tb_ticks <= IDLE_TIME / CLOCK;
   
    stimulate : process
    variable v_byte : std_logic_vector(7 downto 0);
@@ -95,7 +96,7 @@ architecture Behavioral of uart_tb is
          tb_uart_rx <= '1';
          wait for IDLE_TIME * 3 / 2;
       
-         v_byte := X"FF";
+         v_byte := X"01";
          tb_uart_rx <= '0';  -- start
          wait for BAUD;
          for k in 0 to 7 loop
@@ -107,35 +108,35 @@ architecture Behavioral of uart_tb is
 
          wait for IDLE_TIME * 3 / 2;
 
-         -- v_byte := X"02";
-         -- tb_uart_rx <= '0';  -- start
-         -- wait for BAUD;
-         -- for k in 0 to 7 loop
-            -- tb_uart_rx <= v_byte(k);            
-            -- wait for BAUD;
-         -- end loop;           
-         -- tb_uart_rx <= '1';  -- stopbit
-         -- wait for BAUD;
+         v_byte := X"02";
+         tb_uart_rx <= '0';  -- start
+         wait for BAUD;
+         for k in 0 to 7 loop
+            tb_uart_rx <= v_byte(k);            
+            wait for BAUD;
+         end loop;           
+         tb_uart_rx <= '1';  -- stopbit
+         wait for BAUD;
 
-         -- v_byte := X"03";
-         -- tb_uart_rx <= '0';  -- start
-         -- wait for BAUD;
-         -- for k in 0 to 7 loop
-            -- tb_uart_rx <= v_byte(k);            
-            -- wait for BAUD;
-         -- end loop;           
-         -- tb_uart_rx <= '1';  -- stopbit
-         -- wait for BAUD;
+         v_byte := X"03";
+         tb_uart_rx <= '0';  -- start
+         wait for BAUD;
+         for k in 0 to 7 loop
+            tb_uart_rx <= v_byte(k);            
+            wait for BAUD;
+         end loop;           
+         tb_uart_rx <= '1';  -- stopbit
+         wait for BAUD;
 
-         -- v_byte := X"04";
-         -- tb_uart_rx <= '0';  -- start
-         -- wait for BAUD;
-         -- for k in 0 to 7 loop
-            -- tb_uart_rx <= v_byte(k);            
-            -- wait for BAUD;
-         -- end loop;           
-         -- tb_uart_rx <= '1';  -- stopbit
-         -- wait for BAUD;
+         v_byte := X"04";
+         tb_uart_rx <= '0';  -- start
+         wait for BAUD;
+         for k in 0 to 7 loop
+            tb_uart_rx <= v_byte(k);            
+            wait for BAUD;
+         end loop;           
+         tb_uart_rx <= '1';  -- stopbit
+         wait for BAUD;
          
       end loop;
       

@@ -61,6 +61,15 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity cmd_fill
 -- Compiling architecture cmd_fill_arch of cmd_fill
 
+} {} {}} D:/projects/fpgaclock/fpga/rtl/uart.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/uart.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity UART
+-- Compiling architecture UART_arch of UART
+
 } {} {}} D:/projects/fpgaclock/fpga/rtl/fifo.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/fifo.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
@@ -89,14 +98,5 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Loading package NUMERIC_STD
 -- Compiling entity whitemagic_init_screen
 -- Compiling architecture whitemagic_init_screen_arch of whitemagic_init_screen
-
-} {} {}} D:/projects/fpgaclock/fpga/rtl/linear2logarithmic.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/linear2logarithmic.vhd
-Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
--- Loading package STANDARD
--- Loading package TEXTIO
--- Loading package std_logic_1164
--- Loading package NUMERIC_STD
--- Compiling entity linear2logarithmic
--- Compiling architecture linear2logarithmic_arch of linear2logarithmic
 
 } {} {}}

@@ -54,9 +54,9 @@ architecture ledpanel_controller_arch of ledpanel_controller is
  
    component linear2logarithmic
    port (    
-      lin    : in std_logic_vector (7 downto 0);
+      i_lin    : in std_logic_vector (7 downto 0);
       --
-      log    : out std_logic_vector (7 downto 0)
+      o_log    : out std_logic_vector (7 downto 0)
    );
    end component;   
 
@@ -103,6 +103,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       i_reset_n        : in std_logic;
       i_clk            : in std_logic;
       i_data           : in std_logic_vector(7 downto 0);
+      i_color_data     : in std_logic_vector(7 downto 0);
       i_data_rdy       : in std_logic; 
       i_writing        : in std_logic; 
       --
@@ -119,6 +120,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       i_reset_n        : in std_logic;
       i_clk            : in std_logic;
       i_data           : in std_logic_vector(7 downto 0);
+      i_color_data     : in std_logic_vector(7 downto 0);
       i_data_rdy       : in std_logic; 
       i_writing        : in std_logic; 
       --
@@ -155,7 +157,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_fifo_dataout     : std_logic_vector (7 downto 0);
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
 
-   signal s_api_colordata    : std_logic_vector (7 downto 0);
+   signal s_fifo_dataout_color    : std_logic_vector (7 downto 0);
    signal s_dsp_clk          : std_logic;
    signal s_dsp_latch        : std_logic;
    signal s_dsp_oe_n         : std_logic;
@@ -210,8 +212,8 @@ begin
         
    color_correct : linear2logarithmic
    port map (
-      lin => s_fifo_dataout,
-      log => s_api_colordata
+      i_lin => s_fifo_dataout,
+      o_log => s_fifo_dataout_color
    );  
    
    PC : UART
@@ -237,6 +239,7 @@ begin
       o_empty   => s_fifo_empty
    );
 
+
    init_data : whitemagic_init_screen
    port map (
       i_idx   => s_init_data_idx,
@@ -249,6 +252,7 @@ begin
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
       i_data           => s_fifo_dataout,
+      i_color_data     => s_fifo_dataout_color,
       i_data_rdy       => s_cmd_fill_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_fill_busy,
@@ -263,6 +267,7 @@ begin
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
       i_data           => s_fifo_dataout,
+      i_color_data     => s_fifo_dataout_color,
       i_data_rdy       => s_cmd_blit_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_blit_busy,
@@ -417,8 +422,8 @@ begin
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
-         -- s_uart_ticks       <= 60000000 * 20 / 9600;   -- smart uart
-         s_uart_ticks       <= 520; -- fixed  uart
+         --s_uart_ticks       <= 2 * 60000000 * 10 / 9600;   -- smart uart, 2x duration of a byte at lowest baud
+         s_uart_ticks       <= 521; -- fixed  uart, number of 60MHz ticks for 1 bit @ 115200
       
       elsif rising_edge(i_clk60M) then      
          if v_init_idx = s_init_data_size then
@@ -453,6 +458,8 @@ begin
    variable v_cmd_rgbs    : std_logic_vector(23 downto 0);
    variable v_cmd_write   : std_logic;
    variable halveselect   : unsigned(1 downto 0);
+   type tRGBLUT is array (0 to 255) of std_logic_vector(23 downto 0);
+   variable v_RGBLUT : tRGBLUT; 
    begin   
       if s_reset_n = '0' then
          s_fifo_ren        <= '0';
