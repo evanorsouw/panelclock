@@ -91,11 +91,28 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
 
+   component port2_ram
+   generic (
+      DEPTH : natural;
+      WIDTH : natural
+   );
+   port (
+     i_rclk     : in  std_logic;
+     i_raddr    : in  std_logic_vector;
+     o_rdata    : out std_logic_vector;
+     i_wclk     : in  std_logic;
+     i_waddr    : in  std_logic_vector;
+     i_wdata    : in  std_logic_vector;
+     i_wren     : in  std_logic
+   );
+   
+   end component;
    component cmd_fill
    port (   
       i_reset_n        : in std_logic;
       i_clk            : in std_logic;
       i_data           : in std_logic_vector(7 downto 0);
+      i_data_color     : in std_logic_vector(7 downto 0);
       i_data_rdy       : in std_logic; 
       i_writing        : in std_logic; 
       --
@@ -112,6 +129,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       i_reset_n        : in std_logic;
       i_clk            : in std_logic;
       i_data           : in std_logic_vector(7 downto 0);
+      i_data_color     : in std_logic_vector(7 downto 0);
       i_data_rdy       : in std_logic; 
       i_writing        : in std_logic; 
       --
@@ -122,7 +140,22 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       o_write_clk      : out std_logic
    );
    end component cmd_blit;
-  
+
+   component cmd_lut
+   port (
+      i_reset_n        : in std_logic;
+      i_clk            : in std_logic;
+      i_data           : in std_logic_vector(7 downto 0);
+      i_data_rdy       : in std_logic;
+      --
+      o_busy           : out std_logic;
+      o_need_more_data : out std_logic;
+      o_lut_waddr      : out std_logic_vector(7 downto 0);
+      o_lut_wdata      : out std_logic_vector(7 downto 0);
+      o_lut_wren       : out std_logic
+   );
+   
+   end component;
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
@@ -147,6 +180,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_fifo_wen         : std_logic;
    signal s_fifo_ren         : std_logic;
    signal s_fifo_dataout     : std_logic_vector (7 downto 0);
+   signal s_fifo_dataout_color : std_logic_vector (7 downto 0);
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
 
    signal s_api_colordata    : std_logic_vector (7 downto 0);
@@ -162,7 +196,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic;
    
-   type T_FIFOSTATE is ( REQUEST, AVAILABLE );
+   type T_FIFOSTATE is ( REQUEST, LUT, AVAILABLE );
    signal s_fifostate : T_FIFOSTATE;
 
    signal s_cmd_fill_data_rdy       : std_logic;
@@ -178,6 +212,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_cmd_blit_adress         : unsigned(15 downto 0);
    signal s_cmd_blit_rgb            : std_logic_vector(23 downto 0);
    signal s_cmd_blit_write_clk      : std_logic;
+
+   signal s_cmd_lut_data_rdy        : std_logic;
+   signal s_cmd_lut_busy            : std_logic;
+   signal s_cmd_lut_need_more_data  : std_logic;
+
+   signal s_lut_waddr               : std_logic_vector(7 downto 0);
+   signal s_lut_wdata               : std_logic_vector(7 downto 0);
+   signal s_lut_wren                : std_logic;
 
 begin
   reset : reset_controller
@@ -215,7 +257,7 @@ begin
    
    PCFIFO : FIFO 
    generic map (
-      DEPTH => 5,
+      DEPTH => 7,
       WIDTH => 8
    )
    port map (
@@ -236,11 +278,27 @@ begin
       o_data  => s_init_data_out
    );
    
+   color_lut : port2_ram
+   generic map (
+      DEPTH => 8,
+      WIDTH => 8
+   )
+   port map(
+     i_rclk     => i_clk60M,
+     i_raddr    => s_fifo_dataout,
+     o_rdata    => s_fifo_dataout_color,
+     i_wclk     => i_clk60M,
+     i_wdata    => s_lut_waddr,
+     i_waddr    => s_lut_wdata,
+     i_wren     => s_lut_wren
+   );
+   
    cmd_fill_impl : cmd_fill
    port map (
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
       i_data           => s_fifo_dataout,
+      i_data_color     => s_fifo_dataout_color,
       i_data_rdy       => s_cmd_fill_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_fill_busy,
@@ -255,6 +313,7 @@ begin
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
       i_data           => s_fifo_dataout,
+      i_data_color     => s_fifo_dataout_color,
       i_data_rdy       => s_cmd_blit_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_blit_busy,
@@ -264,6 +323,20 @@ begin
       o_write_clk      => s_cmd_blit_write_clk
    );
 
+   cmd_lut_impl : cmd_lut
+   port map (
+      i_reset_n        => s_reset_n,
+      i_clk            => i_clk60M,
+      i_data           => s_fifo_dataout,
+      i_data_rdy       => s_cmd_lut_data_rdy,
+
+      o_busy           => s_cmd_lut_busy,
+      o_need_more_data => s_cmd_lut_need_more_data,
+      o_lut_waddr      => s_lut_waddr,
+      o_lut_wdata      => s_lut_wdata,
+      o_lut_wren       => s_lut_wren
+   );
+   
    o_dsp_clk <= s_dsp_clk;
    o_uart_tx <= i_uart_rx;
    
@@ -461,23 +534,28 @@ begin
          when REQUEST =>
             if s_fifo_empty = '0' then
                s_fifo_ren <= '1';
-               s_fifostate <= AVAILABLE;
+               s_fifostate <= LUT;
             end if;
-         when AVAILABLE =>
+         when LUT =>
             ot_fifo_dataout <= s_fifo_dataout;
             s_fifo_ren <= '0';
+            s_fifostate <= AVAILABLE;
+         when AVAILABLE =>
+            -- nothing here
          end case;
            
          s_ram_wr_clk <= '0';         
          s_cmd_fill_data_rdy <= '0';                  
          s_cmd_blit_data_rdy <= '0';
+         s_cmd_lut_data_rdy <= '0';
                   
-         if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' then
+         if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' or s_cmd_lut_busy = '1' then
             ot_test <= '0';
-            if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' then
+            if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' or s_cmd_lut_need_more_data = '1' then
                if s_fifostate = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
+                  s_cmd_lut_data_rdy <= s_cmd_lut_need_more_data;
                   s_fifostate <= REQUEST;
                end if;                  
             end if;
@@ -514,6 +592,7 @@ begin
             if s_fifostate = AVAILABLE then         
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
+               s_cmd_lut_data_rdy <= '1';
                s_fifostate <= REQUEST;
             end if;
          end if;

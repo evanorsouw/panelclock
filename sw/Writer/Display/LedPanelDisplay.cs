@@ -58,7 +58,10 @@ namespace WhiteMagic.PanelClock.Display
                 }
             }
 
-            WriteBytes(_writeBuffer, i);
+            for (int j=0; j<i; ++j) 
+            {
+                _comm.Write(_writeBuffer, j, 1);
+            }
         }
 
         private void Initialize()

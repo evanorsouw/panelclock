@@ -13,9 +13,10 @@ end entity;
 
 architecture whitemagic_init_screen_arch of whitemagic_init_screen is
 
-   constant Size : integer := 17*8;
+   constant Size : integer := 1+17*8;
    type t_Data is array (0 to Size-1) of std_logic_vector(7 downto 0);
    constant s_lookup : t_Data := (
+      X"11",
       X"02", X"00", X"00", X"40", X"40", X"1f", X"1f", X"1f",  -- white background
       
       X"02", X"06", X"27", X"13", X"01", X"00", X"00", X"00",  -- black top line

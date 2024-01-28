@@ -7,6 +7,7 @@ entity cmd_fill is
       i_reset_n        : in std_logic;
       i_clk            : in std_logic;
       i_data           : in std_logic_vector(7 downto 0);
+      i_data_color     : in std_logic_vector(7 downto 0);
       i_data_rdy       : in std_logic; -- indication that new data is available
       i_writing        : in std_logic; -- indication that address write is in progress
       --
@@ -77,17 +78,17 @@ begin
             end if;
          when ARG_RED =>
             if i_data_rdy = '1' then
-               s_rgb(7 downto 0) <= i_data;
+               s_rgb(7 downto 0) <= i_data_color;
                s_state <= ARG_GRN;
             end if;
          when ARG_GRN =>
             if i_data_rdy = '1' then
-               s_rgb(15 downto 8) <= i_data;
+               s_rgb(15 downto 8) <= i_data_color;
                s_state <= ARG_BLU;
             end if;
          when ARG_BLU =>
             if i_data_rdy = '1' then
-               s_rgb(23 downto 16) <= i_data;
+               s_rgb(23 downto 16) <= i_data_color;
                s_state <= WRITE_PIXELS;
                o_need_more_data <= '0';
                if s_dy = 0 or s_dx = 0 then     -- done when empty rectangle
