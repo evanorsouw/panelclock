@@ -4,25 +4,26 @@ use IEEE.NUMERIC_STD.all;
 
 entity ledpanel_controller is
    port (    
-      i_clk60M      : in std_logic;
-      i_reset_n     : in std_logic;
-      i_uart_rx     : in std_logic;
-      --
-      o_uart_tx     : out std_logic;
-      o_dsp_clk     : out std_logic;
-      o_dsp_latch   : out std_logic;
-      o_dsp_oe_n    : out std_logic;
-      o_dsp_addr    : out std_logic_vector (4 downto 0);
-      o_dsp_rgbs    : out std_logic_vector (11 downto 0);
-      o_dsp_vbl     : out std_logic;
-      -- sram pins
-      o_sram_oe     : out std_logic;
-      o_sram_wr     : out std_logic;
-      o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(13 downto 0);
-      io_sram_data  : inout std_logic_vector(11 downto 0);
-      --
-      o_test        : out std_logic
+      i_clk60M        : in std_logic;
+      i_reset_n       : in std_logic;
+      i_uart_rx       : in std_logic;
+      --              
+      o_uart_tx       : out std_logic;
+      o_dsp_clk       : out std_logic;
+      o_dsp_latch     : out std_logic;
+      o_dsp_oe_n      : out std_logic;
+      o_dsp_addr      : out std_logic_vector (4 downto 0);
+      o_dsp_rgbs      : out std_logic_vector (11 downto 0);
+      o_dsp_vbl       : out std_logic;
+      -- sram pins    
+      o_sram_oe       : out std_logic;
+      o_sram_wr       : out std_logic;
+      o_sram_cs       : out std_logic;
+      o_sram_addr     : out std_logic_vector(13 downto 0);
+      io_sram_data    : inout std_logic_vector(11 downto 0);
+      --              
+      ot_test         : out std_logic;
+      ot_fifo_dataout : out std_logic_vector(7 downto 0)
    );
 end entity ledpanel_controller;
 
@@ -52,14 +53,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
  
-   component linear2logarithmic
-   port (    
-      lin    : in std_logic_vector (7 downto 0);
-      --
-      log    : out std_logic_vector (7 downto 0)
-   );
-   end component;   
-
    component UART
    port
    (
@@ -75,16 +68,16 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    
    component FIFO
    generic (
-      FIFO_DEPTH : integer := 12;  -- FIFO can cache 2^14 = 16K bytes
-      FIFO_WIDTH : natural := 8
+      DEPTH : natural;
+      WIDTH : natural
    );
    port (    
       i_reset_n : in std_logic;
       i_clk     : in std_logic;
       i_wen     : in std_logic;
       i_ren     : in std_logic;
-      i_data    : in std_logic_vector(FIFO_WIDTH-1 downto 0);
-      o_data    : out std_logic_vector(FIFO_WIDTH-1 downto 0);
+      i_data    : in std_logic_vector;
+      o_data    : out std_logic_vector;
       o_full    : out std_logic;
       o_empty   : out std_logic
    );
@@ -150,6 +143,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_wr_bitsB     : std_logic_vector(7 downto 0);
    
    signal s_fifo_empty       : std_logic;
+   signal s_fifo_full        : std_logic;
    signal s_fifo_wen         : std_logic;
    signal s_fifo_ren         : std_logic;
    signal s_fifo_dataout     : std_logic_vector (7 downto 0);
@@ -207,12 +201,6 @@ begin
       o_dsp_oe_n  => s_dsp_oe_n,
       o_dsp_vbl   => s_dsp_vbl
    );
-        
-   color_correct : linear2logarithmic
-   port map (
-      lin => s_fifo_dataout,
-      log => s_api_colordata
-   );  
    
    PC : UART
    port map (
@@ -226,6 +214,10 @@ begin
    );
    
    PCFIFO : FIFO 
+   generic map (
+      DEPTH => 5,
+      WIDTH => 8
+   )
    port map (
       i_reset_n => s_reset_n,
       i_clk     => i_clk60M,
@@ -233,7 +225,7 @@ begin
       i_ren     => s_fifo_ren,
       i_data    => s_fifo_datain,
       o_data    => s_fifo_dataout,
-      o_full    => open,
+      o_full    => s_fifo_full,
       o_empty   => s_fifo_empty
    );
 
@@ -428,13 +420,15 @@ begin
             s_init_data_idx <= v_init_idx;
             s_fifo_datain <= s_init_data_out;
             
-            v_init_delay := v_init_delay - 1;
-            if v_init_delay = 0 then
-               v_init_delay := to_unsigned(2, v_init_delay'length);
-               v_init_idx := v_init_idx + 1;
-               v_rcv_dataclk := '1';
-            else
-               v_rcv_dataclk := '0';
+            if s_fifo_full = '0' then           
+               v_init_delay := v_init_delay - 1;
+               if v_init_delay = 0 then
+                  v_init_delay := to_unsigned(2, v_init_delay'length);
+                  v_init_idx := v_init_idx + 1;
+                  v_rcv_dataclk := '1';
+               else
+                  v_rcv_dataclk := '0';
+               end if;
             end if;
          end if;
          
@@ -470,6 +464,7 @@ begin
                s_fifostate <= AVAILABLE;
             end if;
          when AVAILABLE =>
+            ot_fifo_dataout <= s_fifo_dataout;
             s_fifo_ren <= '0';
          end case;
            
@@ -478,7 +473,7 @@ begin
          s_cmd_blit_data_rdy <= '0';
                   
          if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' then
-            o_test <= '0';
+            ot_test <= '0';
             if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' then
                if s_fifostate = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
@@ -515,7 +510,7 @@ begin
             end if;
             
          else
-            o_test <= '1';
+            ot_test <= '1';
             if s_fifostate = AVAILABLE then         
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';

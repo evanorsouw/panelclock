@@ -59,7 +59,7 @@ architecture toplevel_arch of toplevel is
       o_sram_addr   : out std_logic_vector(13 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0);
       --
-      o_test        : out std_logic
+      ot_test       : out std_logic
    );
    end component;
 
@@ -95,7 +95,7 @@ begin
       o_sram_addr   => s_panel_addr,
       io_sram_data  => io_sram_data,
       
-      o_test       => o_led2
+      ot_test       => o_led2
    ); 
 
    o_sram_addr <= "0" & s_panel_addr;
