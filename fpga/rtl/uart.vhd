@@ -20,43 +20,37 @@ begin
    variable v_clk_count    : unsigned (15 downto 0);
    variable v_state        : unsigned (3 downto 0);
    variable v_shift_data   : std_logic_vector (7 downto 0);
-   variable v_data_clk     : std_logic;
    begin
       if i_reset_n = '0' then
          v_state     := to_unsigned(0, v_state'length);
-         v_data_clk  := '0';
+         o_datain    <= "00000000";
             
       elsif rising_edge(i_clkx) then
-         v_data_clk  := '0';
+         o_datain_clk <= '0';
          if (v_state = 0) then
-            v_data_clk := '0';
             if (i_rx = '0') then
-               v_state     := v_state + 1;
+               v_state := v_state + 1;
                v_clk_count := to_unsigned(i_ticks * 3 / 2, v_clk_count'length);
-            end if;
-         
-         else
+            end if;         
+         else         
             v_clk_count := v_clk_count - 1;            
             if (v_clk_count = 0) then
                v_clk_count := to_unsigned(i_ticks, v_clk_count'length);
                if (v_state <= 8) then
                   v_shift_data := i_rx & v_shift_data (7 downto 1);
-                  v_state      := v_state + 1;               
-                  
+                  v_state := v_state + 1;                                 
+                  if v_state = 9 then
+                     o_datain <= v_shift_data;
+                  end if;
                elsif (i_rx = '1') then
-                  v_state     := to_unsigned(0, v_state'length);
-                  v_data_clk  := '1';
-                                 
+                  v_state := to_unsigned(0, v_state'length);
+                  o_datain_clk <= '1';
                else
-                  v_state     := to_unsigned(0, v_state'length);
-                  
+                  v_state := to_unsigned(0, v_state'length);                  
                end if;      
             end if;
          end if;
-      end if;      
-      
-      o_datain     <= v_shift_data;
-      o_datain_clk <= v_data_clk;
+      end if;          
 
    end process;   
 end architecture UART_arch;

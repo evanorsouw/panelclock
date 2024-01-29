@@ -28,13 +28,14 @@ architecture Behavioral of ledpanel_controller_tb is
       io_sram_data    : inout std_logic_vector(11 downto 0);
       --              
       ot_test         : out std_logic;
-      ot_fifo_dataout : out std_logic_vector(7 downto 0)
+      ot_fifo_dataout : out std_logic_vector(7 downto 0);
+      ot_fifo_datain  : out std_logic_vector(7 downto 0)
    );
    end component ledpanel_controller;
 
-   constant CLOCK       : time := 1000 ms / 60000000; -- 60MHz
+   constant CLOCK       : time := 1 sec / 60000000; -- 60MHz
    constant RAM_SPEED   : time := 10ns;
-   constant BAUD        : time := 1000ms / 115200;
+   constant BAUD        : time := 1 sec / 115200;
 
    -- module under test inputs
    signal tb_clk        : std_logic;
@@ -54,7 +55,9 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_cs    : std_logic;
    signal tb_sram_addr  : std_logic_vector(13 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
+   signal tb_test       : std_logic;
    signal tb_fifo_dataout : std_logic_vector(7 downto 0);
+   signal tb_fifo_datain  : std_logic_vector(7 downto 0);
   
   type t_RAM is array (0 to 16383) of std_logic_vector(11 downto 0);
   signal ram : t_RAM := (others => (others => '1'));
@@ -79,7 +82,9 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_wr             => tb_sram_wr,
       o_sram_addr           => tb_sram_addr,
       io_sram_data          => tb_sram_data,
-      ot_fifo_dataout       => tb_fifo_dataout
+      ot_test               => tb_test,
+      ot_fifo_dataout       => tb_fifo_dataout,
+      ot_fifo_datain        => tb_fifo_datain
    );
      
    tb_clk <= '0' after CLOCK / 2 when tb_clk = '1' else
@@ -107,9 +112,59 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for 6 ms;
 
-      for j in 1 to 10 loop
+      v_byte := X"01";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
 
-         v_byte := X"02";
+      v_byte := X"00";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"00";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"40";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"40";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      for j in 1 to 20000 loop
+
+         v_byte := std_logic_vector(to_unsigned(j,8));
          tb_uart_rx <= '0';  -- start
          wait for BAUD;
          for k in 0 to 7 loop

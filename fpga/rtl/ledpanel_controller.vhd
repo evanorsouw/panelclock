@@ -23,6 +23,7 @@ entity ledpanel_controller is
       io_sram_data    : inout std_logic_vector(11 downto 0);
       --              
       ot_test         : out std_logic;
+      ot_fifo_datain  : out std_logic_vector(7 downto 0);
       ot_fifo_dataout : out std_logic_vector(7 downto 0)
    );
 end entity ledpanel_controller;
@@ -66,23 +67,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
    
-   component FIFO
-   generic (
-      DEPTH : natural;
-      WIDTH : natural
-   );
-   port (    
-      i_reset_n : in std_logic;
-      i_clk     : in std_logic;
-      i_wen     : in std_logic;
-      i_ren     : in std_logic;
-      i_data    : in std_logic_vector;
-      o_data    : out std_logic_vector;
-      o_full    : out std_logic;
-      o_empty   : out std_logic
-   );
-   end component;
-
    component whitemagic_init_screen
    port (
       i_idx   : in  unsigned(15 downto 0);
@@ -153,9 +137,11 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       o_lut_waddr      : out std_logic_vector(7 downto 0);
       o_lut_wdata      : out std_logic_vector(7 downto 0);
       o_lut_wren       : out std_logic
-   );
-   
+   );  
    end component;
+   
+   constant FIFO_DEPTH       : natural := 12;
+   
    signal s_uart_datain      : std_logic_vector (7 downto 0);
    signal s_uart_dataclk     : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
@@ -175,13 +161,13 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_wr_bitsG     : std_logic_vector(7 downto 0);
    signal s_ram_wr_bitsB     : std_logic_vector(7 downto 0);
    
-   signal s_fifo_empty       : std_logic;
-   signal s_fifo_full        : std_logic;
-   signal s_fifo_wen         : std_logic;
-   signal s_fifo_ren         : std_logic;
+   signal s_fifo_wren        : std_logic;
+   signal s_fifo_rindex      : unsigned(FIFO_DEPTH-1 downto 0);
+   signal s_fifo_windex      : unsigned(FIFO_DEPTH-1 downto 0);
    signal s_fifo_dataout     : std_logic_vector (7 downto 0);
-   signal s_fifo_dataout_color : std_logic_vector (7 downto 0);
    signal s_fifo_datain      : std_logic_vector (7 downto 0);
+   signal s_received_data    : std_logic_vector (7 downto 0);
+   signal s_received_color   : std_logic_vector (7 downto 0);
 
    signal s_api_colordata    : std_logic_vector (7 downto 0);
    signal s_dsp_clk          : std_logic;
@@ -197,7 +183,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_rmw_in_progress  : std_logic;
    
    type T_FIFOSTATE is ( REQUEST, LUT, AVAILABLE );
-   signal s_fifostate : T_FIFOSTATE;
+   signal s_readfifo_state : T_FIFOSTATE;
 
    signal s_cmd_fill_data_rdy       : std_logic;
    signal s_cmd_fill_busy           : std_logic;
@@ -255,27 +241,26 @@ begin
       o_datain_clk  => s_uart_dataclk
    );
    
-   PCFIFO : FIFO 
-   generic map (
-      DEPTH => 7,
-      WIDTH => 8
-   )
-   port map (
-      i_reset_n => s_reset_n,
-      i_clk     => i_clk60M,
-      i_wen     => s_fifo_wen,
-      i_ren     => s_fifo_ren,
-      i_data    => s_fifo_datain,
-      o_data    => s_fifo_dataout,
-      o_full    => s_fifo_full,
-      o_empty   => s_fifo_empty
-   );
-
    init_data : whitemagic_init_screen
    port map (
       i_idx   => s_init_data_idx,
       o_count => s_init_data_size,
       o_data  => s_init_data_out
+   );
+
+   fiforam : port2_ram
+   generic map (
+      DEPTH => FIFO_DEPTH,
+      WIDTH => 8
+   )
+   port map(
+     i_rclk     => i_clk60M,
+     i_raddr    => std_logic_vector(s_fifo_rindex),
+     o_rdata    => s_fifo_dataout,
+     i_wclk     => i_clk60M,
+     i_waddr    => std_logic_vector(s_fifo_windex),
+     i_wdata    => s_fifo_datain,
+     i_wren     => s_fifo_wren
    );
    
    color_lut : port2_ram
@@ -285,8 +270,8 @@ begin
    )
    port map(
      i_rclk     => i_clk60M,
-     i_raddr    => s_fifo_dataout,
-     o_rdata    => s_fifo_dataout_color,
+     i_raddr    => s_received_data,
+     o_rdata    => s_received_color,
      i_wclk     => i_clk60M,
      i_wdata    => s_lut_waddr,
      i_waddr    => s_lut_wdata,
@@ -297,8 +282,8 @@ begin
    port map (
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
-      i_data           => s_fifo_dataout,
-      i_data_color     => s_fifo_dataout_color,
+      i_data           => s_received_data,
+      i_data_color     => s_received_color,
       i_data_rdy       => s_cmd_fill_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_fill_busy,
@@ -312,8 +297,8 @@ begin
    port map (
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
-      i_data           => s_fifo_dataout,
-      i_data_color     => s_fifo_dataout_color,
+      i_data           => s_received_data,
+      i_data_color     => s_received_color,
       i_data_rdy       => s_cmd_blit_data_rdy,
       i_writing        => s_rmw_in_progress,
       o_busy           => s_cmd_blit_busy,
@@ -327,7 +312,7 @@ begin
    port map (
       i_reset_n        => s_reset_n,
       i_clk            => i_clk60M,
-      i_data           => s_fifo_dataout,
+      i_data           => s_received_data,
       i_data_rdy       => s_cmd_lut_data_rdy,
 
       o_busy           => s_cmd_lut_busy,
@@ -338,9 +323,8 @@ begin
    );
    
    o_dsp_clk <= s_dsp_clk;
-   o_uart_tx <= i_uart_rx;
-   
-   
+   o_uart_tx <= i_uart_rx;  -- for now send all raw received data back
+      
    p_sram: process(s_reset_n, i_clk60M, s_ram_rd_addr, s_ram_read)
    -- display structure:
    --  2 64x64 panels P0, P1 each with an 64x32 upper (0) and lower (1) half.
@@ -471,11 +455,15 @@ begin
    -- receive API date (byte), initially from internal storage (init_data)
    -- after that from external UART.
    -- received data is stored in a FIFO to decouple reception from processing.
-   p_receive_api: process(s_reset_n, i_clk60M)
+   p_api: process(s_reset_n, i_clk60M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_delay       : unsigned(31 downto 0);
    variable v_init_idx         : unsigned(15 downto 0);
+   variable v_cmd_address : unsigned(15 downto 0);
+   variable v_cmd_rgbs    : std_logic_vector(23 downto 0);
+   variable v_cmd_write   : std_logic;
+   variable halveselect   : unsigned(1 downto 0);
    begin
       if s_reset_n = '0' then
          v_rcv_dataclk      := '0';
@@ -484,64 +472,58 @@ begin
          v_init_delay       := to_unsigned(2, v_init_delay'length);
          -- s_uart_ticks       <= 60000000 * 20 / 9600;   -- smart uart
          s_uart_ticks       <= 520; -- fixed  uart
-      
-      elsif rising_edge(i_clk60M) then      
-         if v_init_idx = s_init_data_size then
-            s_fifo_datain <= s_uart_datain;
-            v_rcv_dataclk := s_uart_dataclk;
-         else
-            s_init_data_idx <= v_init_idx;
-            s_fifo_datain <= s_init_data_out;
-            
-            if s_fifo_full = '0' then           
-               v_init_delay := v_init_delay - 1;
-               if v_init_delay = 0 then
-                  v_init_delay := to_unsigned(2, v_init_delay'length);
-                  v_init_idx := v_init_idx + 1;
-                  v_rcv_dataclk := '1';
-               else
-                  v_rcv_dataclk := '0';
-               end if;
-            end if;
-         end if;
-         
-         -- write received data into fifo.
-         if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
-            s_fifo_wen    <= v_rcv_dataclk;
-         else
-            s_fifo_wen    <= '0';
-         end if;
-         v_last_rcv_dataclk := v_rcv_dataclk;
-      end if;   
-   end process;
-      
-   p_handleapi: process (s_reset_n, i_clk60M)
-   variable v_cmd_address : unsigned(15 downto 0);
-   variable v_cmd_rgbs    : std_logic_vector(23 downto 0);
-   variable v_cmd_write   : std_logic;
-   variable halveselect   : unsigned(1 downto 0);
-   begin   
-      if s_reset_n = '0' then
-         s_fifo_ren        <= '0';
+
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
          s_ram_wr_addr     <= (others => '0');   
-         s_fifostate       <= REQUEST;         
-      
-      elsif rising_edge(i_clk60M) then
+         s_readfifo_state  <= REQUEST;        
 
-         case s_fifostate is
+         s_fifo_rindex     <= to_unsigned(0,FIFO_DEPTH);
+         s_fifo_windex     <= to_unsigned(0,FIFO_DEPTH);
+
+      elsif rising_edge(i_clk60M) then      
+      
+         -- receive uart data (initially 'receive' initialization data)
+         if v_init_idx = s_init_data_size then
+            s_fifo_datain <= s_uart_datain;
+            v_rcv_dataclk := s_uart_dataclk;
+         else         
+            s_init_data_idx <= v_init_idx;
+            s_fifo_datain <= s_init_data_out;            
+            
+            v_init_delay := v_init_delay - 1;
+            if v_init_delay = 0 then
+               v_init_delay := to_unsigned(5, v_init_delay'length);
+               v_init_idx := v_init_idx + 1;
+               v_rcv_dataclk := '1';
+            else
+               v_rcv_dataclk := '0';
+            end if;
+         end if;
+         ot_test <= v_rcv_dataclk;
+
+         -- write received data into fifo to decouple from execution.
+         if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
+            ot_fifo_datain  <= s_fifo_datain;
+            s_fifo_wren <= '1';
+         elsif v_rcv_dataclk = '0' and v_last_rcv_dataclk = '1' then
+            s_fifo_windex <= s_fifo_windex + 1;  -- auto wraparound due to power of 2
+            s_fifo_wren <= '0';
+         end if;
+         v_last_rcv_dataclk := v_rcv_dataclk;
+
+         -- read recevied data from fifo
+         case s_readfifo_state is
          when REQUEST =>
-            if s_fifo_empty = '0' then
-               s_fifo_ren <= '1';
-               s_fifostate <= LUT;
+            if s_fifo_windex /= s_fifo_rindex then  -- we have something in the fifo?
+               s_fifo_rindex <= s_fifo_rindex + 1;
+               s_readfifo_state <= LUT;
             end if;
          when LUT =>
             ot_fifo_dataout <= s_fifo_dataout;
-            s_fifo_ren <= '0';
-            s_fifostate <= AVAILABLE;
-         when AVAILABLE =>
-            -- nothing here
+            s_received_data <= s_fifo_dataout;
+            s_readfifo_state <= AVAILABLE;
+         when others =>
          end case;
            
          s_ram_wr_clk <= '0';         
@@ -550,13 +532,12 @@ begin
          s_cmd_lut_data_rdy <= '0';
                   
          if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' or s_cmd_lut_busy = '1' then
-            ot_test <= '0';
             if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' or s_cmd_lut_need_more_data = '1' then
-               if s_fifostate = AVAILABLE then
+               if s_readfifo_state = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
                   s_cmd_lut_data_rdy <= s_cmd_lut_need_more_data;
-                  s_fifostate <= REQUEST;
+                  s_readfifo_state <= REQUEST;
                end if;                  
             end if;
 
@@ -588,12 +569,11 @@ begin
             end if;
             
          else
-            ot_test <= '1';
-            if s_fifostate = AVAILABLE then         
+            if s_readfifo_state = AVAILABLE then         
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
                s_cmd_lut_data_rdy <= '1';
-               s_fifostate <= REQUEST;
+               s_readfifo_state <= REQUEST;
             end if;
          end if;
       end if;      
