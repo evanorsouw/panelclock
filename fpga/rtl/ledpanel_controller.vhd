@@ -22,9 +22,7 @@ entity ledpanel_controller is
       o_sram_addr     : out std_logic_vector(13 downto 0);
       io_sram_data    : inout std_logic_vector(11 downto 0);
       --              
-      ot_test         : out std_logic;
-      ot_fifo_datain  : out std_logic_vector(7 downto 0);
-      ot_fifo_dataout : out std_logic_vector(7 downto 0)
+      ot_test         : out std_logic
    );
 end entity ledpanel_controller;
 
@@ -504,7 +502,6 @@ begin
 
          -- write received data into fifo to decouple from execution.
          if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
-            ot_fifo_datain  <= s_fifo_datain;
             s_fifo_wren <= '1';
          elsif v_rcv_dataclk = '0' and v_last_rcv_dataclk = '1' then
             s_fifo_windex <= s_fifo_windex + 1;  -- auto wraparound due to power of 2
@@ -520,7 +517,6 @@ begin
                s_readfifo_state <= LUT;
             end if;
          when LUT =>
-            ot_fifo_dataout <= s_fifo_dataout;
             s_received_data <= s_fifo_dataout;
             s_readfifo_state <= AVAILABLE;
          when others =>
@@ -532,6 +528,7 @@ begin
          s_cmd_lut_data_rdy <= '0';
                   
          if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' or s_cmd_lut_busy = '1' then
+            ot_test <= '1';
             if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' or s_cmd_lut_need_more_data = '1' then
                if s_readfifo_state = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
@@ -569,6 +566,7 @@ begin
             end if;
             
          else
+            ot_test <= '0';
             if s_readfifo_state = AVAILABLE then         
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';

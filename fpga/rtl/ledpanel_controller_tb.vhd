@@ -27,9 +27,7 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_addr     : out std_logic_vector(13 downto 0);
       io_sram_data    : inout std_logic_vector(11 downto 0);
       --              
-      ot_test         : out std_logic;
-      ot_fifo_dataout : out std_logic_vector(7 downto 0);
-      ot_fifo_datain  : out std_logic_vector(7 downto 0)
+      ot_test         : out std_logic
    );
    end component ledpanel_controller;
 
@@ -56,8 +54,6 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_addr  : std_logic_vector(13 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
    signal tb_test       : std_logic;
-   signal tb_fifo_dataout : std_logic_vector(7 downto 0);
-   signal tb_fifo_datain  : std_logic_vector(7 downto 0);
   
   type t_RAM is array (0 to 16383) of std_logic_vector(11 downto 0);
   signal ram : t_RAM := (others => (others => '1'));
@@ -82,9 +78,7 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_wr             => tb_sram_wr,
       o_sram_addr           => tb_sram_addr,
       io_sram_data          => tb_sram_data,
-      ot_test               => tb_test,
-      ot_fifo_dataout       => tb_fifo_dataout,
-      ot_fifo_datain        => tb_fifo_datain
+      ot_test               => tb_test
    );
      
    tb_clk <= '0' after CLOCK / 2 when tb_clk = '1' else
