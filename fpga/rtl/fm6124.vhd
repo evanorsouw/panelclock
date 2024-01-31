@@ -54,23 +54,24 @@ begin
          v_clockside := not v_clockside;
          v_dsp_clk := '0';
          v_latch  := '0';
-         v_read := '0';                 
          o_dsp_vbl <= '0';
          
          if v_clockside = '1' then
             if (v_waiting = '1') then
                v_depth_count := v_depth_count - 1;
-               if (v_depth_count = 1) then
-                  v_read := '1';
-               elsif (v_depth_count = 0) then
-                  v_waiting := '0';
+               if v_depth_count > 1 then
+                  v_read := '0';
+               else
+                  v_read := '1';              
+                  if (v_depth_count = 0) then
+                     v_waiting := '0';
+                  end if;
                end if;
             end if;
             
             if (v_waiting = '0') then
                if (v_column_count < 64) then 
                   v_dsp_clk := '1';
-                  v_read := '1';
                   v_pixel_addr := v_pixel_addr + 1;
                   v_column_count := v_column_count + 1;                               
                elsif (v_column_count = 64) then
@@ -84,9 +85,6 @@ begin
                   v_oe_n := '0';
                   v_waiting := '1';
                   v_depth_count := v_depth_delay * 67 - 66;
-                  if v_depth_count = 1 then
-                     v_read := '1';
-                  end if;               
                   v_row_count_next := v_row_count_next + 1;
                   v_column_count := to_unsigned(0, v_column_count'Length);
                   if (v_row_count_next = 0) then
@@ -108,6 +106,7 @@ begin
          o_dsp_oe_n   <= v_oe_n;
          o_dsp_latch  <= v_latch;
          o_dsp_addr   <= std_logic_vector(v_row_count);
+         
       end if;               
    end process;
    

@@ -20,6 +20,7 @@ begin
    variable v_clk_count    : unsigned (15 downto 0);
    variable v_state        : unsigned (3 downto 0);
    variable v_shift_data   : std_logic_vector (7 downto 0);
+   variable v_complete_data: std_logic_vector (7 downto 0);
    begin
       if i_reset_n = '0' then
          v_state     := to_unsigned(0, v_state'length);
@@ -38,10 +39,10 @@ begin
                v_clk_count := to_unsigned(i_ticks, v_clk_count'length);
                if (v_state <= 8) then
                   v_shift_data := i_rx & v_shift_data (7 downto 1);
-                  v_state := v_state + 1;                                 
-                  if v_state = 9 then
-                     o_datain <= v_shift_data;
+                  if v_state = 8 then
+                     v_complete_data := v_shift_data;
                   end if;
+                  v_state := v_state + 1;                                 
                elsif (i_rx = '1') then
                   v_state := to_unsigned(0, v_state'length);
                   o_datain_clk <= '1';
@@ -50,6 +51,7 @@ begin
                end if;      
             end if;
          end if;
+         o_datain <=  v_complete_data;                     
       end if;          
 
    end process;   

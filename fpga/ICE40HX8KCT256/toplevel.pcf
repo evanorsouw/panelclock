@@ -69,9 +69,3 @@ set_io o_dsp_rgbs[2] F5
 set_io o_dsp_rgbs[3] B1
 set_io o_dsp_rgbs[4] C1
 set_io o_dsp_rgbs[5] C2
-
-
-###ProDemote List 2
-demote_signal_unbuffered panel_controller.PC.N_1577_0_g
-demote_signal_unbuffered panel_controller.PC.s_duratione_0_0_g
-
