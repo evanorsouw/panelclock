@@ -27,7 +27,43 @@ architecture rtl of cmd_lut is
    signal s_state     : T_STATE;
    signal s_cmd       : integer;
    signal s_idx       : integer;
-   signal s_wren       : std_logic;
+   signal s_wren      : std_logic;
+
+   type t_Data is array (0 to 255) of std_logic_vector(7 downto 0);
+   constant s_lin2log : t_Data := (
+      x"00", x"00", x"00", x"00", x"01", x"01", x"01", x"01",
+      x"02", x"02", x"02", x"02", x"03", x"03", x"03", x"04",
+      x"04", x"04", x"05", x"05", x"05", x"05", x"06", x"06",
+      x"06", x"07", x"07", x"07", x"08", x"08", x"08", x"09",
+      x"09", x"09", x"0a", x"0a", x"0a", x"0b", x"0b", x"0b",
+      x"0c", x"0c", x"0d", x"0d", x"0d", x"0e", x"0e", x"0e",
+      x"0f", x"0f", x"10", x"10", x"10", x"11", x"11", x"12",
+      x"12", x"13", x"13", x"13", x"14", x"14", x"15", x"15",
+      x"16", x"16", x"17", x"17", x"18", x"18", x"18", x"19",
+      x"19", x"1a", x"1a", x"1b", x"1b", x"1c", x"1c", x"1d",
+      x"1e", x"1e", x"1f", x"1f", x"20", x"20", x"21", x"21",
+      x"22", x"22", x"23", x"24", x"24", x"25", x"25", x"26",
+      x"27", x"27", x"28", x"28", x"29", x"2a", x"2a", x"2b",
+      x"2c", x"2c", x"2d", x"2e", x"2e", x"2f", x"30", x"30",
+      x"31", x"32", x"32", x"33", x"34", x"35", x"35", x"36",
+      x"37", x"38", x"38", x"39", x"3a", x"3b", x"3c", x"3c",
+      x"3d", x"3e", x"3f", x"40", x"40", x"41", x"42", x"43",
+      x"44", x"45", x"46", x"47", x"47", x"48", x"49", x"4a",
+      x"4b", x"4c", x"4d", x"4e", x"4f", x"50", x"51", x"52",
+      x"53", x"54", x"55", x"56", x"57", x"58", x"59", x"5a",
+      x"5b", x"5c", x"5e", x"5f", x"60", x"61", x"62", x"63",
+      x"64", x"65", x"67", x"68", x"69", x"6a", x"6c", x"6d",
+      x"6e", x"6f", x"71", x"72", x"73", x"74", x"76", x"77",
+      x"78", x"7a", x"7b", x"7c", x"7e", x"7f", x"81", x"82",
+      x"84", x"85", x"87", x"88", x"89", x"8b", x"8d", x"8e",
+      x"90", x"91", x"93", x"94", x"96", x"98", x"99", x"9b",
+      x"9d", x"9e", x"a0", x"a2", x"a3", x"a5", x"a7", x"a9",
+      x"aa", x"ac", x"ae", x"b0", x"b2", x"b4", x"b5", x"b7",
+      x"b9", x"bb", x"bd", x"bf", x"c1", x"c3", x"c5", x"c7",
+      x"c9", x"cb", x"ce", x"d0", x"d2", x"d4", x"d6", x"d8",
+      x"db", x"dd", x"df", x"e1", x"e4", x"e6", x"e8", x"eb",
+      x"ed", x"f0", x"f2", x"f4", x"f7", x"f9", x"fc", x"ff"
+   );
 
 begin
    process (i_reset_n, i_clk)
@@ -72,8 +108,9 @@ begin
             when FILL_LIN =>
                o_lut_wdata <= std_logic_vector(to_unsigned(s_idx, o_lut_wdata'length));
                v_writenext := '1';
-            when FILL_LOG =>         
-               s_state <= CMD;
+            when FILL_LOG =>    
+               o_lut_wdata <= s_lin2log(s_idx);               
+               v_writenext := '1';
             when others =>           
             end case;
             
@@ -92,51 +129,4 @@ begin
      
    end process;   
 end architecture;
-            
-            
-            
-            
-
-
-
-
-
-
-
-
-
-   -- type tLUT is array (0 to 255) of std_logic_vector(7 downto 0);
-   -- variable v_lut : tLUT := ( -- default LUT with linear-logarithmic intensity mapping
-      -- X"00", X"00", X"00", X"00", X"01", X"01", X"01", X"01",
-      -- X"02", X"02", X"02", X"02", X"03", X"03", X"03", X"04",
-      -- X"04", X"04", X"05", X"05", X"05", X"05", X"06", X"06",
-      -- X"06", X"07", X"07", X"07", X"08", X"08", X"08", X"09",
-      -- X"09", X"09", X"0A", X"0A", X"0A", X"0B", X"0B", X"0B",
-      -- X"0C", X"0C", X"0D", X"0D", X"0D", X"0E", X"0E", X"0E",
-      -- X"0F", X"0F", X"10", X"10", X"10", X"11", X"11", X"12",
-      -- X"12", X"13", X"13", X"13", X"14", X"14", X"15", X"15",
-      -- X"16", X"16", X"17", X"17", X"18", X"18", X"18", X"19",
-      -- X"19", X"1A", X"1A", X"1B", X"1B", X"1C", X"1C", X"1D",
-      -- X"1E", X"1E", X"1F", X"1F", X"20", X"20", X"21", X"21",
-      -- X"22", X"22", X"23", X"24", X"24", X"25", X"25", X"26",
-      -- X"27", X"27", X"28", X"28", X"29", X"2A", X"2A", X"2B",
-      -- X"2C", X"2C", X"2D", X"2E", X"2E", X"2F", X"30", X"30",
-      -- X"31", X"32", X"32", X"33", X"34", X"35", X"35", X"36",
-      -- X"37", X"38", X"38", X"39", X"3A", X"3B", X"3C", X"3C",
-      -- X"3D", X"3E", X"3F", X"40", X"40", X"41", X"42", X"43",
-      -- X"44", X"45", X"46", X"47", X"47", X"48", X"49", X"4A",
-      -- X"4B", X"4C", X"4D", X"4E", X"4F", X"50", X"51", X"52",
-      -- X"53", X"54", X"55", X"56", X"57", X"58", X"59", X"5A",
-      -- X"5B", X"5C", X"5E", X"5F", X"60", X"61", X"62", X"63",
-      -- X"64", X"65", X"67", X"68", X"69", X"6A", X"6C", X"6D",
-      -- X"6E", X"6F", X"71", X"72", X"73", X"74", X"76", X"77",
-      -- X"78", X"7A", X"7B", X"7C", X"7E", X"7F", X"81", X"82",
-      -- X"84", X"85", X"87", X"88", X"89", X"8B", X"8D", X"8E",
-      -- X"90", X"91", X"93", X"94", X"96", X"98", X"99", X"9B",
-      -- X"9D", X"9E", X"A0", X"A2", X"A3", X"A5", X"A7", X"A9",
-      -- X"AA", X"AC", X"AE", X"B0", X"B2", X"B4", X"B5", X"B7",
-      -- X"B9", X"BB", X"BD", X"BF", X"C1", X"C3", X"C5", X"C7",
-      -- X"C9", X"CB", X"CE", X"D0", X"D2", X"D4", X"D6", X"D8",
-      -- X"DB", X"DD", X"DF", X"E1", X"E4", X"E6", X"E8", X"EB",
-      -- X"ED", X"F0", X"F2", X"F4", X"F7", X"F9", X"FC", X"FF"
-   -- );
+                   

@@ -106,7 +106,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for 6 ms;
 
-      v_byte := X"01";
+      v_byte := X"08";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -126,7 +126,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"00";
+      v_byte := X"80";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -136,7 +136,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"40";
+      v_byte := X"FF";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -146,7 +146,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"40";
+      v_byte := X"8F";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -156,19 +156,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      for j in 1 to 20000 loop
 
-         v_byte := std_logic_vector(to_unsigned(j,8));
-         tb_uart_rx <= '0';  -- start
-         wait for BAUD;
-         for k in 0 to 7 loop
-            tb_uart_rx <= v_byte(k);            
-            wait for BAUD;
-         end loop;           
-         tb_uart_rx <= '1';  -- stopbit
-         wait for BAUD;
-            
-      end loop;
    end process uart_stimulate;
   
    reset_gen : process

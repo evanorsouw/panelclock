@@ -32,7 +32,7 @@ Version=Lattice Semiconductor Corporation iCEcube - Release: 2020.12.27943 - Bui
 ProjectName=ICE40HX8KCT256
 Vendor=SiliconBlue
 Synthesis=lse
-ProjectVFiles=../rtl/cmd_blit.vhd=work,../rtl/cmd_fill.vhd=work,../rtl/fm6124.vhd=work,../rtl/init_data.vhd=work,../rtl/ledpanel_controller.vhd=work,../rtl/reset.vhd=work,../rtl/toplevel.vhd=work,../rtl/uart.vhd=work,pll.vhd=work,../rtl/port2_ram.vhd=work,../rtl/cmd_lut.vhd=work
+ProjectVFiles=../rtl/cmd_blit.vhd=work,../rtl/cmd_fill.vhd=work,../rtl/fm6124.vhd=work,../rtl/init_data.vhd=work,../rtl/ledpanel_controller.vhd=work,../rtl/reset.vhd=work,../rtl/toplevel.vhd=work,../rtl/uart.vhd=work,pll.vhd=work,../rtl/port2_ram.vhd=work,../rtl/cmd_lut.vhd=work,../rtl/cmd_pixel.vhd=work
 ProjectCFiles=toplevel.sdc
 CurImplementation=ICE40HX8KCT256_Implmnt
 Implementations=ICE40HX8KCT256_Implmnt

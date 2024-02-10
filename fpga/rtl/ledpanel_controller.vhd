@@ -138,6 +138,23 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );  
    end component;
    
+   component cmd_pixel
+   port (   
+      i_reset_n        : in std_logic;
+      i_clk            : in std_logic;
+      i_data           : in std_logic_vector(7 downto 0);
+      i_data_color     : in std_logic_vector(7 downto 0);
+      i_data_rdy       : in std_logic; 
+      i_writing        : in std_logic; 
+      --
+      o_busy           : out std_logic;
+      o_need_more_data : out std_logic;
+      o_address        : out unsigned(15 downto 0);
+      o_rgb            : out std_logic_vector(23 downto 0);
+      o_write_clk      : out std_logic
+   );
+   end component;
+   
    constant FIFO_DEPTH       : natural := 13;
    
    signal s_uart_datain      : std_logic_vector (7 downto 0);
@@ -206,6 +223,13 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_lut_wdata               : std_logic_vector(7 downto 0);
    signal s_lut_wren                : std_logic;
 
+   signal s_cmd_pixel_data_rdy      : std_logic;
+   signal s_cmd_pixel_busy          : std_logic;
+   signal s_cmd_pixel_need_more_data: std_logic;
+   signal s_cmd_pixel_address       : unsigned(15 downto 0);
+   signal s_cmd_pixel_rgb           : std_logic_vector(23 downto 0);
+   signal s_cmd_pixel_write_clk     : std_logic;
+
 begin
   reset : reset_controller
   port map (    
@@ -272,8 +296,8 @@ begin
      i_raddr    => s_received_data,
      o_rdata    => s_received_color,
      i_wclk     => i_clk60M,
-     i_wdata    => s_lut_waddr,
-     i_waddr    => s_lut_wdata,
+     i_wdata    => s_lut_wdata,
+     i_waddr    => s_lut_waddr,
      i_wren     => s_lut_wren
    );
    
@@ -313,12 +337,26 @@ begin
       i_clk            => i_clk60M,
       i_data           => s_received_data,
       i_data_rdy       => s_cmd_lut_data_rdy,
-
       o_busy           => s_cmd_lut_busy,
       o_need_more_data => s_cmd_lut_need_more_data,
       o_lut_waddr      => s_lut_waddr,
       o_lut_wdata      => s_lut_wdata,
       o_lut_wren       => s_lut_wren
+   );
+
+   cmd_pixel_impl : cmd_pixel
+   port map (   
+      i_reset_n        => s_reset_n,
+      i_clk            => i_clk60M,
+      i_data           => s_received_data,
+      i_data_color     => s_received_color,
+      i_data_rdy       => s_cmd_pixel_data_rdy,
+      i_writing        => s_rmw_in_progress,
+      o_busy           => s_cmd_pixel_busy,
+      o_need_more_data => s_cmd_pixel_need_more_data,
+      o_address        => s_cmd_pixel_address,
+      o_rgb            => s_cmd_pixel_rgb,
+      o_write_clk      => s_cmd_pixel_write_clk
    );
    
    o_uart_tx <= i_uart_rx;  -- for now send all raw received data back
@@ -473,7 +511,7 @@ begin
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
          -- s_uart_ticks       <= 60000000 * 20 / 9600;   -- smart uart
-         s_uart_ticks       <= 520; -- fixed  uart
+         s_uart_ticks       <= 520; -- fixed  uart @115200/60Mhz
 
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');    
@@ -529,14 +567,16 @@ begin
          s_cmd_fill_data_rdy <= '0';                  
          s_cmd_blit_data_rdy <= '0';
          s_cmd_lut_data_rdy <= '0';
+         s_cmd_pixel_data_rdy <= '0';
                   
-         if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' or s_cmd_lut_busy = '1' then
+         if s_cmd_fill_busy = '1' or s_cmd_blit_busy = '1' or s_cmd_lut_busy = '1' or s_cmd_pixel_busy = '1'then
             ot_test <= '1';
-            if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' or s_cmd_lut_need_more_data = '1' then
+            if s_cmd_fill_need_more_data = '1' or s_cmd_blit_need_more_data = '1' or s_cmd_lut_need_more_data = '1' or s_cmd_pixel_need_more_data = '1' then
                if s_readfifo_state = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;                  
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
                   s_cmd_lut_data_rdy <= s_cmd_lut_need_more_data;
+                  s_cmd_pixel_data_rdy <= s_cmd_pixel_need_more_data;
                   s_readfifo_state <= REQUEST;
                end if;                  
             end if;
@@ -550,7 +590,12 @@ begin
                v_cmd_address := s_cmd_blit_adress;
                v_cmd_rgbs := s_cmd_blit_rgb;
                v_cmd_write := '1';
+            elsif s_cmd_pixel_write_clk = '1' then
+               v_cmd_address := s_cmd_pixel_address;
+               v_cmd_rgbs := s_cmd_pixel_rgb;
+               v_cmd_write := '1';
             end if;
+            
             if v_cmd_write = '1' then            
                s_ram_wr_addr <= "000" & v_cmd_address(12 downto 8) & v_cmd_address(5 downto 0);
                s_ram_wr_bitsR <= v_cmd_rgbs(7 downto 0);
@@ -574,6 +619,7 @@ begin
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
                s_cmd_lut_data_rdy <= '1';
+               s_cmd_pixel_data_rdy <= '1';
                s_readfifo_state <= REQUEST;
             end if;
          end if;
