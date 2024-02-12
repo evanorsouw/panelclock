@@ -32,6 +32,7 @@ namespace WhiteMagic.PanelClock.Display
 
         public int Height => _vPanels*64;
 
+        bool state = false;
         public void Show(Bitmap bitmap)
         {
             if (!_initialized)
@@ -41,6 +42,8 @@ namespace WhiteMagic.PanelClock.Display
             }
             var bytes = _writeBuffer;
             var i = 0;
+
+            state = !state;
 
             bytes[i++] = 1;
             bytes[i++] = 0;

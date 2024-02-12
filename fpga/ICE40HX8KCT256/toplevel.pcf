@@ -52,6 +52,9 @@ set_io o_sram_addr[11] M7
 set_io o_sram_addr[12] N7
 set_io o_sram_addr[13] P6
 set_io o_sram_addr[14] M8
+set_io o_sram_addr[15] T5
+set_io o_sram_addr[16] R6
+set_io o_sram_addr[17] P8
 
 set_io o_dsp_clk E3
 set_io o_dsp_latch H5

@@ -22,7 +22,7 @@ entity toplevel is
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(14 downto 0);
+      o_sram_addr   : out std_logic_vector(17 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0)
    );
 end entity toplevel;
@@ -56,7 +56,7 @@ architecture toplevel_arch of toplevel is
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
       o_sram_cs     : out std_logic;
-      o_sram_addr   : out std_logic_vector(13 downto 0);
+      o_sram_addr   : out std_logic_vector(17 downto 0);
       io_sram_data  : inout std_logic_vector(11 downto 0);
       --
       ot_test       : out std_logic
@@ -64,7 +64,7 @@ architecture toplevel_arch of toplevel is
    end component;
 
    signal s_clk60M     : std_logic;
-   signal s_panel_addr : std_logic_vector(13 downto 0);
+   signal s_panel_addr : std_logic_vector(17 downto 0);
      
 begin  
    clock_generator : pll
@@ -98,7 +98,7 @@ begin
       ot_test       => o_led2
    ); 
 
-   o_sram_addr <= "0" & s_panel_addr;
+   o_sram_addr <= s_panel_addr;
    o_led1      <= i_uart_rx;
 
 end architecture toplevel_arch;
