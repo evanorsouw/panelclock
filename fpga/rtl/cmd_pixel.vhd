@@ -15,6 +15,7 @@ entity cmd_pixel is
       o_need_more_data : out std_logic; -- indication that more data is needed
       o_address        : out unsigned(15 downto 0);  -- address to write the RGB values
       o_rgb            : out std_logic_vector(23 downto 0);
+      o_alpha          : out unsigned(5 downto 0);
       o_write_clk      : out std_logic  -- on rising edge, address and rgb values are ready for writing
    );
 end entity cmd_pixel;
@@ -37,9 +38,6 @@ architecture cmd_pixel_arch of cmd_pixel is
 
 begin
    cmd_pixel: process (i_reset_n, i_clk)
-   variable v_red : unsigned(13 downto 0);
-   variable v_grn : unsigned(13 downto 0);
-   variable v_blu : unsigned(13 downto 0);
    begin
       if i_reset_n = '0' then
          s_state          <= CMD;
@@ -73,7 +71,7 @@ begin
             end if;
          when ARG_RED =>
             if i_data_rdy = '1' then
-               s_brush(7 downto 0) <= i_data_color;
+               s_brush(23 downto 16) <= i_data_color;
                s_state <= ARG_GRN;
             end if;
          when ARG_GRN =>
@@ -83,7 +81,7 @@ begin
             end if;
          when ARG_BLU =>
             if i_data_rdy = '1' then
-               s_brush(23 downto 16) <= i_data_color;
+               s_brush(7 downto 0) <= i_data_color;
                o_need_more_data <= '0';
                o_busy <= '0';
                s_state <= CMD;
@@ -101,10 +99,8 @@ begin
             end if;
          when WRITE_PIXEL =>
             o_address <= s_y & s_x;
-            v_red := unsigned(s_brush(23 downto 16)) * unsigned(s_alpha) / 63;
-            v_grn := unsigned(s_brush(15 downto 8)) * unsigned(s_alpha) / 63;
-            v_blu := unsigned(s_brush(7 downto 0)) * unsigned(s_alpha) / 63;
-            o_rgb <= std_logic_vector(v_red(7 downto 0)) & std_logic_vector(v_grn(7 downto 0)) & std_logic_vector(v_blu(7 downto 0));
+            o_rgb <= s_brush;
+            o_alpha <= s_alpha;
             s_write_clk <= '1';
             s_state <= WAIT_WRITE_START;
          when WAIT_WRITE_START =>

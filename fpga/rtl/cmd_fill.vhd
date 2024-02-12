@@ -80,7 +80,7 @@ begin
             end if;
          when ARG_RED =>
             if i_data_rdy = '1' then
-               s_rgb(7 downto 0) <= i_data_color;
+               s_rgb(23 downto 16) <= i_data_color;
                s_state <= ARG_GRN;
             end if;
          when ARG_GRN =>
@@ -90,7 +90,7 @@ begin
             end if;
          when ARG_BLU =>
             if i_data_rdy = '1' then
-               s_rgb(23 downto 16) <= i_data_color;
+               s_rgb(7 downto 0) <= i_data_color;
                s_state <= WRITE_PIXELS;
                o_need_more_data <= '0';
                if s_dy = 0 or s_dx = 0 then     -- done when empty rectangle
@@ -99,8 +99,8 @@ begin
                end if;
             end if;
          when WRITE_PIXELS =>
-            o_address <= s_py & s_px;
             o_rgb <= s_rgb;
+            o_address <= s_py & s_px;
             s_write_clk <= '1';                              
             -- prepare next pixel
             s_px <= s_px + 1;

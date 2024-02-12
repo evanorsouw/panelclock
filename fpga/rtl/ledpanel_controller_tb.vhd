@@ -24,7 +24,7 @@ architecture Behavioral of ledpanel_controller_tb is
       o_sram_oe       : out std_logic;
       o_sram_wr       : out std_logic;
       o_sram_cs       : out std_logic;
-      o_sram_addr     : out std_logic_vector(13 downto 0);
+      o_sram_addr     : out std_logic_vector(17 downto 0);
       io_sram_data    : inout std_logic_vector(11 downto 0);
       --              
       ot_test         : out std_logic
@@ -51,11 +51,11 @@ architecture Behavioral of ledpanel_controller_tb is
    signal tb_sram_oe    : std_logic;
    signal tb_sram_wr    : std_logic;
    signal tb_sram_cs    : std_logic;
-   signal tb_sram_addr  : std_logic_vector(13 downto 0);
+   signal tb_sram_addr  : std_logic_vector(17 downto 0);
    signal tb_sram_data  : std_logic_vector(11 downto 0);
    signal tb_test       : std_logic;
   
-  type t_RAM is array (0 to 16383) of std_logic_vector(11 downto 0);
+  type t_RAM is array (0 to 2**17-1) of std_logic_vector(11 downto 0);
   signal ram : t_RAM := (others => (others => '1'));
   
    begin
@@ -116,7 +116,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"00";
+      v_byte := X"ff";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -126,7 +126,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"80";
+      v_byte := X"ff";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -146,7 +146,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"8F";
+      v_byte := X"fE";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop

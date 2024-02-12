@@ -39,8 +39,8 @@ begin
          s_state          <= CMD;
          o_busy           <= '0';
          o_need_more_data <= '0';
-         o_displayscreen  <= "00";
-         o_writescreen    <= "00";
+         o_displayscreen  <= "0000";
+         o_writescreen    <= "0000";
          
       elsif rising_edge(i_clk) then
 

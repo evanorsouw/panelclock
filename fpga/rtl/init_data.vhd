@@ -35,9 +35,9 @@ architecture whitemagic_init_screen_arch of whitemagic_init_screen is
       X"02", X"0D", X"25", X"04", X"02", X"00", X"00", X"00",  -- white square 5 top
       X"02", X"0D", X"27", X"04", X"02", X"FF", X"FF", X"FF",  -- white square 5 bottom
       
-      X"02", X"17", X"1C", X"04", X"04", X"00", X"A5", X"E0",  -- blue square
+      X"02", X"17", X"1C", X"04", X"04", X"00", X"00", X"FF",  -- blue square
       X"02", X"12", X"20", X"04", X"04", X"FF", X"00", X"00",  -- red square
-      X"02", X"18", X"22", X"04", X"04", X"83", X"C3", X"0E"   -- green square     
+      X"02", X"18", X"22", X"04", X"04", X"00", X"FF", X"00"   -- green square     
    );
 
 begin

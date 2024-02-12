@@ -28,25 +28,12 @@ UEXT Top-view (looking inside connector)
    D14/MOSI           SDI 7 | o o | 8  SDO           - D16 MISO
     D15/SCK -         SCK 9 | o o | 10 SS_B          - D13/CS
                             +-----+
-             
-              
               
               
 Olimex Ice4040HX8K-EVB board, GPIO connector (IDC)
 
 -- view inside IDC connector (at back of panel)
 Olimex board uses CT256 package
-
-                  GPIO1         +-----+        GPIO1
-       IOL_1B/B2 - #7     R1  1 | o o | 2  G1   #10 - IOL_15A/J2
-       IOL_2A/F5 - #9     B1  3 | o o | 4  GND  #2  - GND       
-       IOL_2B/B1 - #11    R2  5 | o o | 6  G2   #12 - IOL_14B/H1
-       IOL_3A/C1 - #13    B2  7   o o | 8  E    #14 - IOL_13B/G1
-       IOL_3B/C2 - #15     A  9   o o | 10 B    #16 - IOL_13A/J5
-       IOL_4A/F4 - #17     C 11 | o o | 12 D    #18 - IOL_12B/H2
-  0:GR IOL_4B/D2 - #19   CLK 13 | o o | 14 LAT  #20 - IOL_12A/J4  2:RD   #22 / G2
-  1:BR IOL_5A/G5 - #21    OE 15 | o o | 16 GND  #8  - GND       
-                                +-----+
                                 
                   GPIO1         +-----+        GPIO1
        IOL_1A/E4 - #5     R1  1 | o o | 2  G1   #7  - IOL_1B/B2

@@ -5,7 +5,7 @@ using System.Runtime.Intrinsics.Arm;
 const int N = 64;
 const int MASK = 63;
 
-var bitmap = new Bitmap(64, 64, N);
+var bitmap = new Bitmap(64, 64);
 
 void swap<T>(ref T v1, ref T v2)
 {
@@ -122,7 +122,8 @@ void drawtriangleup_i(Bitmap bitmap, int xt, int yt, int xb1, int xb2, int yb, i
             var ox = (x & (~MASK)) == (xr2 & (~MASK)) ? (xr2 - x) : MASK - (x & MASK);
             var oy = Math.Min(MASK, tdy);
 
-            bitmap.SetPixel(x, y1, color, ox, oy);
+            var alpha = ox * oy / 63;
+            bitmap.SetPixel(x, y1, color, alpha);
 
             x = xnext;
         }
@@ -187,7 +188,8 @@ void drawtriangledown_i(Bitmap bitmap, int xb, int yb, int xt1, int xt2, int yt,
             var ox = (x & (~MASK)) == (xr2 & (~MASK)) ? (xr2 - x) : MASK - (x & MASK);
             var oy = Math.Min(MASK, tdy);
 
-            bitmap.SetPixel(x, y1, color, ox, oy);
+            var alpha = ox * oy / 63;
+            bitmap.SetPixel(x, y1, color, alpha);
 
             x = xnext;
         }
@@ -202,20 +204,26 @@ void drawtriangledown_i(Bitmap bitmap, int xb, int yb, int xt1, int xt2, int yt,
 //    Thread.Sleep(50);
 //}
 
-var sw = 0;
-for (double i = 0; i <= 360; i += 0.5)
+for (; ; )
 {
-    bitmap.Clear();
-    var angle = (float)(i / 180f * Math.PI);
+    var sw = 0;
+    for (double i = 0; i <= 360; i += 0.5)
+    {
+        bitmap.Clear();
+        bitmap.Rect(0, 0, 10, 10, 0xFF0000);
+        bitmap.Rect(10, 0, 10, 10, 0x00FF00);
+        bitmap.Rect(20, 0, 10, 10, 0x0000FF);
 
-    var (x1, y1) = RotatedCenter(32f * 0.5f, angle);
-    var (x2, y2) = RotatedCenter(32f * 0.5f, angle - Math.PI * 2 / 3);
-    var (x3, y3) = RotatedCenter(32f * 0.5f, angle + Math.PI * 2 / 3);
-    drawtriangle(bitmap, x1, y1, x2, y2, x3, y3, 0xff0000);
+        var angle = (float)(i / 180f * Math.PI);
 
-    var sd = sw;
-    bitmap.SelectScreen(sd, sw);
-    sw++;
+        var (x1, y1) = RotatedCenter(32f * 0.5f, angle);
+        var (x2, y2) = RotatedCenter(32f * 0.5f, angle - Math.PI * 2 / 3);
+        var (x3, y3) = RotatedCenter(32f * 0.5f, angle + Math.PI * 2 / 3);
+        drawtriangle(bitmap, x1, y1, x2, y2, x3, y3, 0xFF0050);
+
+        var sd = sw++;
+        bitmap.SelectScreen(sd, sw);
+    }
 }
 
 (float, float) RotatedCenter(double distance, double angle)

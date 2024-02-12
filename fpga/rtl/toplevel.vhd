@@ -50,7 +50,7 @@ architecture toplevel_arch of toplevel is
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
-      o_dsp_rgbs    : out std_logic_vector (11 downto 0);
+      o_dsp_rgbs    : out std_logic_vector (11 downto 0);  -- 'RGBRGBRGBRGB'
       o_dsp_vbl     : out std_logic;
       -- sram pins
       o_sram_oe     : out std_logic;

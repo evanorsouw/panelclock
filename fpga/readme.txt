@@ -25,3 +25,40 @@ e.g.: WinICEProg.exe -ICOM2 -v ice40\ice40_Implmnt\sbt\outputs\bitmap\toplevel_b
 
 
 
+
+
+
+
+Add to FPGA code:
+
+- setcolor(r,g,b)
+0x03,<R>,<G>,<B>
+
+- setpixel(x,y,alpha) - use current color and blend pixel at x,y with existing pixel using <alpha>
+0b10aaaaaa,<x>,<y>
+
+- setnextpixel(alpha) - use current color and last position (x+1,y) and blend existing pixel using alpha then update current position to (x+1,y)
+0b11aaaaaa 
+
+
+
+the FPGA must get ability to read an RGB pixel value back from memory.
+- writing a pixel takes 8 writes (each RGB bit need 1 read)
+- reading a pixel also takes 8 writes
+
+the alpha pixel blend must:
+- read 24 pixel from memory 
+- merge color using 6 bit alpha value:
+  - calculate the color value for each RGB channel in the pixel:
+    - clip(old * (63-alpha) + new * alpha, 255)
+- write 24 pixel back to memory
+
+performance:
+- each read/write of a set of RGB pixels takes 2 clock cycles
+- given 8 reads and 8 write leaves requires 16*x = 32 clock cycles.
+- at 60MHz this leaves an ideal bandwith of ~1.877 million pixels, or 228 full 128x64 screens
+
+using above techniques we can render a screen that has say 30% filling:
+- worst case: 128 * 64 * 30% * 3 (setpixel) = 7372 bytes (@115200 baud = 0.64 sec)
+- with 90% scanlines: (128 * 64 * 0.3) * 10% * 3 + (128 * 64 * 0.3) * 90% * 1 = 2949 (@115200 baud = 0.256 sec)
+

@@ -82,18 +82,18 @@ begin
                o_busy <= '0';
                o_need_more_data <= '0';
             elsif i_data_rdy = '1' then
-               s_rg(7 downto 0) <= i_data_color;
+               s_rg(15 downto 8) <= i_data_color;
                s_state <= ARG_GRN;
             end if;
          when ARG_GRN =>
             if i_data_rdy = '1' then
-               s_rg(15 downto 8) <= i_data_color;
+               s_rg(7 downto 0) <= i_data_color;
                s_state <= ARG_BLU;
             end if;
          when ARG_BLU =>
             if i_data_rdy = '1' then
                o_address <= s_py & s_px;
-               o_rgb <= i_data_color & s_rg;
+               o_rgb <= s_rg & i_data_color;
                o_need_more_data <= '0';
                s_write_clk <= '1';                  
                

@@ -47,6 +47,7 @@ begin
          v_waiting         := '0';
          v_depth_count     := to_unsigned(1, v_depth_count'Length);
          v_depth_delay     := "10000000";
+         v_read            := '1';
          o_dsp_vbl         <= '1';
 
       elsif rising_edge(i_clkx2) then

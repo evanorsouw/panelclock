@@ -12,7 +12,7 @@
 
 # ##############################################################################
 
-###IOSet List 46
+
 set_io i_clk100M J3
 set_io i_reset_n K11
 set_io i_uart_rx L11
@@ -66,9 +66,9 @@ set_io o_dsp_addr[2] D1
 set_io o_dsp_addr[3] G4
 set_io o_dsp_addr[4] F4
 
-set_io o_dsp_rgbs[0] E4
-set_io o_dsp_rgbs[1] B2
-set_io o_dsp_rgbs[2] F5
-set_io o_dsp_rgbs[3] B1
-set_io o_dsp_rgbs[4] C1
-set_io o_dsp_rgbs[5] C2
+set_io o_dsp_rgbs[0] F5  # Blue1
+set_io o_dsp_rgbs[1] B2  # Green1
+set_io o_dsp_rgbs[2] E4  # Red1
+set_io o_dsp_rgbs[3] C2  # Blue2
+set_io o_dsp_rgbs[4] C1  # Green2
+set_io o_dsp_rgbs[5] B1  # Red2

@@ -1,4 +1,4 @@
-D:/projects/fpgaclock/fpga/rtl/toplevel.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/toplevel.vhd
+D:/projects/fpgaclock/fpga/rtl/toplevel.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/toplevel.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -7,7 +7,7 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity toplevel
 -- Compiling architecture toplevel_arch of toplevel
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/reset.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/reset.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/reset.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/reset.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -16,7 +16,16 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity reset_controller
 -- Compiling architecture reset_controller_arch of reset_controller
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_pixel.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_pixel.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_screen.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_screen.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity cmd_screen
+-- Compiling architecture cmd_screen_arch of cmd_screen
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_pixel.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_pixel.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -25,7 +34,7 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity cmd_pixel
 -- Compiling architecture cmd_pixel_arch of cmd_pixel
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_blit.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -34,7 +43,16 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity cmd_blit
 -- Compiling architecture cmd_blit_arch of cmd_blit
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/fm6124.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/fm6124.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity FM6124
+-- Compiling architecture FM6124_arch of FM6124
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/uart_tb.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -43,7 +61,7 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity uart_tb
 -- Compiling architecture Behavioral of uart_tb
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_fill.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_fill.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_fill.vhd {1 {vcom -work work -2008 -explicit -stats=none {D:\projects\fpgaclock\fpga\rtl\cmd_fill.vhd}
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -52,7 +70,16 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity cmd_fill
 -- Compiling architecture cmd_fill_arch of cmd_fill
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd {2 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/uart.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/uart.vhd
+Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
+-- Loading package STANDARD
+-- Loading package TEXTIO
+-- Loading package std_logic_1164
+-- Loading package NUMERIC_STD
+-- Compiling entity UART
+-- Compiling architecture UART_arch of UART
+
+} {} {}} D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd {2 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -62,16 +89,7 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling architecture Behavioral of ledpanel_controller_tb
 ** Warning: D:/projects/fpgaclock/fpga/rtl/ledpanel_controller_tb.vhd(35): (vcom-1207) An abstract literal and an identifier must have a separator between them.
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/init_data.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/init_data.vhd
-Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
--- Loading package STANDARD
--- Loading package TEXTIO
--- Loading package std_logic_1164
--- Loading package NUMERIC_STD
--- Compiling entity whitemagic_init_screen
--- Compiling architecture whitemagic_init_screen_arch of whitemagic_init_screen
-
-} {} {}} D:/projects/fpgaclock/fpga/rtl/port2_ram.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/port2_ram.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/port2_ram.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/port2_ram.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
@@ -80,7 +98,7 @@ Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oc
 -- Compiling entity port2_ram
 -- Compiling architecture rtl of port2_ram
 
-} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_lut.vhd {1 {vcom -work work -2002 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_lut.vhd
+} {} {}} D:/projects/fpgaclock/fpga/rtl/cmd_lut.vhd {1 {vcom -work work -2008 -explicit -stats=none D:/projects/fpgaclock/fpga/rtl/cmd_lut.vhd
 Model Technology ModelSim - Lattice FPGA Edition vcom 2020.3 Compiler 2020.10 Oct 14 2020
 -- Loading package STANDARD
 -- Loading package TEXTIO
