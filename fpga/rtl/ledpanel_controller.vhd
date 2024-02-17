@@ -41,7 +41,7 @@ use IEEE.NUMERIC_STD.all;
 -- Each panel half has 64x32 pixels. Each pixels has 3 RGB leds controlled by 3 bytes.
 -- With a color resolution of 8 bit you get 256 intensities per color.
 -- Each panel half has its own RGB inputs that are clocked in 1 line at-a-time.
--- Since we have 4 panel halves, we can clock 4x3 bits with every display clock.
+-- For ach panels half we clock in 3 bits with every display clock.
 -- We use BAM (Bit Angle Modulation) to generate a PWM signal in 8 steps with
 -- decreasing intervals: bit7:128/256  bit6:64/256, bit5:32/256 ... bit0:1/256
 -- The duration for clocking the line corresponding to bit0 take 64clks. We add
@@ -52,14 +52,14 @@ use IEEE.NUMERIC_STD.all;
 -- With a max clock of 30MHz this means a single screen renders in (256*32*67)/30E6 = 18.3ms.
 -- This means a refreshrate of 54.6 Hz.
 -- In practice we clock in bit7 for all 32 lines, following by bit6 for all 32 lines etc.
--- For keep consistent datastream from memory for displaying the updates, we store
--- in memory, the 4x3 RGB bits for all 4 panel halves.
--- This means that each pixel we progress in a line, we also progress 1 memory address.
--- To display all 32x64 pixels we need 64*8*32=16384 12 bit words.
--- Each 12bit word represents 1 bit of the color intensities for all 4 64x32 panels:
---   [P0,0] [P0,1] [P1,0] [P1,1]
---    11:9   8:6    5:3    2:0
---    RGB    RGB    RGB    RGB
+-- For keep consistent datastream from memory for displaying the updates, we have the 
+-- datasize for each address equal to the required RGB bits for all panel halves.
+-- This means that each pixel we progress 1 pixel in a line, we also progress 1 memory address.
+-- To display all 32x64 pixels we need 64*32*8=16384 words.
+-- How the individual bits of each word maps to a panel is implementation defined and based 
+-- on the available datasize. If we want 4 64x64 panels we need 4*2*3 = 24 bit wordsize
+-- in terms of ram, this means 3 parallel 8bit ram chips.
+-- 
 -- The display is controlled using 8 bit channels (256 intensities) using
 -- BAM (Bit Angle Modulation).
 --
@@ -83,12 +83,11 @@ use IEEE.NUMERIC_STD.all;
 -- So a read-modify-write cycle of a single pixel involves 8 updates in memory.
 -- The adressspace needed to display a single 64x32 panel half is 0x4000 (16K) or 14 bits.
 -- with a datawidth of 3 bits.
--- If mutilple panel(-halve)s are used the addresswidth stays the same but the data-width
--- increases accordingly. So for 2 64x64 panels this is 4x3=12 bits.
 --
--- To support double-buffering of screen we a 15'th address bit can be introduced for
+-- To support double-buffering of screen we a additional address bit can be introduced for
 -- both displaying and writing. by toggling these bits on the start of displaying a new
 -- screen we can write the display without visual artifacts.
+-- currently trhe code supports 4 bits meaning 16 screens.
 --
 
 entity ledpanel_controller is
@@ -484,7 +483,7 @@ begin
       o_writescreen    => s_writescreen
    );
 
-   --o_uart_tx <= i_uart_rx;  -- for now send all raw received data back
+   o_uart_tx <= i_uart_rx;  -- for now send all raw received data back
 
    p_sram: process(s_reset_n, i_clk60M)
    -- An memory write update is initiated by setting the:
@@ -528,19 +527,11 @@ begin
                o_sram_addr <= s_displayscreen & s_ram_rd_addr;
                io_sram_data <= (others => 'Z');
                o_dsp_rgbs <= io_sram_data;
-               s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;   -- an interrupted read-modify-write cycle is restarted
+               --s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;   -- an interrupted read-modify-write cycle is restarted
 
             else
-               -- update external display ram during periods where display is idle showing a row.
-               if s_ram_wr_clk = '1' then
-                  s_rmw_in_progress <= '1';
-                  s_rmw_bitmask <= "10000000";
-                  s_rmw_address <= s_ram_wr_addr;
-                  s_rmw_color <= s_ram_wr_color;
-                  s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;
-                  v_assembled_color := (others => '0');
-                  
-               elsif s_rmw_in_progress = '1' then
+               -- update external display ram during periods where display is idle showing a row.                 
+               if s_rmw_in_progress = '1' then
                   s_rmw_step <= s_rmw_step + 1;
                   case s_rmw_step is
                   when 0 => -- read back pixel RGB value for alpha merge
@@ -564,17 +555,17 @@ begin
                         s_rmw_step <= 0;
                      else
                         -- assembled last bit, merge the read back value with the new pixel value
-                        v_red := unsigned(v_assembled_color(23 downto 16)) +
+                        v_red := (unsigned(v_assembled_color(23 downto 16)) * (63 - s_ram_wr_alpha) / 63) +
                                  ((unsigned(s_rmw_color(23 downto 16)) * s_ram_wr_alpha) / 63);
                         if (v_red > 255) then 
                            v_red := to_unsigned(255, v_red'length); 
                         end if;
-                        v_grn := unsigned(v_assembled_color(15 downto 8)) +
+                        v_grn := (unsigned(v_assembled_color(15 downto 8)) * (63 - s_ram_wr_alpha) / 63) +
                                  ((unsigned(s_rmw_color(15 downto 8)) * s_ram_wr_alpha) / 63);
                         if (v_grn > 255) then 
                            v_grn := to_unsigned(255, v_grn'length); 
                         end if;
-                        v_blu := unsigned(v_assembled_color(7 downto 0)) +
+                        v_blu := (unsigned(v_assembled_color(7 downto 0)) * (63 - s_ram_wr_alpha) / 63) +
                                  ((unsigned(s_rmw_color(7 downto 0)) * s_ram_wr_alpha) / 63);
                         if (v_blu > 255) then 
                            v_blu := to_unsigned(255, v_blu'length); 
@@ -614,6 +605,13 @@ begin
                      end if;
                   when others =>
                   end case;
+               elsif s_ram_wr_clk = '1' then
+                  s_rmw_in_progress <= '1';
+                  s_rmw_bitmask <= "10000000";
+                  s_rmw_address <= s_ram_wr_addr;
+                  s_rmw_color <= s_ram_wr_color;
+                  s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;
+                  v_assembled_color := (others => '0');
                end if;
             end if;
          end if;
