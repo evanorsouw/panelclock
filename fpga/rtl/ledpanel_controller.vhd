@@ -239,7 +239,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
       o_need_more_data : out std_logic;
       o_address        : out unsigned(15 downto 0);
       o_rgb            : out std_logic_vector(23 downto 0);
-      o_alpha          : out unsigned(5 downto 0);
+      o_alpha          : out unsigned(7 downto 0);
       o_write_clk      : out std_logic
    );
    end component;
@@ -277,7 +277,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(13 downto 0);
    signal s_ram_wr_color     : std_logic_vector(23 downto 0);
-   signal s_ram_wr_alpha     : unsigned(5 downto 0);
+   signal s_ram_wr_alpha     : unsigned(7 downto 0);
 
    signal s_fifo_wren        : std_logic;
    signal s_fifo_rindex      : unsigned(FIFO_DEPTH-1 downto 0);
@@ -331,7 +331,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_cmd_pixel_need_more_data: std_logic;
    signal s_cmd_pixel_address       : unsigned(15 downto 0);
    signal s_cmd_pixel_rgb           : std_logic_vector(23 downto 0);
-   signal s_cmd_pixel_alpha         : unsigned(5 downto 0);
+   signal s_cmd_pixel_alpha         : unsigned(7 downto 0);
    signal s_cmd_pixel_write_clk     : std_logic;
 
    signal s_cmd_screen_data_rdy     : std_logic;
@@ -483,7 +483,7 @@ begin
       o_writescreen    => s_writescreen
    );
 
-   o_uart_tx <= i_uart_rx;  -- for now send all raw received data back
+   o_uart_tx <= '0';--i_uart_rx;  -- for now send all raw received data back
 
    p_sram: process(s_reset_n, i_clk60M)
    -- An memory write update is initiated by setting the:
@@ -494,10 +494,10 @@ begin
    --   s_ram_wr_clk
    -- set 
    variable v_updated_bits    : std_logic_vector (11 downto 0);
-   variable v_assembled_color : std_logic_vector (23 downto 0);
-   variable v_red             : unsigned(13 downto 0);
-   variable v_grn             : unsigned(13 downto 0);
-   variable v_blu             : unsigned(13 downto 0);
+   variable v_backgroundcolor : std_logic_vector (23 downto 0);
+   variable v_red             : unsigned(15 downto 0);
+   variable v_grn             : unsigned(15 downto 0);
+   variable v_blu             : unsigned(15 downto 0);
    variable v_readbits        : std_logic_vector(11 downto 0);
    
    begin
@@ -527,46 +527,45 @@ begin
                o_sram_addr <= s_displayscreen & s_ram_rd_addr;
                io_sram_data <= (others => 'Z');
                o_dsp_rgbs <= io_sram_data;
-               --s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;   -- an interrupted read-modify-write cycle is restarted
 
             else
                -- update external display ram during periods where display is idle showing a row.                 
                if s_rmw_in_progress = '1' then
                   s_rmw_step <= s_rmw_step + 1;
                   case s_rmw_step is
-                  when 0 => -- read back pixel RGB value for alpha merge
+                  when 0 => -- read back pixel RGB value as backgroun color to merge with new foreground pixel value
                      o_sram_addr  <= s_writescreen & std_logic_vector(s_rmw_address);
                      o_sram_wr    <= '1';
                      io_sram_data <= (others => 'Z');
-                  when 1 => -- assembled pixel bit
+                  when 1 => -- assemble 24bit pixel value
                      v_readbits := io_sram_data;
                      if ((v_readbits and s_ram_wr_mask and "100100100100") /= "000000000000") then
-                        v_assembled_color(23 downto 16) := v_assembled_color(23 downto 16) or s_rmw_bitmask;
+                        v_backgroundcolor(23 downto 16) := v_backgroundcolor(23 downto 16) or s_rmw_bitmask;
                      end if;
                      if ((v_readbits and s_ram_wr_mask and "010010010010") /= "000000000000") then
-                        v_assembled_color(15 downto 8) := v_assembled_color(15 downto 8) or s_rmw_bitmask;
+                        v_backgroundcolor(15 downto 8) := v_backgroundcolor(15 downto 8) or s_rmw_bitmask;
                      end if;
                      if ((v_readbits and s_ram_wr_mask and "001001001001") /= "000000000000") then
-                        v_assembled_color(7 downto 0) := v_assembled_color(7 downto 0) or s_rmw_bitmask;
+                        v_backgroundcolor(7 downto 0) := v_backgroundcolor(7 downto 0) or s_rmw_bitmask;
                      end if;
                      s_rmw_address <= s_rmw_address + 16#0800#;                     
                      s_rmw_bitmask <= '0' & s_rmw_bitmask(7 downto 1);                     
                      if s_rmw_bitmask /= "00000001" then                      
                         s_rmw_step <= 0;
                      else
-                        -- assembled last bit, merge the read back value with the new pixel value
-                        v_red := (unsigned(v_assembled_color(23 downto 16)) * (63 - s_ram_wr_alpha) / 63) +
-                                 ((unsigned(s_rmw_color(23 downto 16)) * s_ram_wr_alpha) / 63);
+                        -- all 24 bits assembled, merge the read back value with the new pixel value
+                        v_red := (unsigned(v_backgroundcolor(23 downto 16)) * (255 - s_ram_wr_alpha) / 255) +
+                                 ((unsigned(s_rmw_color(23 downto 16)) * s_ram_wr_alpha) / 255);
                         if (v_red > 255) then 
                            v_red := to_unsigned(255, v_red'length); 
                         end if;
-                        v_grn := (unsigned(v_assembled_color(15 downto 8)) * (63 - s_ram_wr_alpha) / 63) +
-                                 ((unsigned(s_rmw_color(15 downto 8)) * s_ram_wr_alpha) / 63);
+                        v_grn := (unsigned(v_backgroundcolor(15 downto 8)) * (255 - s_ram_wr_alpha) / 255) +
+                                 ((unsigned(s_rmw_color(15 downto 8)) * s_ram_wr_alpha) / 255);
                         if (v_grn > 255) then 
                            v_grn := to_unsigned(255, v_grn'length); 
                         end if;
-                        v_blu := (unsigned(v_assembled_color(7 downto 0)) * (63 - s_ram_wr_alpha) / 63) +
-                                 ((unsigned(s_rmw_color(7 downto 0)) * s_ram_wr_alpha) / 63);
+                        v_blu := (unsigned(v_backgroundcolor(7 downto 0)) * (255 - s_ram_wr_alpha) / 255) +
+                                 ((unsigned(s_rmw_color(7 downto 0)) * s_ram_wr_alpha) / 255);
                         if (v_blu > 255) then 
                            v_blu := to_unsigned(255, v_blu'length); 
                         end if;
@@ -610,8 +609,8 @@ begin
                   s_rmw_bitmask <= "10000000";
                   s_rmw_address <= s_ram_wr_addr;
                   s_rmw_color <= s_ram_wr_color;
-                  s_rmw_step <= 2 when s_ram_wr_alpha = 63 else 0;
-                  v_assembled_color := (others => '0');
+                  s_rmw_step <= 2 when s_ram_wr_alpha = 255 else 0;
+                  v_backgroundcolor := (others => '0');
                end if;
             end if;
          end if;
@@ -683,7 +682,7 @@ begin
                s_fifo_rindex <= s_fifo_rindex + 1;
                s_readfifo_state <= LUT;
             end if;
-         when LUT =>
+         when LUT => -- 1 cycle to do the color lut lookup.
             s_received_data <= s_fifo_dataout;
             s_readfifo_state <= AVAILABLE;
          when others =>

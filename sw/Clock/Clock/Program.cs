@@ -1,7 +1,5 @@
 ﻿
 using Clock;
-using System.Security.Cryptography.X509Certificates;
-using System.Xml.Serialization;
 
 const int N = 64;
 const int MASK = 63;
@@ -52,7 +50,7 @@ void drawtriangle(Bitmap bitmap, double x1, double y1, double x2, double y2, dou
     }
     else
     {
-        var x = x1 + (x3 - x1) * (y2 - y1) / (y3 - y1) ;
+        var x = x1 + (x3 - x1) * (y2 - y1) / (y3 - y1);
         drawtriangleup_i(bitmap, x1, y1, x2 < x ? x2 : x, x2 < x ? x : x2, y2, color);
         drawtriangledown_i(bitmap, x3, y3, x2 < x ? x2 : x, x2 < x ? x : x2, y2, color);
     }
@@ -70,7 +68,7 @@ void drawtriangleup_i(Bitmap bitmap, double xtop, double ytop, double xbottomlef
 
     while (y<ybottom)
     {
-        var ynext = Math.Min(ybottom, Math.Floor(y + 1));
+        var ynext = Math.Min(ybottom, (int)y + 1.0);
 
         var yy = ynext - ytop;
         var xbl = xtop + dxl * yy / dy;
@@ -95,7 +93,7 @@ void drawtriangledown_i(Bitmap bitmap, double xbottom, double ybottom, double xt
 
     while (y < ybottom)
     {
-        var ynext = Math.Min(ybottom, Math.Floor(y + 1));
+        var ynext = Math.Min(ybottom, (int)y + 1.0);
 
         var yy = ynext - ytop;
         var xbl = xtopleft + dxl * yy / dy;
@@ -148,11 +146,21 @@ void drawscanline(Bitmap bitmap, double xtl, double xtr, double yt, double xbl, 
     var x = lxl;
     while (x < rxr)
     {
-        var xnext = Math.Min(Math.Floor(x + 1), rxr);
+        var xnext = Math.Min((int)x + 1.0, rxr);
         var xc = (x + xnext) / 2;
 
         var yl = clip(lyl + dyl * (xc - lxl) / dy, yt, yb);
         var yr = clip(ryl + dyr * (xc - rxl) / dy, yt, yb);
+
+        // individual situations in left and right lines that all need separate handling
+        //
+        //     /  /      / |    /       / \      \  \      \    | \      \         /
+        //    /  /      /  |   /       /   \      \  \      \   |  \      \       /
+        //  L/  /R    L/   |  /R      /     \      \  \      \  |   \      \     /
+        //  /| /      /    | /       /       \      \ |\      \ |    \      \   /
+        // / |/      /     |/       /         \      \| \      \|     \      \ /
+        //   (1)        (2)            (3)            (4)        (5)         (6)
+        //
 
         var ayt = yt;
         var ayb = yb;
@@ -173,6 +181,7 @@ void drawscanline(Bitmap bitmap, double xtl, double xtr, double yt, double xbl, 
                 {
                     ayb = yr;
                 }
+
             }
             else if (ryl > ryr)
             {   // 2
@@ -270,20 +279,33 @@ void drawline(Bitmap bitmap, double sx, double sy, double ex, double ey, double 
     drawtriangle(bitmap, x1, y1, x3, y3, x4, y4, color);
 }
 
-//bitmap.Clear();
-//drawtriangle(bitmap, 32, 20, 18f, 10, 30, 10, 0xFF0000);
-
-var sw = 0;
-//for (double x = 0; x < 64; x += 0.01f)
-//{
-//    bitmap.Clear();
-//    drawtriangle(bitmap, 32, 20, 18f, 10, x, 10, 0xFF0000);
-//    var sd = sw++;
-//    //bitmap.SelectScreen(sd, sw);
-//}
-
+var l = 1;
 for (; ; )
 {
+    //if (++l == 3) l = 0;
+    //bitmap.SelectLut(l == 0 ? 0x11 : 0x12);
+
+    bitmap.WriteBytes(0x10);
+    for (int i = 0; i < 256; ++i)
+    {
+        bitmap.WriteBytes((byte)(255 - i));
+    }
+    //bitmap.WriteBytes(0x12);
+
+    for (int x = 0; x < 64; ++x)
+    {
+        for (int y = 0; y < 10; ++y)
+        {
+            var c = x * 2;
+            bitmap.SetPixel(x, y, c | (c << 8) | (c << 16));
+        }
+    }
+}
+
+int sw = 0;
+for (; ; )
+{
+    bitmap.WriteBytes(0x11);
     bitmap.Clear();
 
     for (int i = 0; i < 12; ++i)
@@ -314,10 +336,9 @@ for (; ; )
     (ex, ey) = RotatedCenter(30 * 0.9, angle3);
     drawline(bitmap, sx, sy, ex, ey, 1, 0xFF0000);
 
-
-
     var sd = sw++;
     bitmap.SelectScreen(sd, sw);
+    //bitmap.SelectScreen(0,0);
 }
 
 (double, double) RotatedCenter(double distance, double angle)

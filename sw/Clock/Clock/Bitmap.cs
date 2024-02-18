@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO.Ports;
 using System.Reflection.Metadata.Ecma335;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Clock
 {
@@ -34,7 +35,12 @@ namespace Clock
         /// <param name="alpha">alphfa value 0=transparant to oversample=opaque</param>
         public void SetPixel(int x, int y, int color, double alpha)
         {
-            var a = (byte)(Math.Max(0, Math.Min(63, alpha * 63)));
+
+            // 0x08,< red >,< green,< blue > -set brushcolor
+            // 0x0B,< x >,< y >,< alpha > - merge pixel at coordinates with given alpha channel
+            // 0x0C,< alpha > - merge at next coordinates with given alpha channel
+
+            var a = (byte)(Math.Max(0, Math.Min(255, alpha * 255)));
             if (_lastcolor != color)
             {
                 WriteBytes(0x08, (byte)(color >> 16), (byte)(color >> 8), (byte)color);
@@ -43,13 +49,13 @@ namespace Clock
             if (_lasty != y || _lastx+1 != x)
             {
                 _lasty = y;
-                _lastx = x;
-                WriteBytes((byte)(0xC0 | a), (byte)x, (byte)y);
+                _lastx = x; 
+                WriteBytes(0x0b, (byte)x, (byte)y, a);
             }
             else
             {
                 _lastx = (_lastx + 1) & 0xff;
-                WriteBytes((byte)(0x80 | a));
+                WriteBytes(0x0c, a);
             }
         }
 
@@ -60,13 +66,24 @@ namespace Clock
 
         public void Clear()
         {
-            var buf = new byte[] { 2, 0, 0, 64, 64, 0, 0, 0 };
-            WriteBytes(buf, buf.Length);
+            WriteBytes(2, 0, 0, 64, 64, 0, 0, 0);
         }
 
         public void SelectScreen(int d, int w)
         {
-            WriteBytes(0x09, (byte)((d & 15) | ((w & 15) << 4)));
+            WriteBytes(0x18, (byte)((d & 15) | ((w & 15) << 4)));
+        }
+
+        public void SelectLut(int idx)
+        {
+            if (idx == 0)
+            {
+                WriteBytes(0x11);
+            }
+            else if (idx == 1)
+            {
+                WriteBytes(0x12);
+            }
         }
 
         private void Open()
@@ -100,10 +117,10 @@ namespace Clock
             }
         }
 
-        private void WriteBytes(params byte[] bytes)
+        public void WriteBytes(params byte[] bytes)
             => WriteBytes(bytes, bytes.Length);
 
-        private void WriteBytes(byte[] buffer, int n)
+        public void WriteBytes(byte[] buffer, int n)
         {
             if (_comm == null || !_comm.IsOpen)
             {

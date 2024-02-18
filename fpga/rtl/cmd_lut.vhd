@@ -23,7 +23,7 @@ end entity;
 -- expected byte sequence: 0x12 - fill lut logarithmicly
 architecture rtl of cmd_lut is   
 
-   type T_STATE is ( CMD, WRITE_LUT, FILL_LIN, FILL_LOG );  
+   type T_STATE is ( CMD, FILL_CUSTOM, FILL_LIN, FILL_LOG );  
    signal s_state     : T_STATE;
    signal s_cmd       : integer;
    signal s_idx       : integer;
@@ -84,7 +84,7 @@ begin
                case i_data is 
                when X"10" =>  -- write lut
                   o_need_more_data <= '1';
-                  s_state <= WRITE_LUT;
+                  s_state <= FILL_CUSTOM;
                when X"11" =>  -- fill lut linear
                   s_state <= FILL_LIN;
                when X"12" =>  -- fill lut logarithmic
@@ -100,7 +100,7 @@ begin
             v_writenext := '0';
             
             case s_state is             
-            when WRITE_LUT =>
+            when FILL_CUSTOM =>
                if i_data_rdy = '1' then
                   o_lut_wdata <= i_data;
                   v_writenext := '1';

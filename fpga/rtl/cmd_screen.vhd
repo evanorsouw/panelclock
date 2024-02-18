@@ -47,7 +47,7 @@ begin
          case s_state is
          when CMD =>
             if i_data_rdy = '1' then
-               if i_data = X"09" then
+               if i_data = X"18" then
                   o_busy <= '1';
                   o_need_more_data <= '1';
                   s_state <= ARG_BASENO;

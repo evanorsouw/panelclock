@@ -106,27 +106,27 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for 6 ms;
 
+      v_byte := X"10";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"11";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
       v_byte := X"08";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
-
-      v_byte := X"ff";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
-
-      v_byte := X"ff";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -146,7 +146,7 @@ architecture Behavioral of ledpanel_controller_tb is
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
 
-      v_byte := X"fE";
+      v_byte := X"80";
       tb_uart_rx <= '0';  -- start
       wait for BAUD;
       for k in 0 to 7 loop
@@ -155,6 +155,37 @@ architecture Behavioral of ledpanel_controller_tb is
       end loop;           
       tb_uart_rx <= '1';  -- stopbit
       wait for BAUD;
+
+      v_byte := X"10";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"0C";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
+      v_byte := X"FF";
+      tb_uart_rx <= '0';  -- start
+      wait for BAUD;
+      for k in 0 to 7 loop
+         tb_uart_rx <= v_byte(k);            
+         wait for BAUD;
+      end loop;           
+      tb_uart_rx <= '1';  -- stopbit
+      wait for BAUD;
+
 
 
    end process uart_stimulate;
