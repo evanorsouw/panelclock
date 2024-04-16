@@ -1,4 +1,4 @@
-23264509420930745
+23266225044629587
 0_project
 ESP32-WROVER-E
 ESP32-WROVER-E: https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32e_esp32-wroom-32ue_datasheet_en.pdf
@@ -69,6 +69,13 @@ USB C Type-C Receptacle SMD
 0
 20
 17
+0_project
+cr2032_smd_clip
+
+
+0
+2
+2
 0_project
 white_magic
 

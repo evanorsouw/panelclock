@@ -303,7 +303,7 @@
 		(remove_unused_layers no)
 		(uuid "3514667b-a8c5-48a4-b5d4-30061921f232")
 	)
-	(model "${KIPRJMOD}/0_project.3dshapes/USB A Female ThruHole.stp"
+	(model "${KIPRJMOD}/0_project.3dshapes/USB A Female ThruHole.step"
 		(offset
 			(xyz 3.5 -12.5 3)
 		)

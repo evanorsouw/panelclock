@@ -62,11 +62,7 @@
         "clearance|84567470|126945270|d8284148-f1a1-49fc-ad9c-507f5b543ae4|d6e99436-0578-4306-a474-084ee9dda19e",
         "clearance|88179000|126671900|9f35f9a3-ab25-48d0-a6eb-d9a4de2f5ace|50e80ec9-06f5-45fa-af05-19612e294f17",
         "solder_mask_bridge|74750000|137775000|d15aa23d-a891-4f7c-9809-c10b1400bebe|6ceedcc4-c923-4d99-8da0-b247182d9084",
-        "solder_mask_bridge|85229000|126009000|033c4a04-b0fe-4f02-9c0f-7f0c9130e1a6|899b59a8-168e-4a0b-99e6-f707afd5bf43",
-        "starved_thermal|148502106|108915392|184156e0-26fe-4448-bf00-15bec8aadee8|9c1d4d4b-0511-4dec-a050-4de39bba9977|F.Cu",
-        "starved_thermal|78700000|137775000|184156e0-26fe-4448-bf00-15bec8aadee8|5afb88ac-eb49-4baf-af78-c5222b4cf89d|F.Cu",
-        "starved_thermal|78700000|137775000|184156e0-26fe-4448-bf00-15bec8aadee8|f5dafa4b-3522-4cc5-85af-5d0f5d443bb0|F.Cu",
-        "starved_thermal|80570000|142575000|184156e0-26fe-4448-bf00-15bec8aadee8|b400d003-2977-4e08-846a-fe3f6dc16c0e|F.Cu"
+        "solder_mask_bridge|85229000|126009000|033c4a04-b0fe-4f02-9c0f-7f0c9130e1a6|899b59a8-168e-4a0b-99e6-f707afd5bf43"
       ],
       "meta": {
         "version": 2
@@ -502,7 +498,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "facbrication",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "standalonepanel.step",
