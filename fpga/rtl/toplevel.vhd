@@ -6,9 +6,9 @@ use IEEE.NUMERIC_STD.all;
 --- This allows us to simulate the ledpanel_controller isolated from the PLL.
 entity toplevel is
    port (    
-      i_clk100M     : in std_logic;
-      i_reset_n     : in std_logic;
+      i_clk12M      : in std_logic;
       i_uart_rx     : in std_logic;
+      i_tst_button  : in std_logic;
       -- --
       o_uart_tx     : out std_logic;
       o_dsp_clk     : out std_logic;
@@ -16,8 +16,7 @@ entity toplevel is
       o_dsp_oe_n    : out std_logic;
       o_dsp_addr    : out std_logic_vector (4 downto 0);
       o_dsp_rgbs    : out std_logic_vector (11 downto 0);
-      o_led1        : out std_logic;
-      o_led2        : out std_logic;
+      o_tst_led     : out std_logic;
       -- sram pins
       o_sram_oe     : out std_logic;
       o_sram_wr     : out std_logic;
@@ -42,7 +41,6 @@ architecture toplevel_arch of toplevel is
    component ledpanel_controller
    port (    
       i_clk60M      : in std_logic;
-      i_reset_n     : in std_logic;
       i_uart_rx     : in std_logic;
       --
       o_uart_tx     : out std_logic;
@@ -69,8 +67,8 @@ architecture toplevel_arch of toplevel is
 begin  
    clock_generator : pll
    port map (
-      REFERENCECLK  => i_clk100M,
-      RESET         => i_reset_n,
+      REFERENCECLK  => i_clk12M,
+      RESET         => '1',
       --
       PLLOUTGLOBAL  => s_clk60M,
       plloutcore    => open
@@ -79,7 +77,6 @@ begin
    panel_controller : ledpanel_controller
    port map (
       i_clk60M      => s_clk60M,
-      i_reset_n     => i_reset_n,
       i_uart_rx     => i_uart_rx,
       o_uart_tx     => o_uart_tx,
 
@@ -95,11 +92,11 @@ begin
       o_sram_addr   => s_panel_addr,
       io_sram_data  => io_sram_data,
       
-      ot_test       => o_led2
+      ot_test       => open
    ); 
 
    o_sram_addr <= s_panel_addr;
-   o_led1      <= i_uart_rx;
+   o_tst_led   <= i_tst_button;
 
 end architecture toplevel_arch;
             

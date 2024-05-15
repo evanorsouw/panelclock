@@ -93,7 +93,6 @@ use IEEE.NUMERIC_STD.all;
 entity ledpanel_controller is
    port (
       i_clk60M        : in std_logic;
-      i_reset_n       : in std_logic;
       i_uart_rx       : in std_logic;
       --
       o_uart_tx       : out std_logic;
@@ -226,24 +225,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
 
-   component cmd_pixel
-   port (
-      i_reset_n        : in std_logic;
-      i_clk            : in std_logic;
-      i_data           : in std_logic_vector(7 downto 0);
-      i_data_color     : in std_logic_vector(7 downto 0);
-      i_data_rdy       : in std_logic;
-      i_writing        : in std_logic;
-      --
-      o_busy           : out std_logic;
-      o_need_more_data : out std_logic;
-      o_address        : out unsigned(15 downto 0);
-      o_rgb            : out std_logic_vector(23 downto 0);
-      o_alpha          : out unsigned(7 downto 0);
-      o_write_clk      : out std_logic
-   );
-   end component;
-
    component cmd_screen
    port (
       i_reset_n        : in std_logic;
@@ -277,7 +258,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(13 downto 0);
    signal s_ram_wr_color     : std_logic_vector(23 downto 0);
-   signal s_ram_wr_alpha     : unsigned(7 downto 0);
 
    signal s_fifo_wren        : std_logic;
    signal s_fifo_rindex      : unsigned(FIFO_DEPTH-1 downto 0);
@@ -296,7 +276,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 
    signal s_rmw_step         : integer;
    signal s_rmw_address      : unsigned(13 downto 0);
-   signal s_rmw_color        : std_logic_vector(23 downto 0);
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic;
 
@@ -326,14 +305,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_lut_wdata               : std_logic_vector(7 downto 0);
    signal s_lut_wren                : std_logic;
 
-   signal s_cmd_pixel_data_rdy      : std_logic;
-   signal s_cmd_pixel_busy          : std_logic;
-   signal s_cmd_pixel_need_more_data: std_logic;
-   signal s_cmd_pixel_address       : unsigned(15 downto 0);
-   signal s_cmd_pixel_rgb           : std_logic_vector(23 downto 0);
-   signal s_cmd_pixel_alpha         : unsigned(7 downto 0);
-   signal s_cmd_pixel_write_clk     : std_logic;
-
    signal s_cmd_screen_data_rdy     : std_logic;
    signal s_cmd_screen_busy         : std_logic;
    signal s_cmd_screen_need_more_data : std_logic;
@@ -345,7 +316,7 @@ begin
   reset : reset_controller
   port map (
       i_clk              => i_clk60M,
-      i_external_reset_n => i_reset_n,
+      i_external_reset_n => '1',
       --
       o_reset_n          => s_reset_n
    );
@@ -368,7 +339,7 @@ begin
    port map (
       i_clkx        => i_clk60M,
       i_ticks       => s_uart_ticks,
-      i_reset_n     => i_reset_n,
+      i_reset_n     => s_reset_n,
       i_rx          => i_uart_rx,
       --
       o_datain      => s_uart_datain,
@@ -455,22 +426,6 @@ begin
       o_lut_wren       => s_lut_wren
    );
 
-   cmd_pixel_impl : cmd_pixel
-   port map (
-      i_reset_n        => s_reset_n,
-      i_clk            => i_clk60M,
-      i_data           => s_received_data,
-      i_data_color     => s_received_color,
-      i_data_rdy       => s_cmd_pixel_data_rdy,
-      i_writing        => s_rmw_in_progress,
-      o_busy           => s_cmd_pixel_busy,
-      o_need_more_data => s_cmd_pixel_need_more_data,
-      o_address        => s_cmd_pixel_address,
-      o_rgb            => s_cmd_pixel_rgb,
-      o_alpha          => s_cmd_pixel_alpha,
-      o_write_clk      => s_cmd_pixel_write_clk
-   );
-
    cmd_screen_impl : cmd_screen
    port map (
       i_reset_n        => s_reset_n,
@@ -489,7 +444,6 @@ begin
    -- An memory write update is initiated by setting the:
    --   s_ram_wr_addr
    --   s_ram_wr_color => contains new 24 bit RGB color
-   --   s_ram_wr_alpha => contains alpha channel for writing pixels
    --   s_ram_wr_mask  => contains the RGB bitmask for the selected panel.
    --   s_ram_wr_clk
    -- set 
@@ -533,72 +487,30 @@ begin
                if s_rmw_in_progress = '1' then
                   s_rmw_step <= s_rmw_step + 1;
                   case s_rmw_step is
-                  when 0 => -- read back pixel RGB value as backgroun color to merge with new foreground pixel value
+                  when 0 =>  -- write cycle
                      o_sram_addr  <= s_writescreen & std_logic_vector(s_rmw_address);
                      o_sram_wr    <= '1';
                      io_sram_data <= (others => 'Z');
-                  when 1 => -- assemble 24bit pixel value
-                     v_readbits := io_sram_data;
-                     if ((v_readbits and s_ram_wr_mask and "100100100100") /= "000000000000") then
-                        v_backgroundcolor(23 downto 16) := v_backgroundcolor(23 downto 16) or s_rmw_bitmask;
-                     end if;
-                     if ((v_readbits and s_ram_wr_mask and "010010010010") /= "000000000000") then
-                        v_backgroundcolor(15 downto 8) := v_backgroundcolor(15 downto 8) or s_rmw_bitmask;
-                     end if;
-                     if ((v_readbits and s_ram_wr_mask and "001001001001") /= "000000000000") then
-                        v_backgroundcolor(7 downto 0) := v_backgroundcolor(7 downto 0) or s_rmw_bitmask;
-                     end if;
-                     s_rmw_address <= s_rmw_address + 16#0800#;                     
-                     s_rmw_bitmask <= '0' & s_rmw_bitmask(7 downto 1);                     
-                     if s_rmw_bitmask /= "00000001" then                      
-                        s_rmw_step <= 0;
-                     else
-                        -- all 24 bits assembled, merge the read back value with the new pixel value
-                        v_red := (unsigned(v_backgroundcolor(23 downto 16)) * (255 - s_ram_wr_alpha) / 255) +
-                                 ((unsigned(s_rmw_color(23 downto 16)) * s_ram_wr_alpha) / 255);
-                        if (v_red > 255) then 
-                           v_red := to_unsigned(255, v_red'length); 
-                        end if;
-                        v_grn := (unsigned(v_backgroundcolor(15 downto 8)) * (255 - s_ram_wr_alpha) / 255) +
-                                 ((unsigned(s_rmw_color(15 downto 8)) * s_ram_wr_alpha) / 255);
-                        if (v_grn > 255) then 
-                           v_grn := to_unsigned(255, v_grn'length); 
-                        end if;
-                        v_blu := (unsigned(v_backgroundcolor(7 downto 0)) * (255 - s_ram_wr_alpha) / 255) +
-                                 ((unsigned(s_rmw_color(7 downto 0)) * s_ram_wr_alpha) / 255);
-                        if (v_blu > 255) then 
-                           v_blu := to_unsigned(255, v_blu'length); 
-                        end if;
-                        s_rmw_color <= std_logic_vector(v_red(7 downto 0)) & 
-                                       std_logic_vector(v_grn(7 downto 0)) & 
-                                       std_logic_vector(v_blu(7 downto 0));                                                                                  
-                        s_rmw_bitmask <= "10000000";
-                        -- continue with a normal write-cycle
-                     end if;                     
-                  when 2 =>  -- write cycle
-                     o_sram_addr  <= s_writescreen & std_logic_vector(s_rmw_address);
-                     o_sram_wr    <= '1';
-                     io_sram_data <= (others => 'Z');
-                  when 3 => -- write modified pixel bits
+                  when 1 => -- write modified pixel bits
                      v_updated_bits := io_sram_data and not s_ram_wr_mask;
-                     if ((s_rmw_color(23 downto 16) and s_rmw_bitmask) /= "00000000") then
+                     if ((s_ram_wr_color(23 downto 16) and s_rmw_bitmask) /= "00000000") then
                         v_updated_bits := v_updated_bits or (s_ram_wr_mask and "100100100100");
                      end if;
-                     if ((s_rmw_color(15 downto 8) and s_rmw_bitmask) /= "00000000") then
+                     if ((s_ram_wr_color(15 downto 8) and s_rmw_bitmask) /= "00000000") then
                         v_updated_bits := v_updated_bits or (s_ram_wr_mask and "010010010010");
                      end if;
-                     if ((s_rmw_color(7 downto 0) and s_rmw_bitmask) /= "00000000") then
+                     if ((s_ram_wr_color(7 downto 0) and s_rmw_bitmask) /= "00000000") then
                         v_updated_bits := v_updated_bits or (s_ram_wr_mask and "001001001001");
                      end if;
                      io_sram_data <= v_updated_bits;
                      o_sram_addr <= s_writescreen & std_logic_vector(s_rmw_address);
                      o_sram_wr <= '0';
-                  when 4 =>
+                  when 2 =>
                      -- prepare for next bit
                      s_rmw_bitmask <= '0' & s_rmw_bitmask(7 downto 1);
                      s_rmw_address <= s_rmw_address + 16#0800#;
                      if s_rmw_bitmask /= "00000001" then
-                        s_rmw_step <= 2;  -- next bit
+                        s_rmw_step <= 0;  -- next bit
                      else                        
                         s_rmw_in_progress <= '0';  -- all bits written, we're done
                      end if;
@@ -608,8 +520,7 @@ begin
                   s_rmw_in_progress <= '1';
                   s_rmw_bitmask <= "10000000";
                   s_rmw_address <= s_ram_wr_addr;
-                  s_rmw_color <= s_ram_wr_color;
-                  s_rmw_step <= 2 when s_ram_wr_alpha = 255 else 0;
+                  s_rmw_step <= 0;
                   v_backgroundcolor := (others => '0');
                end if;
             end if;
@@ -692,25 +603,21 @@ begin
          s_cmd_fill_data_rdy <= '0';
          s_cmd_blit_data_rdy <= '0';
          s_cmd_lut_data_rdy <= '0';
-         s_cmd_pixel_data_rdy <= '0';
          s_cmd_screen_data_rdy <= '0';
 
          if s_cmd_fill_busy = '1' or
             s_cmd_blit_busy = '1' or
             s_cmd_lut_busy = '1' or
-            s_cmd_pixel_busy = '1' or
             s_cmd_screen_busy = '1'then
             ot_test <= '1';
             if s_cmd_fill_need_more_data = '1' or
                s_cmd_blit_need_more_data = '1' or
                s_cmd_lut_need_more_data = '1' or
-               s_cmd_pixel_need_more_data = '1' or
                s_cmd_screen_need_more_data = '1' then
                if s_readfifo_state = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
                   s_cmd_lut_data_rdy <= s_cmd_lut_need_more_data;
-                  s_cmd_pixel_data_rdy <= s_cmd_pixel_need_more_data;
                   s_cmd_screen_data_rdy <= s_cmd_screen_need_more_data;
                   s_readfifo_state <= REQUEST;
                end if;
@@ -721,16 +628,9 @@ begin
                v_cmd_address := s_cmd_fill_adress;
                v_cmd_rgbs := s_cmd_fill_rgb;
                v_cmd_write := '1';
-               s_ram_wr_alpha <= (others => '1');               
             elsif s_cmd_blit_write_clk = '1' then
                v_cmd_address := s_cmd_blit_adress;
                v_cmd_rgbs := s_cmd_blit_rgb;
-               v_cmd_write := '1';
-               s_ram_wr_alpha <= (others => '1');               
-            elsif s_cmd_pixel_write_clk = '1' then
-               v_cmd_address := s_cmd_pixel_address;
-               v_cmd_rgbs := s_cmd_pixel_rgb;
-               s_ram_wr_alpha <= s_cmd_pixel_alpha;
                v_cmd_write := '1';
             end if;
 
@@ -755,7 +655,6 @@ begin
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
                s_cmd_lut_data_rdy <= '1';
-               s_cmd_pixel_data_rdy <= '1';
                s_cmd_screen_data_rdy <= '1';
                s_readfifo_state <= REQUEST;
             end if;
