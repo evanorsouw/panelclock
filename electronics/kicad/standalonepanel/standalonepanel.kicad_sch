@@ -11029,7 +11029,7 @@
 	)
 	(wire
 		(pts
-			(xy 318.77 33.02) (xy 396.24 33.02)
+			(xy 318.77 33.02) (xy 374.65 33.02)
 		)
 		(stroke
 			(width 0)
@@ -11199,16 +11199,6 @@
 	)
 	(wire
 		(pts
-			(xy 393.7 30.48) (xy 393.7 63.5)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "16a38105-4ae8-44e3-959b-3e53ac4dacf4")
-	)
-	(wire
-		(pts
 			(xy 269.24 173.99) (xy 278.13 173.99)
 		)
 		(stroke
@@ -11256,16 +11246,6 @@
 			(type default)
 		)
 		(uuid "188262ec-34f6-489f-be7a-c3156a534e5e")
-	)
-	(wire
-		(pts
-			(xy 383.54 30.48) (xy 393.7 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1923fc2f-79b9-407c-8124-e7d0ab1ff5a3")
 	)
 	(wire
 		(pts
@@ -11409,6 +11389,16 @@
 	)
 	(wire
 		(pts
+			(xy 398.78 66.04) (xy 398.78 30.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "22dcdfe9-1933-4eab-a20a-80ff48ba0ee1")
+	)
+	(wire
+		(pts
 			(xy 318.77 55.88) (xy 320.04 55.88)
 		)
 		(stroke
@@ -11519,23 +11509,13 @@
 	)
 	(wire
 		(pts
-			(xy 318.77 30.48) (xy 375.92 30.48)
+			(xy 318.77 30.48) (xy 398.78 30.48)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "32761bb4-61c6-4011-a4d7-63122df15ea8")
-	)
-	(wire
-		(pts
-			(xy 388.62 66.04) (xy 396.24 66.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "331dcdd2-c4c5-4829-8e46-a77f3d487d03")
 	)
 	(wire
 		(pts
@@ -11556,16 +11536,6 @@
 			(type default)
 		)
 		(uuid "33f9f625-9db1-4122-8f37-359174b69baa")
-	)
-	(wire
-		(pts
-			(xy 396.24 33.02) (xy 396.24 66.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3472a167-c1cf-4d63-8070-1a058bf791da")
 	)
 	(wire
 		(pts
@@ -11776,6 +11746,16 @@
 			(type default)
 		)
 		(uuid "4721bc90-6190-41b0-966f-8350a8bf6026")
+	)
+	(wire
+		(pts
+			(xy 388.62 66.04) (xy 398.78 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "47f560b5-e67d-466b-b9f8-0a6f7c8e0c7b")
 	)
 	(wire
 		(pts
@@ -12549,6 +12529,16 @@
 	)
 	(wire
 		(pts
+			(xy 396.24 33.02) (xy 396.24 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "86a621b7-9ce5-4c28-b984-cc65866f084d")
+	)
+	(wire
+		(pts
 			(xy 80.01 154.94) (xy 80.01 158.75)
 		)
 		(stroke
@@ -12616,16 +12606,6 @@
 			(type default)
 		)
 		(uuid "8ca4778a-fb72-4078-a056-987d56cf8e10")
-	)
-	(wire
-		(pts
-			(xy 388.62 63.5) (xy 393.7 63.5)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8e78c625-5637-4066-90e7-167c397bbc4b")
 	)
 	(wire
 		(pts
@@ -13206,6 +13186,16 @@
 			(type default)
 		)
 		(uuid "bb5380e0-6112-4cd8-bbeb-09f9e331cd77")
+	)
+	(wire
+		(pts
+			(xy 382.27 33.02) (xy 396.24 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bcab877e-ef06-41a3-af99-238dffcc5198")
 	)
 	(wire
 		(pts
@@ -14146,6 +14136,16 @@
 			(type default)
 		)
 		(uuid "f520bad1-d6e6-4eb4-b966-63b36dc7d88d")
+	)
+	(wire
+		(pts
+			(xy 396.24 63.5) (xy 388.62 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f54b26e3-92b3-4c6e-a234-79960b9c484a")
 	)
 	(wire
 		(pts
@@ -20794,7 +20794,7 @@
 				)
 			)
 		)
-		(property "Value" "1N5819WS"
+		(property "Value" "BAT760"
 			(at 234.95 90.17 0)
 			(effects
 				(font
@@ -21148,8 +21148,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "DS3231M"
-			(at 303.022 232.918 0)
+		(property "Value" "DS3231"
+			(at 300.736 231.648 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -21157,7 +21157,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_SO:SO-16_3.9x9.9mm_P1.27mm"
+		(property "Footprint" "Package_SO:SOIC-16W_7.5x10.3mm_P1.27mm"
 			(at 297.18 237.49 0)
 			(effects
 				(font
@@ -21440,73 +21440,6 @@
 			(project "standalonepanel"
 				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
 					(reference "#PWR035")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 379.73 30.48 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "539404b9-ec04-4903-a883-20baa3b7e28b")
-		(property "Reference" "R2"
-			(at 384.1962 29.1831 90)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "33R"
-			(at 379.73 30.48 90)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder"
-			(at 379.73 32.258 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 379.73 30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 379.73 30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "5c6d4914-87b7-482c-be61-4778a2e64022")
-		)
-		(pin "2"
-			(uuid "4fad2009-5d34-4193-98c9-ceca5a4438ae")
-		)
-		(instances
-			(project "standalonepanel"
-				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
-					(reference "R2")
 					(unit 1)
 				)
 			)
@@ -26138,6 +26071,73 @@
 			(project "standalonepanel"
 				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
 					(reference "#PWR068")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 378.46 33.02 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "a6c6080d-73e5-4580-a15a-a197ca154044")
+		(property "Reference" "R2"
+			(at 382.9262 31.7231 90)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Value" "47R"
+			(at 378.46 33.02 90)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_1206_3216Metric_Pad1.30x1.75mm_HandSolder"
+			(at 378.46 34.798 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 378.46 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 378.46 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3af555a5-f7eb-4908-91df-6aa048ffe747")
+		)
+		(pin "2"
+			(uuid "124885d4-a910-4808-8b10-6f3867cd7285")
+		)
+		(instances
+			(project "standalonepanel"
+				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
+					(reference "R2")
 					(unit 1)
 				)
 			)
@@ -30780,7 +30780,7 @@
 				)
 			)
 		)
-		(property "Value" "SC189ZSKTRT"
+		(property "Value" "SC189CSKTRT"
 			(at 104.14 36.83 0)
 			(effects
 				(font
