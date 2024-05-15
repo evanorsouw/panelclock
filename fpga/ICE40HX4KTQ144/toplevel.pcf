@@ -1,0 +1,65 @@
+
+set_io i_clk12M 129
+set_io i_uart_rx 67
+set_io o_uart_tx 68
+set_io o_tst_led 144
+set_io i_tst_button 143
+
+set_io o_sram_cs 101
+set_io o_sram_oe 56
+set_io o_sram_wr 90
+
+set_io io_sram_data[0] 99
+set_io io_sram_data[1] 98
+set_io io_sram_data[2] 97
+set_io io_sram_data[3] 96
+set_io io_sram_data[4] 95
+set_io io_sram_data[5] 94
+set_io io_sram_data[6] 93
+set_io io_sram_data[7] 91
+set_io io_sram_data[8] 43
+set_io io_sram_data[9] 44
+set_io io_sram_data[10] 45
+set_io io_sram_data[11] 47
+
+set_io o_sram_addr[0] 107
+set_io o_sram_addr[1] 106
+set_io o_sram_addr[2] 105
+set_io o_sram_addr[3] 104
+set_io o_sram_addr[4] 102
+set_io o_sram_addr[5] 88
+set_io o_sram_addr[6] 87
+set_io o_sram_addr[7] 85
+set_io o_sram_addr[8] 84
+set_io o_sram_addr[9] 83
+set_io o_sram_addr[10] 37
+set_io o_sram_addr[11] 38
+set_io o_sram_addr[12] 39
+set_io o_sram_addr[13] 41
+set_io o_sram_addr[14] 42
+set_io o_sram_addr[15] 60
+set_io o_sram_addr[16] 61
+set_io o_sram_addr[17] 63
+
+set_io o_dsp_clk 137
+set_io o_dsp_latch 136
+set_io o_dsp_oe_n 138
+
+set_io o_dsp_addr[0] 130
+set_io o_dsp_addr[1] 128
+set_io o_dsp_addr[2] 135
+set_io o_dsp_addr[3] 134
+set_io o_dsp_addr[4] 124
+
+set_io o_dsp_rgbs[0] 119 
+set_io o_dsp_rgbs[1] 118 
+set_io o_dsp_rgbs[2] 120 
+set_io o_dsp_rgbs[3] 122 
+set_io o_dsp_rgbs[4] 121 
+set_io o_dsp_rgbs[5] 125 
+set_io o_dsp_rgbs[6] 112 
+set_io o_dsp_rgbs[7] 113 
+set_io o_dsp_rgbs[8] 114 
+set_io o_dsp_rgbs[9] 115 
+set_io o_dsp_rgbs[10] 116
+set_io o_dsp_rgbs[11] 117

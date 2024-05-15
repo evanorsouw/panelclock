@@ -1,0 +1,10 @@
+**/*_Implmnt/**
+*_lse.*
+*.vdb
+*_syn.prj
+*_drc.*
+*_prim.v
+*_list
+*_file
+*.arearep
+dbStat.txt
