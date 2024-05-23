@@ -93,9 +93,10 @@ use IEEE.NUMERIC_STD.all;
 entity ledpanel_controller is
    port (
       i_clk60M        : in std_logic;
-      i_uart_rx       : in std_logic;
+      i_spi_clk       : in std_logic;
+      i_spi_sdi       : in std_logic;
       --
-      o_uart_tx       : out std_logic;
+      o_spi_sdo       : out std_logic;
       o_dsp_clk       : out std_logic;
       o_dsp_latch     : out std_logic;
       o_dsp_oe_n      : out std_logic;
@@ -139,13 +140,13 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
 
-   component UART
+   component SPI
    port
    (
       i_clkx        : in std_logic;
-      i_ticks       : integer;
       i_reset_n     : in std_logic;
-      i_rx          : in std_logic;
+      i_spi_clk     : in std_logic;
+      i_spi_sdi     : in std_logic;
       --
       o_datain      : out std_logic_vector (7 downto 0);
       o_datain_clk  : out std_logic
@@ -241,13 +242,12 @@ architecture ledpanel_controller_arch of ledpanel_controller is
 
    constant FIFO_DEPTH       : natural := 13;
 
-   signal s_uart_datain      : std_logic_vector (7 downto 0);
-   signal s_uart_dataclk     : std_logic;
+   signal s_serial_datain    : std_logic_vector (7 downto 0);
+   signal s_serial_dataclk   : std_logic;
    signal s_ram_rd_addr      : std_logic_vector (13 downto 0);
    signal s_ram_read         : std_logic;
 
    signal s_reset_n          : std_logic;
-   signal s_uart_ticks       : integer;
 
    signal s_init_data_idx    : unsigned(15 downto 0);
    signal s_init_data_size   : unsigned(7 downto 0);
@@ -335,15 +335,15 @@ begin
       o_dsp_vbl   => s_dsp_vbl
    );
 
-   PC : UART
+   PC : SPI
    port map (
-      i_clkx        => i_clk60M,
-      i_ticks       => s_uart_ticks,
       i_reset_n     => s_reset_n,
-      i_rx          => i_uart_rx,
+      i_clkx        => i_clk60M,
+      i_spi_clk     => i_spi_clk,
+      i_spi_sdi     => i_spi_sdi,
       --
-      o_datain      => s_uart_datain,
-      o_datain_clk  => s_uart_dataclk
+      o_datain      => s_serial_datain,
+      o_datain_clk  => s_serial_dataclk
    );
 
    init_data : whitemagic_init_screen
@@ -438,7 +438,7 @@ begin
       o_writescreen    => s_writescreen
    );
 
-   o_uart_tx <= '0';--i_uart_rx;  -- for now send all raw received data back
+   o_spi_sdo <= i_spi_sdi;
 
    p_sram: process(s_reset_n, i_clk60M)
    -- An memory write update is initiated by setting the:
@@ -534,20 +534,18 @@ begin
    p_api: process(s_reset_n, i_clk60M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
-   variable v_init_delay       : unsigned(31 downto 0);
+   variable v_init_delay       : unsigned(28 downto 0);
    variable v_init_idx         : unsigned(15 downto 0);
-   variable v_cmd_address : unsigned(15 downto 0);
-   variable v_cmd_rgbs    : std_logic_vector(23 downto 0);
-   variable v_cmd_write   : std_logic;
-   variable halveselect   : unsigned(1 downto 0);
+   variable v_cmd_address      : unsigned(15 downto 0);
+   variable v_cmd_rgbs         : std_logic_vector(23 downto 0);
+   variable v_cmd_write        : std_logic;
+   variable halveselect        : unsigned(1 downto 0);
    begin
       if s_reset_n = '0' then
          v_rcv_dataclk      := '0';
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
-         -- s_uart_ticks       <= 60000000 * 20 / 9600;   -- smart uart
-         s_uart_ticks       <= 520; -- fixed  uart @115200/60Mhz
 
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');
@@ -561,8 +559,8 @@ begin
 
          -- receive uart data (initially 'receive' initialization data)
          if v_init_idx = s_init_data_size then
-            s_fifo_datain <= s_uart_datain;
-            v_rcv_dataclk := s_uart_dataclk;
+            s_fifo_datain <= s_serial_datain;
+            v_rcv_dataclk := s_serial_dataclk;
          else
             s_init_data_idx <= v_init_idx;
             s_fifo_datain <= s_init_data_out;

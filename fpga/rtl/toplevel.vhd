@@ -7,10 +7,11 @@ use IEEE.NUMERIC_STD.all;
 entity toplevel is
    port (    
       i_clk12M      : in std_logic;
-      i_uart_rx     : in std_logic;
+      i_spi_clk     : in std_logic;
+      i_spi_sdi     : in std_logic;
       i_tst_button  : in std_logic;
       -- --
-      o_uart_tx     : out std_logic;
+      o_spi_sdo     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -41,9 +42,10 @@ architecture toplevel_arch of toplevel is
    component ledpanel_controller
    port (    
       i_clk60M      : in std_logic;
-      i_uart_rx     : in std_logic;
+      i_spi_clk     : in std_logic;
+      i_spi_sdi     : in std_logic;
       --
-      o_uart_tx     : out std_logic;
+      o_spi_sdo     : out std_logic;
       o_dsp_clk     : out std_logic;
       o_dsp_latch   : out std_logic;
       o_dsp_oe_n    : out std_logic;
@@ -77,8 +79,9 @@ begin
    panel_controller : ledpanel_controller
    port map (
       i_clk60M      => s_clk60M,
-      i_uart_rx     => i_uart_rx,
-      o_uart_tx     => o_uart_tx,
+      i_spi_clk     => i_spi_clk,
+      i_spi_sdi     => i_spi_sdi,
+      o_spi_sdo     => o_spi_sdo,
 
       o_dsp_clk     => o_dsp_clk,
       o_dsp_latch   => o_dsp_latch,
