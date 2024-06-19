@@ -1,16 +1,28 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <cstdlib>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/gpio.h>
 #include "esp_chip_info.h"
 #include "esp_flash.h"
+#include "SpiWrapper.h"
 
 #include "FpgaConfigurator.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
 #define BUTTON_TEST   GPIO_NUM_32 // 0=pressed
+
+#define FPGA_SPI_CLK         GPIO_NUM_21
+#define FPGA_SPI_MOSI        GPIO_NUM_25
+#define FPGA_SPI_MISO        GPIO_NUM_22
+#define FPGA_RESET           GPIO_NUM_19
+
+SpiWrapper espSpi(SPI2_HOST, FPGA_SPI_CLK,FPGA_SPI_MOSI, FPGA_SPI_MISO);
+FpgaConfigurator FpgaConfig(&espSpi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
+
 
 bool getButton()
 {
@@ -22,19 +34,55 @@ void setLed(bool on)
   gpio_set_level(LED_TEST, on);
 }
 
-void downloadFpgaBinary()
+void SendIntermittendSpiPackets()
 {
-  for (;;)
-  {
-    setLed(true);
-    vTaskDelay(300 / portTICK_PERIOD_MS);
-    setLed(false);
-    vTaskDelay(300 / portTICK_PERIOD_MS);
-  }
+    espSpi.start();
+
+    uint8_t buffer[16];
+    bool led = true;
+
+    int n = 0;
+    int color = 0;
+    while (!getButton())
+    {
+        auto i = 0;
+
+        auto dx = 1;
+        auto dy = 64;
+        auto x = n;
+        auto y = 0;
+
+        buffer[i++] = 2;
+        buffer[i++] = x;
+        buffer[i++] = y;
+        buffer[i++] = dx;
+        buffer[i++] = dy;
+        buffer[i++] = color;
+        buffer[i++] = color;
+        buffer[i++] = color;
+        espSpi.write(buffer, 8);
+
+        setLed(led);
+        led = !led;
+
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+
+        n++;
+        if (n == 128)
+            n = 0;
+            
+        color++;
+        if (color == 256)
+            color = 0;
+    }
+    espSpi.end();
 }
 
 void statemachine(void * parameter)
 {
+  gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
+  gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
+  gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
   gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
   gpio_set_direction(BUTTON_TEST, GPIO_MODE_INPUT);
 
@@ -69,8 +117,8 @@ void statemachine(void * parameter)
           {
             switch (choice)
             {
-              case 2: // download FPGA binary
-                downloadFpgaBinary();
+              case 2:
+                SendIntermittendSpiPackets();
                 break;
               default:  // unknown command, restart
                 state = 0;
@@ -100,7 +148,6 @@ void statemachine(void * parameter)
   }
 }
 
-FpgaConfigurator FpgaConfig("/spiffs/toplevel_bitmap.bin");
 
 void init_spiffs()
 {

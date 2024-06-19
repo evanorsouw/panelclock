@@ -27,7 +27,8 @@ The gist is as follows:
 - place the file you want to have available on the ESP32 in the `data` directory.
 - run `menuconfig` and make the following change
   - in the partitions section select `Custom partition table CSV` and name it `partitions.csv`
-- Now from platformio, select `Build Filesystem Image` and `Upload Filesystem Image`.
+- Now from platformio, select `Build Filesystem Image` and `Upload Filesystem Image`
+  or  or even simpler, just use `Upload Filesystem Image`.
 
 
 There were the links I used:

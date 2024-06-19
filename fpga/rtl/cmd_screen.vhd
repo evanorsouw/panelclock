@@ -16,7 +16,7 @@ entity cmd_screen is
    );
 end entity cmd_screen;
 
--- pixel commands
+-- screen commands
 -- 0x09,0bWWWWRRRR - select screen for display (R) and writing (W)
 architecture cmd_screen_arch of cmd_screen is
 

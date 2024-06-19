@@ -95,11 +95,11 @@ begin
       o_sram_addr   => s_panel_addr,
       io_sram_data  => io_sram_data,
       
-      ot_test       => open
+      ot_test       => o_tst_led
    ); 
 
    o_sram_addr <= s_panel_addr;
-   o_tst_led   <= i_tst_button;
+   --o_tst_led   <= i_tst_button;
 
 end architecture toplevel_arch;
             

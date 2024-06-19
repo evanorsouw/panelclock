@@ -60,8 +60,12 @@ use IEEE.NUMERIC_STD.all;
 -- on the available datasize. If we want 4 64x64 panels we need 4*2*3 = 24 bit wordsize
 -- in terms of ram, this means 3 parallel 8bit ram chips.
 -- 
--- The display is controlled using 8 bit channels (256 intensities) using
--- BAM (Bit Angle Modulation).
+-- Note that HUB75 panels can be chained. Here we only clock in 1 panel (64 pixels).
+-- Each 64x64 panel get its own HUB75 output where each HUB75 connector gets its own
+-- RGBRGB values but they all share the Clk,Latch,OE and  ABCDE lines. 
+-- A chained version for 2 64x64 would require only 1 HUB75 connector but each line
+-- now take 128 clock cycles. This means that the refresh rate effectively is halved.
+-- We could counteract that by reducing the color resulotion from 8 to 7 bits.
 --
 -- memory addresses:
 -- @0000 -> bit7 @0,0      (bits 7 shown for 128 time units)
@@ -143,13 +147,14 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    component SPI
    port
    (
-      i_clkx        : in std_logic;
       i_reset_n     : in std_logic;
+      i_clk         : in std_logic;
       i_spi_clk     : in std_logic;
       i_spi_sdi     : in std_logic;
       --
       o_datain      : out std_logic_vector (7 downto 0);
-      o_datain_clk  : out std_logic
+      o_datain_clk  : out std_logic;
+      o_test        : out std_logic
    );
    end component;
 
@@ -338,12 +343,13 @@ begin
    PC : SPI
    port map (
       i_reset_n     => s_reset_n,
-      i_clkx        => i_clk60M,
+      i_clk         => i_clk60M,
       i_spi_clk     => i_spi_clk,
       i_spi_sdi     => i_spi_sdi,
       --
       o_datain      => s_serial_datain,
-      o_datain_clk  => s_serial_dataclk
+      o_datain_clk  => s_serial_dataclk,
+      o_test        => ot_test
    );
 
    init_data : whitemagic_init_screen
@@ -481,6 +487,7 @@ begin
                o_sram_addr <= s_displayscreen & s_ram_rd_addr;
                io_sram_data <= (others => 'Z');
                o_dsp_rgbs <= io_sram_data;
+               s_rmw_step <= 0;
 
             else
                -- update external display ram during periods where display is idle showing a row.                 
@@ -529,13 +536,14 @@ begin
    end process;
 
    -- receive API date (byte), initially from internal storage (init_data)
-   -- after that from external UART.
+   -- after that from the external serial source.
    -- received data is stored in a FIFO to decouple reception from processing.
    p_api: process(s_reset_n, i_clk60M)
    variable v_rcv_dataclk      : std_logic;
    variable v_last_rcv_dataclk : std_logic;
    variable v_init_delay       : unsigned(28 downto 0);
    variable v_init_idx         : unsigned(15 downto 0);
+   variable v_init_done        : std_logic;
    variable v_cmd_address      : unsigned(15 downto 0);
    variable v_cmd_rgbs         : std_logic_vector(23 downto 0);
    variable v_cmd_write        : std_logic;
@@ -546,6 +554,7 @@ begin
          v_last_rcv_dataclk := '0';
          v_init_idx         := to_unsigned(0, v_init_idx'length);
          v_init_delay       := to_unsigned(2, v_init_delay'length);
+         v_init_done        := '0';
 
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');
@@ -557,8 +566,8 @@ begin
 
       elsif rising_edge(i_clk60M) then
 
-         -- receive uart data (initially 'receive' initialization data)
-         if v_init_idx = s_init_data_size then
+         -- receive serial data (initially 'receive' initialization data)
+         if v_init_done = '1' then
             s_fifo_datain <= s_serial_datain;
             v_rcv_dataclk := s_serial_dataclk;
          else
@@ -567,11 +576,14 @@ begin
 
             v_init_delay := v_init_delay - 1;
             if v_init_delay = 0 then
-               v_init_delay := to_unsigned(5, v_init_delay'length);
-               v_init_idx := v_init_idx + 1;
-               v_rcv_dataclk := '1';
+                v_init_delay := to_unsigned(5, v_init_delay'length);
+                v_init_idx := v_init_idx + 1;
+                v_rcv_dataclk := '1';
             else
-               v_rcv_dataclk := '0';
+                v_rcv_dataclk := '0';
+                if v_init_idx = s_init_data_size then
+                    v_init_done := '1';
+                end if;
             end if;
          end if;
 
@@ -591,7 +603,7 @@ begin
                s_fifo_rindex <= s_fifo_rindex + 1;
                s_readfifo_state <= LUT;
             end if;
-         when LUT => -- 1 cycle to do the color lut lookup.
+         when LUT => -- 1 cycle to do the color lut lookup
             s_received_data <= s_fifo_dataout;
             s_readfifo_state <= AVAILABLE;
          when others =>
@@ -607,7 +619,6 @@ begin
             s_cmd_blit_busy = '1' or
             s_cmd_lut_busy = '1' or
             s_cmd_screen_busy = '1'then
-            ot_test <= '1';
             if s_cmd_fill_need_more_data = '1' or
                s_cmd_blit_need_more_data = '1' or
                s_cmd_lut_need_more_data = '1' or
@@ -648,7 +659,6 @@ begin
             end if;
 
          else
-            ot_test <= '0';
             if s_readfifo_state = AVAILABLE then
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
