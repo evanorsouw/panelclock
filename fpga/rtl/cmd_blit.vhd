@@ -74,14 +74,17 @@ begin
          when ARG_DY =>
             if i_data_rdy = '1' then
                s_dy <= unsigned(i_data);
-               s_state <= ARG_RED;
+               if unsigned(i_data) = 0 or s_dx = 0 then
+                  -- empty rectangle
+                  s_state <= CMD;
+                  o_busy <= '0';
+                  o_need_more_data <= '0';
+               else
+                  s_state <= ARG_RED;
+               end if;
             end if;
          when ARG_RED =>
-            if s_dy = 0 or s_dx = 0 then     -- done when empty rectangle
-               s_state <= CMD;
-               o_busy <= '0';
-               o_need_more_data <= '0';
-            elsif i_data_rdy = '1' then
+            if i_data_rdy = '1' then
                s_rg(15 downto 8) <= i_data_color;
                s_state <= ARG_GRN;
             end if;
@@ -95,14 +98,14 @@ begin
                o_address <= s_py & s_px;
                o_rgb <= s_rg & i_data_color;
                o_need_more_data <= '0';
-               s_write_clk <= '1';                  
-               
+               s_write_clk <= '1';                                
                -- prepare next pixel
-               s_px <= s_px + 1;
                if s_px = s_x + s_dx - 1 then
                   s_px <= s_x;
                   s_py <= s_py + 1;
                   s_dy <= s_dy - 1;
+               else
+                  s_px <= s_px + 1;
                end if;   
                s_state <= WAIT_WRITE_START;
             end if;
@@ -116,7 +119,6 @@ begin
                if s_dy = 0 then     -- check if done with rectangle
                   s_state <= CMD;
                   o_busy <= '0';
-                  o_need_more_data <= '0';
                else
                   o_need_more_data <= '1';
                   s_state <= ARG_RED;

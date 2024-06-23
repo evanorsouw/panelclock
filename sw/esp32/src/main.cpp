@@ -11,6 +11,8 @@
 #include "SpiWrapper.h"
 
 #include "FpgaConfigurator.h"
+#include "bitmap.h"
+#include "ledpanel.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
 #define BUTTON_TEST   GPIO_NUM_32 // 0=pressed
@@ -38,42 +40,46 @@ void SendIntermittendSpiPackets()
 {
     espSpi.start();
 
-    uint8_t buffer[16];
-    bool led = true;
+    Bitmap drawing(10,10);
+    drawing.fill(0x000000);    
+    drawing.set(1,1,0xFF0000);
+    drawing.set(2,1,0x00FF00);
+    drawing.set(3,1,0x0000FF);
+    drawing.set(1,2,0x00FF00);
+    drawing.set(2,2,0x0000FF);
+    drawing.set(3,2,0xFF0000);
+    drawing.set(1,3,0x0000FF);
+    drawing.set(2,3,0xFF0000);
+    drawing.set(3,3,0x00FF00);
+    LedPanel panel(128, 64, espSpi);
 
-    int n = 0;
-    int color = 0;
-    while (!getButton())
+    int dir = 1;
+    int x = 1;
+    int y = 1;
+    for (;;)
     {
-        auto i = 0;
+        drawing.copyTo(panel, x, y);
 
-        auto dx = 1;
-        auto dy = 64;
-        auto x = n;
-        auto y = 0;
+        x += dir;
+        if (x == 100 || x == 1)
+        {
+            dir = -dir;
+            y++;
+            if (y == 50)
+                y = 0;
+        }
 
-        buffer[i++] = 2;
-        buffer[i++] = x;
-        buffer[i++] = y;
-        buffer[i++] = dx;
-        buffer[i++] = dy;
-        buffer[i++] = color;
-        buffer[i++] = color;
-        buffer[i++] = color;
-        espSpi.write(buffer, 8);
-
-        setLed(led);
-        led = !led;
-
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-
-        n++;
-        if (n == 128)
-            n = 0;
-            
-        color++;
-        if (color == 256)
-            color = 0;
+        if (false)
+        {
+            while (!getButton())
+                vTaskDelay(10 / portTICK_PERIOD_MS);
+            while (getButton())
+                vTaskDelay(10 / portTICK_PERIOD_MS);
+        }
+        else
+        {
+            vTaskDelay(25 / portTICK_PERIOD_MS);
+        }
     }
     espSpi.end();
 }

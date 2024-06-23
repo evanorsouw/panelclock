@@ -317,6 +317,12 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_nextdisplayscreen       : std_logic_vector(3 downto 0);
    signal s_writescreen             : std_logic_vector(3 downto 0);
 
+   signal s_last_rcv_dataclk        : std_logic;
+   signal s_rcv_dataclk             : std_logic;
+   signal s_init_delay              : unsigned(28 downto 0);
+   signal s_init_idx                : unsigned(15 downto 0);
+   signal s_init_done               : std_logic;
+
 begin
   reset : reset_controller
   port map (
@@ -349,7 +355,7 @@ begin
       --
       o_datain      => s_serial_datain,
       o_datain_clk  => s_serial_dataclk,
-      o_test        => ot_test
+      o_test        => open
    );
 
    init_data : whitemagic_init_screen
@@ -453,13 +459,7 @@ begin
    --   s_ram_wr_mask  => contains the RGB bitmask for the selected panel.
    --   s_ram_wr_clk
    -- set 
-   variable v_updated_bits    : std_logic_vector (11 downto 0);
-   variable v_backgroundcolor : std_logic_vector (23 downto 0);
-   variable v_red             : unsigned(15 downto 0);
-   variable v_grn             : unsigned(15 downto 0);
-   variable v_blu             : unsigned(15 downto 0);
-   variable v_readbits        : std_logic_vector(11 downto 0);
-   
+   variable v_updated_bits    : std_logic_vector (11 downto 0);  
    begin
       if s_reset_n = '0' then
          o_sram_cs         <= '1';
@@ -528,7 +528,6 @@ begin
                   s_rmw_bitmask <= "10000000";
                   s_rmw_address <= s_ram_wr_addr;
                   s_rmw_step <= 0;
-                  v_backgroundcolor := (others => '0');
                end if;
             end if;
          end if;
@@ -539,22 +538,17 @@ begin
    -- after that from the external serial source.
    -- received data is stored in a FIFO to decouple reception from processing.
    p_api: process(s_reset_n, i_clk60M)
-   variable v_rcv_dataclk      : std_logic;
-   variable v_last_rcv_dataclk : std_logic;
-   variable v_init_delay       : unsigned(28 downto 0);
-   variable v_init_idx         : unsigned(15 downto 0);
-   variable v_init_done        : std_logic;
+   variable v_halveselect      : unsigned(1 downto 0);
    variable v_cmd_address      : unsigned(15 downto 0);
    variable v_cmd_rgbs         : std_logic_vector(23 downto 0);
    variable v_cmd_write        : std_logic;
-   variable halveselect        : unsigned(1 downto 0);
    begin
       if s_reset_n = '0' then
-         v_rcv_dataclk      := '0';
-         v_last_rcv_dataclk := '0';
-         v_init_idx         := to_unsigned(0, v_init_idx'length);
-         v_init_delay       := to_unsigned(2, v_init_delay'length);
-         v_init_done        := '0';
+         s_rcv_dataclk      <= '0';
+         s_last_rcv_dataclk <= '0';
+         s_init_idx         <= to_unsigned(0, s_init_idx'length);
+         s_init_delay       <= to_unsigned(2, s_init_delay'length);
+         s_init_done        <= '0';
 
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');
@@ -567,44 +561,45 @@ begin
       elsif rising_edge(i_clk60M) then
 
          -- receive serial data (initially 'receive' initialization data)
-         if v_init_done = '1' then
+         if s_init_done = '1' then
             s_fifo_datain <= s_serial_datain;
-            v_rcv_dataclk := s_serial_dataclk;
+            s_rcv_dataclk <= s_serial_dataclk;
          else
-            s_init_data_idx <= v_init_idx;
+            s_init_data_idx <= s_init_idx;
             s_fifo_datain <= s_init_data_out;
 
-            v_init_delay := v_init_delay - 1;
-            if v_init_delay = 0 then
-                v_init_delay := to_unsigned(5, v_init_delay'length);
-                v_init_idx := v_init_idx + 1;
-                v_rcv_dataclk := '1';
+            s_init_delay <= s_init_delay - 1;
+            if s_init_delay = 0 then
+                s_init_delay <= to_unsigned(5, s_init_delay'length);
+                s_init_idx <= s_init_idx + 1;
+                s_rcv_dataclk <= '1';
             else
-                v_rcv_dataclk := '0';
-                if v_init_idx = s_init_data_size then
-                    v_init_done := '1';
+                s_rcv_dataclk <= '0';
+                if s_init_idx = s_init_data_size then
+                    s_init_done <= '1';
                 end if;
             end if;
          end if;
 
          -- write received data into fifo to decouple from execution.
-         if v_rcv_dataclk = '1' and v_last_rcv_dataclk = '0' then
+         if s_rcv_dataclk = '1' and s_last_rcv_dataclk = '0' then
             s_fifo_wren <= '1';
-         elsif v_rcv_dataclk = '0' and v_last_rcv_dataclk = '1' then
+         elsif s_rcv_dataclk = '0' and s_last_rcv_dataclk = '1' then
             s_fifo_windex <= s_fifo_windex + 1;  -- auto wraparound due to power of 2
             s_fifo_wren <= '0';
          end if;
-         v_last_rcv_dataclk := v_rcv_dataclk;
+         s_last_rcv_dataclk <= s_rcv_dataclk;
+
 
          -- read received data from fifo
          case s_readfifo_state is
          when REQUEST =>
             if s_fifo_windex /= s_fifo_rindex then  -- we have something in the fifo?
                s_fifo_rindex <= s_fifo_rindex + 1;
+               s_received_data <= s_fifo_dataout;
                s_readfifo_state <= LUT;
             end if;
          when LUT => -- 1 cycle to do the color lut lookup
-            s_received_data <= s_fifo_dataout;
             s_readfifo_state <= AVAILABLE;
          when others =>
          end case;
@@ -615,14 +610,18 @@ begin
          s_cmd_lut_data_rdy <= '0';
          s_cmd_screen_data_rdy <= '0';
 
+         ot_test <= '0';
          if s_cmd_fill_busy = '1' or
             s_cmd_blit_busy = '1' or
             s_cmd_lut_busy = '1' or
-            s_cmd_screen_busy = '1'then
+            s_cmd_screen_busy = '1'
+         then
+            ot_test <= '1';
             if s_cmd_fill_need_more_data = '1' or
                s_cmd_blit_need_more_data = '1' or
                s_cmd_lut_need_more_data = '1' or
-               s_cmd_screen_need_more_data = '1' then
+               s_cmd_screen_need_more_data = '1' 
+            then
                if s_readfifo_state = AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
@@ -646,12 +645,12 @@ begin
             if v_cmd_write = '1' then
                s_ram_wr_addr <= "000" & v_cmd_address(12 downto 8) & v_cmd_address(5 downto 0);
                s_ram_wr_color <= v_cmd_rgbs;
-               halveselect(1) := v_cmd_address(13);
-               halveselect(0) := v_cmd_address(6);
-               case halveselect is
+               v_halveselect(1) := v_cmd_address(13);
+               v_halveselect(0) := v_cmd_address(6);
+               case v_halveselect is
                when "00" => s_ram_wr_mask <= "000000000111";  -- panel1 top
-               when "01" => s_ram_wr_mask <= "000111000000";  -- panel2 top
                when "10" => s_ram_wr_mask <= "000000111000";  -- panel1 bottom
+               when "01" => s_ram_wr_mask <= "000111000000";  -- panel2 top
                when "11" => s_ram_wr_mask <= "111000000000";  -- panel2 bottom
                when others =>
                end case;

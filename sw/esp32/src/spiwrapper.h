@@ -37,7 +37,7 @@ public:
         ESP_ERROR_CHECK(spi_bus_initialize(_host, &bus_config, SPI_DMA_CH_AUTO));
 
         spi_device_interface_config_t devcfg = {
-            .mode = 0,                  //SPI mode 0
+            .mode = 0,                  // SPI mode 0
             .clock_speed_hz = 1000000,  // 1 MHz
             .spics_io_num = -1,     
             .flags = SPI_DEVICE_HALFDUPLEX,
