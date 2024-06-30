@@ -30,7 +30,6 @@ public:
         gpio_set_level(_ioReset, 1);
         vTaskDelay(10 / portTICK_PERIOD_MS);
 
-
         FILE *fp = fopen(_bitstreamfile, "rb");
 
         int total = 0;

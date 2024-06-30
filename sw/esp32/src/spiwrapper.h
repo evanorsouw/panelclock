@@ -2,6 +2,7 @@
 #ifndef SPIWRAPPER_H_
 #define SPIWRAPPER_H_
 
+#include "driver/gpio.h"
 #include "esp_spiffs.h"
 #include "driver/spi_master.h"
 
@@ -25,26 +26,24 @@ public:
 
     void start()
     {
-        spi_bus_config_t bus_config = {
-            .mosi_io_num = _mosi,
-            .miso_io_num = _miso,
-            .sclk_io_num = _clk,
-            .quadwp_io_num = -1,
-            .quadhd_io_num = -1,
-            .max_transfer_sz = 32
-        };
+        spi_bus_config_t bus_config = {0};
+        bus_config.mosi_io_num = _mosi;
+        bus_config.miso_io_num = _miso;
+        bus_config.sclk_io_num = _clk;
+        bus_config.quadwp_io_num = -1;
+        bus_config.quadhd_io_num = -1;
+        bus_config.max_transfer_sz = 3;
 
         ESP_ERROR_CHECK(spi_bus_initialize(_host, &bus_config, SPI_DMA_CH_AUTO));
 
-        spi_device_interface_config_t devcfg = {
-            .mode = 0,                  // SPI mode 0
-            .clock_speed_hz = 1000000,  // 1 MHz
-            .spics_io_num = -1,     
-            .flags = SPI_DEVICE_HALFDUPLEX,
-            .queue_size = 1,
-            .pre_cb = NULL,
-            .post_cb = NULL
-        };
+        spi_device_interface_config_t devcfg = {0};
+        devcfg.mode = 0;                  // SPI mode 0
+        devcfg.clock_speed_hz = 5000000;
+        devcfg.spics_io_num = -1;     
+        devcfg.flags = SPI_DEVICE_HALFDUPLEX;
+        devcfg.queue_size = 1;
+        devcfg.pre_cb = NULL;
+        devcfg.post_cb = NULL;
 
         ESP_ERROR_CHECK(spi_bus_add_device(_host, &devcfg, &_hspi));
     }

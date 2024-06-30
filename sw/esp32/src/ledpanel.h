@@ -66,7 +66,7 @@ public:
         int bufsize = 5 + job.dx * 3;
         uint8_t buf[bufsize];
 
-        auto psrc = src.getPtr(job.srcx, job.srcy);
+        auto psrc = src.getptr(job.srcx, job.srcy);
         while (job.dy-- > 0)
         {                              
             buf[0] = 1;
@@ -77,6 +77,7 @@ public:
             std::copy(psrc, psrc + job.dx * 3, buf + 5);           
             psrc += src.stride();
 
+            
             _spi.write(buf, bufsize);
         }
     }

@@ -10,8 +10,10 @@
 #include "esp_flash.h"
 #include "SpiWrapper.h"
 
-#include "FpgaConfigurator.h"
 #include "bitmap.h"
+#include "color.h"
+#include "fpgaconfigurator.h"
+#include "graphics.h"
 #include "ledpanel.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
@@ -36,21 +38,21 @@ void setLed(bool on)
   gpio_set_level(LED_TEST, on);
 }
 
-void SendIntermittendSpiPackets()
+void animate()
 {
     espSpi.start();
 
-    Bitmap drawing(10,10);
-    drawing.fill(0x000000);    
-    drawing.set(1,1,0xFF0000);
-    drawing.set(2,1,0x00FF00);
-    drawing.set(3,1,0x0000FF);
-    drawing.set(1,2,0x00FF00);
-    drawing.set(2,2,0x0000FF);
-    drawing.set(3,2,0xFF0000);
-    drawing.set(1,3,0x0000FF);
-    drawing.set(2,3,0xFF0000);
-    drawing.set(3,3,0x00FF00);
+    Bitmap drawing(10,10,3);
+    drawing.fill(Color::black);    
+    drawing.set(1,1,Color::red);
+    drawing.set(2,1,Color::green);
+    drawing.set(3,1,Color::blue);
+    drawing.set(1,2,Color::green);
+    drawing.set(2,2,Color::blue);
+    drawing.set(3,2,Color::red);
+    drawing.set(1,3,Color::blue);
+    drawing.set(2,3,Color::red);
+    drawing.set(3,3,Color::green);
     LedPanel panel(128, 64, espSpi);
 
     int dir = 1;
@@ -69,18 +71,42 @@ void SendIntermittendSpiPackets()
                 y = 0;
         }
 
-        if (false)
-        {
-            while (!getButton())
-                vTaskDelay(10 / portTICK_PERIOD_MS);
-            while (getButton())
-                vTaskDelay(10 / portTICK_PERIOD_MS);
-        }
-        else
-        {
-            vTaskDelay(25 / portTICK_PERIOD_MS);
-        }
+        while (!getButton())
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(25 / portTICK_PERIOD_MS);
     }
+    espSpi.end();
+}
+
+void drawtext()
+{
+    espSpi.start();
+
+    LedPanel panel(128, 64, espSpi);
+    Bitmap screen(128,64,3);
+    screen.fill(Color::black);
+    screen.copyTo(panel, 0, 0);
+
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+
+    Graphics g;
+    g.setfont("scriptin.TTF", 30, 28);
+
+    auto x = 5.0f;
+    auto y = 32.0f;
+    for (;;)
+    {
+        screen.fill(Color::black);
+        g.text(screen, x, y, "02:41", Color::white);
+        screen.copyTo(panel, 0, 0);
+
+        x = x + 0.1;
+        y = y + 0.05;
+        while (!getButton())
+            ;
+        //vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+
     espSpi.end();
 }
 
@@ -123,13 +149,16 @@ void statemachine(void * parameter)
           {
             switch (choice)
             {
+              case 1:
+                drawtext();
+                break;
               case 2:
-                SendIntermittendSpiPackets();
+                animate();
                 break;
               default:  // unknown command, restart
-                state = 0;
                 break;
             }
+            state = 0;
           }
           break;        
       }
@@ -172,7 +201,7 @@ void setup()
     
     FpgaConfig.configure();
 
-    xTaskCreate(statemachine, "test", 4000, NULL, 1, NULL);
+    xTaskCreate(statemachine, "test", 80000, NULL, 1, NULL);
 }
 
 extern "C" {

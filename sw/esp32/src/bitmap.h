@@ -1,79 +1,119 @@
 #ifndef _BITMAP_H_
 #define _BITMAP_H_
 
+#include <assert.h>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
-#include "pixelsquare.h"
+#include "color.h"
 #include "copyjob.h"
+#include "pixelsquare.h"
 
 class LedPanel;
 
 class Bitmap : public PixelSquare
 {
 private:
+    int _bpp;
     int _stride;
+    int _bitmapsize;
     uint8_t *_bitmap;
 
 public:
-    Bitmap(int dx, int dy) : PixelSquare(dx, dy)
+    Bitmap(int dx, int dy, int bpp) 
+        : PixelSquare(dx, dy) 
     {
-        _stride = ((dx * 3 + 3) / 4) * 4;
-        _bitmap = new uint8_t[dy * stride()];
+        assert( dx > 0 && dy > 0);
+        assert( bpp == 1 || bpp == 3);
+
+        _bpp = bpp;
+        _stride = ((dx * bpp + 3) / 4) * 4;
+        _bitmapsize = dy * _stride;
+        _bitmap = (uint8_t*)malloc(_bitmapsize);
+        printf("Bitmap(%d,%d,%d): allocated %d bytes @%p\n", dx, dy, bpp, _bitmapsize, _bitmap);
+        assert( _bitmap != nullptr );
     }
 
     virtual ~Bitmap()
     {
-        delete [] _bitmap;
+        printf("Bitmap: freed %d bytes\n", _bitmapsize);
+        free(_bitmap);
         _bitmap = 0;
     }
 
     int stride() const { return _stride; }
-    uint8_t *getPtr(int x, int y) { return _bitmap + (x * 3 + y * _stride); }
 
-    void fill(int color)
+    uint8_t *getptr() const { return _bitmap; }
+    uint8_t *getptr(int x, int y) const { return _bitmap + (x * _bpp + y * _stride); }
+
+    void fill(const Color &color)
     {
-        uint8_t r = color >> 16;
-        uint8_t g = color >> 8;
-        uint8_t b = color;
-        for (auto y = 0 ; y < dy(); ++y)
+        if (_bpp == 1 || color.isgray())
         {
-            auto p = _bitmap + _stride * y;
-            for (auto x = dx(); x-- > 0; )
+            std::memset(_bitmap, color.b(), _bitmapsize);
+        }
+        else 
+        {
+            for (auto y=0; y < dy(); ++y)
             {
-                *p++ = r;
-                *p++ = g;
-                *p++ = b;
+                auto p = getptr(0, y);
+                for (auto x=dx(); x-- > 0; )
+                {
+                    *p++ = color.r();
+                    *p++ = color.g();
+                    *p++ = color.b();
+                }                
             }
         }
     }
 
-    void set(int x, int y, int rgb)
+    void set(int x, int y, const Color color)
     {
-        auto pt = getPtr(x, y);
-        uint8_t *ps = (uint8_t*)&rgb;
-        pt[0] = ps[0];
-        pt[1] = ps[1];
-        pt[2] = ps[2];
+        auto pt = getptr(x, y);
+        if (_bpp == 1)
+        {
+            *pt = color.b();
+        }
+        else
+        {
+            pt[0] = color.r();
+            pt[1] = color.g();
+            pt[2] = color.b();
+        }
     }
 
-    int get(int x, int y)
+    void set(int x, int y, const Color color, uint8_t alpha)
     {
-        auto ps = getPtr(x, y);
-        int color = 0;
-        uint8_t *pt = (uint8_t*)&color;
-        pt[0] = ps[0];
-        pt[1] = ps[1];
-        pt[2] = ps[2];
-        return color;
+        if (alpha == 255)
+        {
+            set(x, y, color);
+        }
+        else
+        {
+            assert( _bpp = 3 );
+
+            auto pt = getptr(x, y);
+            pt[0] = (pt[0] * (255 - alpha) + color.r() * alpha) / 256;
+            pt[1] = (pt[1] * (255 - alpha) + color.g() * alpha) / 256;
+            pt[2] = (pt[2] * (255 - alpha) + color.b() * alpha) / 256;
+        }
+    }
+
+    Color get(int x, int y)
+    {
+        auto ps = getptr(x, y);
+        if (_bpp == 1)
+            return *ps;
+        return Color(ps[0], ps[1], ps[2]);
     }
 
     void copyTo(Bitmap &tgt, int tgtx, int tgty)
     {
         CopyJob job(*this, tgt, tgtx, tgty);
 
-        auto psrc = getPtr(job.srcx, job.srcy);
-        auto ptgt = tgt.getPtr(job.tgtx, job.tgty);
+        auto psrc = getptr(job.srcx, job.srcy);
+        auto ptgt = tgt.getptr(job.tgtx, job.tgty);
         auto copyx = job.dx * 3;
 
         while (job.dy-- > 0)
@@ -86,12 +126,5 @@ public:
 
     void copyTo(LedPanel &tgt, int tgtx, int tgty);
 };
-
-#include "ledpanel.h"
-
-void Bitmap::copyTo(LedPanel &tgt, int tgtx, int tgty)
-{
-    tgt.copyFrom(*this, tgtx, tgty);
-}
 
 #endif
