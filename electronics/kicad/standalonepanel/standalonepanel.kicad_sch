@@ -10382,12 +10382,6 @@
 		(uuid "8b38b8ae-2053-4aa7-b0a2-09ebbaf8097b")
 	)
 	(junction
-		(at 233.68 226.06)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "8b96ed1e-a624-4f0f-a223-18da30149fed")
-	)
-	(junction
 		(at 17.78 43.18)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -12109,6 +12103,16 @@
 	)
 	(wire
 		(pts
+			(xy 232.41 223.52) (xy 233.68 223.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6166bf7c-0edd-4869-9a54-f5a51ada668d")
+	)
+	(wire
+		(pts
 			(xy 242.57 120.65) (xy 247.65 120.65)
 		)
 		(stroke
@@ -13686,16 +13690,6 @@
 			(type default)
 		)
 		(uuid "dab95989-4094-4477-9c66-fa294b0c3c51")
-	)
-	(wire
-		(pts
-			(xy 233.68 223.52) (xy 233.68 226.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "db8a5019-bc23-49e9-b52a-add176a17c19")
 	)
 	(wire
 		(pts
@@ -27479,6 +27473,71 @@
 			(project "standalonepanel"
 				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
 					(reference "#PWR080")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 232.41 223.52 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c6b1cc63-97cf-4527-9b17-43079781ff66")
+		(property "Reference" "#PWR092"
+			(at 236.22 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 228.6 223.52 0)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 232.41 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 232.41 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 232.41 223.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6de799b9-d638-4636-b3ce-43e5eb7f7fc2")
+		)
+		(instances
+			(project "standalonepanel"
+				(path "/982fd936-c5cb-43af-8607-60f832a26f93"
+					(reference "#PWR092")
 					(unit 1)
 				)
 			)
