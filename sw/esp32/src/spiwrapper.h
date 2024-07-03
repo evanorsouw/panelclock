@@ -14,14 +14,18 @@ private:
     gpio_num_t _mosi;
     gpio_num_t _miso;
     spi_device_handle_t _hspi;
+    int _speed;
+    int _mode;
 
 public:
-    SpiWrapper(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso)
+    SpiWrapper(spi_host_device_t host, gpio_num_t clk, gpio_num_t mosi, gpio_num_t miso, int speed)
     {
         _host = host;
         _clk = clk;
         _mosi = mosi;
         _miso = miso;
+        _speed = speed;
+        _mode = 0;  // spi mode 0 (rising edge
     }
 
     void start()
@@ -37,8 +41,8 @@ public:
         ESP_ERROR_CHECK(spi_bus_initialize(_host, &bus_config, SPI_DMA_CH_AUTO));
 
         spi_device_interface_config_t devcfg = {0};
-        devcfg.mode = 0;                  // SPI mode 0
-        devcfg.clock_speed_hz = 5000000;
+        devcfg.mode = _mode;
+        devcfg.clock_speed_hz = _speed;
         devcfg.spics_io_num = -1;     
         devcfg.flags = SPI_DEVICE_HALFDUPLEX;
         devcfg.queue_size = 1;
@@ -46,12 +50,16 @@ public:
         devcfg.post_cb = NULL;
 
         ESP_ERROR_CHECK(spi_bus_add_device(_host, &devcfg, &_hspi));
+
+        printf("intialized SPI bus=%d half duplex, mode=%d, mosi=%d, miso=%d, clk=%d, speed=%d\n", 
+            _host, _mode, _mosi, _miso, _clk, _speed);
     }
 
     void end()
     {
         ESP_ERROR_CHECK(spi_bus_remove_device(_hspi));
         ESP_ERROR_CHECK(spi_bus_free(_host));
+        printf("terminated SPI bus=%d\n", _host);
     }
 
     void write(uint8_t *buf, int n)

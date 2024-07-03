@@ -44,11 +44,9 @@ public:
         memset(buf, 0, 128);
         _spi->write(buf, 128);
 
+        printf("configured fpga with %d bytes\n", total);
+
         _spi->end();
-
-        printf("total is %d bytes in configuration\n", total);
-        fflush(stdout);
-
         fclose(fp);
     }
 };

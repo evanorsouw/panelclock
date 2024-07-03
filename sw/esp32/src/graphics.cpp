@@ -9,7 +9,7 @@
 #include "esp_system.h"
 #include "graphics.h"
 
-#if 1
+#if 0
   #define LOG(...) printf(__VA_ARGS__)
 #else
   #define LOG(...)
@@ -148,6 +148,13 @@ SFT_Font *Graphics::getfont(const char *fontname)
     if (it == _fonts.end())
     {
         font = loadfont(fontname);
+        if (font == nullptr)
+        {
+            if (strrchr(fontname, '.') == nullptr)
+            {
+                font = loadfont((std::string(fontname) + ".ttf").c_str());
+            } 
+        }
         if (font != nullptr)
         {
             printf("loaded font='%s', size=%d @%p\n", fontname, font->size, font->memory);
