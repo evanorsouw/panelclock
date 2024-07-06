@@ -46,6 +46,8 @@ public:
         auto rawtmp = getRaw(buf[6], buf[7]);
 
         auto accx = rawx /16384.0f;
+
+        
         auto accy = rawy /16384.0f;
         auto accz = rawz /16384.0f;
         auto temp = rawtmp / 340.0f + 36.53f;

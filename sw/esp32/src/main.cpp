@@ -106,6 +106,94 @@ void drawtext()
     }
 }
 
+void waitKey()
+{
+    while (!getButton());
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    while (getButton());
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+}
+
+void drawtriangle()
+{
+    LedPanel panel(128, 64, espSPI);
+    Bitmap screen(128,64,3);
+    screen.fill(Color::black);
+    screen.copyTo(panel, 0, 0);
+
+    Graphics g;
+
+    float angle = (float)(1);
+    int visible = 0;
+    for (;;)
+    {
+        screen.fill(Color::black);
+
+        auto x1 = 32 + cos(angle) * 5; 
+        auto y1 = 32 + sin(angle) * 5; 
+        auto x2 = 32 + cos(angle) * 30; 
+        auto y2 = 32 + sin(angle) * 30; 
+
+        g.line(screen, x1,y1,x2,y2,2,Color::red);
+        screen.copyTo(panel, 0, 0);
+       
+        angle += 0.005;
+    }
+}
+
+
+void screen_flicker()
+{
+    LedPanel panel(128, 64, espSPI);    
+    Bitmap screen(128,64,3);
+
+    Graphics g;
+    g.setfont("luteouse", 12, 24);
+
+    for (int i=0; i<128; ++i)
+    {
+        g.rect(screen, i, 1, 1, 62, Color(i/2,i/2,i/2));
+    }
+    g.text(screen, 10,30,"Eric van Orsouw", Color::white);
+
+    while (true)
+        screen.copyTo(panel,0,0);
+}
+
+void select_screens()
+{    
+    LedPanel panel(128, 64, espSPI);    
+    Bitmap screen(128,64,3);
+
+    Graphics g;
+    g.setfont("luteouse", 20, 24);
+
+    for (int i=0; i<16; ++i)
+    {
+        panel.selectScreen(i);
+        printf("select screen %d\n", i);
+        screen.fill(Color(i&1?0x20:0x00,i&2?0x20:0x00,i&4?0x20:0x00));
+
+        char buf[20];
+        sprintf(buf, "%d", i);
+        g.text(screen, 10,30, buf, Color::white);
+        screen.copyTo(panel, 0, 0);
+    }
+
+    int i = 0;
+    for(;;)
+    {
+        printf("show screen %d\n", i);
+
+        panel.showScreen(i);
+        waitKey();
+
+        i = (i + 1) & 7;
+    }
+
+
+}
+
 void read_tod()
 {
     I2CWrapper i2c(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
@@ -174,15 +262,18 @@ void statemachine(void * parameter)
             switch (choice)
             {
               case 1:
-                read_orientation();
+                drawtriangle();
                 break;
               case 2:
-                read_tod();
+                read_orientation();
                 break;
               case 3:
-                drawtext();
+                read_tod();
                 break;
               case 4:
+                drawtext();
+                break;
+              case 5:
                 animate();
                 break;
               default:  // unknown command, restart

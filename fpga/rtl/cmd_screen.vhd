@@ -17,7 +17,7 @@ entity cmd_screen is
 end entity cmd_screen;
 
 -- screen commands
--- 0x09,0bWWWWRRRR - select screen for display (R) and writing (W)
+-- 0x18,0bWWWWRRRR - select screen for display (R) and writing (W)
 architecture cmd_screen_arch of cmd_screen is
 
    type T_STATE is ( CMD, ARG_BASENO );

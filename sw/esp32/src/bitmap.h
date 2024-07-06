@@ -89,14 +89,14 @@ public:
         {
             set(x, y, color);
         }
-        else
+        else if (alpha > 0)
         {
             assert( _bpp = 3 );
 
             auto pt = getptr(x, y);
-            pt[0] = (pt[0] * (255 - alpha) + color.r() * alpha) / 256;
-            pt[1] = (pt[1] * (255 - alpha) + color.g() * alpha) / 256;
-            pt[2] = (pt[2] * (255 - alpha) + color.b() * alpha) / 256;
+            pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
+            pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
+            pt[2] = clip(pt[2] + ((color.b() * alpha) >> 8));
         }
     }
 
@@ -125,6 +125,7 @@ public:
     }
 
     void copyTo(LedPanel &tgt, int tgtx, int tgty);
+    uint8_t clip(int v) { return v > 255 ? 255 : v; };
 };
 
 #endif

@@ -26,7 +26,7 @@ public:
     // select a screen to copy data to (not neccesarily the same as being written to)
     LedPanel &selectScreen(int iscreen)
     {
-        _screenVisible = iscreen & 0xF;
+        _screenWrite = iscreen & 0xF;
         sendScreen();
         return *this;
     }
@@ -34,7 +34,7 @@ public:
     // select a screen that will become visible on the LED panel.
     LedPanel &showScreen(int iscreen)
     {
-        _screenWrite = iscreen & 0xF;
+        _screenVisible = iscreen & 0xF;
         sendScreen();
         return *this;    
     }
@@ -57,7 +57,7 @@ public:
     void copyFrom(Bitmap &src, int tgtx, int tgty)
     {
         CopyJob job(src, *this, tgtx, tgty);
-        printf("copy: src:%d,%d, tgt:%d,%d, size:%d,%d\n", job.srcx, job.srcy, job.tgtx, job.tgty, job.dx, job.dy);
+        //printf("copy: src:%d,%d, tgt:%d,%d, size:%d,%d\n", job.srcx, job.srcy, job.tgtx, job.tgty, job.dx, job.dy);
 
         if (job.dx == 0 || job.dy == 0)
             return;
@@ -76,7 +76,6 @@ public:
             buf[4] = 1;
             std::copy(psrc, psrc + job.dx * 3, buf + 5);           
             psrc += src.stride();
-
             
             _spi.write(buf, bufsize);
         }
@@ -85,7 +84,7 @@ public:
 private:
     void sendScreen()
     {
-        uint8_t buf[2] = { 9, (uint8_t)(_screenVisible | (_screenWrite << 4)) };
+        uint8_t buf[2] = { 0x18, (uint8_t)(_screenVisible | (_screenWrite << 4)) };
         _spi.write(buf, sizeof(buf));
     }
 };

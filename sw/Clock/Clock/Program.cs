@@ -1,349 +1,252 @@
-﻿
-using Clock;
+﻿using Clock;
+using System;
+using System.Drawing;
 
-const int N = 64;
-const int MASK = 63;
 
-var bitmap = new Bitmap(64, 64);
+var display = new Display(128, 64);
+var bitmap = new Bitmap(128, 64, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
 
-void swap<T>(ref T v1, ref T v2)
+display.Show(bitmap);
+
+for (int i = 0; i < 128; ++i)
+    rect(i, 1, 1, 62, (i << 1) | (i << 9) | (i << 17));
+display.Show(bitmap);
+
+
+float angle = 7.19566f;
+for (; ; )
 {
-    var tmp = v1;
-    v1 = v2;
-    v2 = tmp;
+    float x = 32 + 20 * (float)Math.Cos(angle-0.1);
+    float y = 32 + 20 * (float)Math.Sin(angle-0.1);
+
+    bitmap = new Bitmap(128, 64, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
+    rect(x, y, 8, 4, 0xFFFF00);
+    display.Show(bitmap);
+
+    angle = angle + 0.001f;
 }
 
-double clip(double v, double min, double max)
+void SWAP(ref float a, ref float b)
 {
-    if (v < min)
-        return min;
-    if (v > max)
-        return max;
-    return v;
+    float tmp = a;
+    a = b;
+    b = tmp;
 }
 
-void drawtriangle(Bitmap bitmap, double x1, double y1, double x2, double y2, double x3, double y3, int color)
+void blendpixel(int x, int y, int color, byte alpha)
+{
+    if (alpha == 0)
+        return;
+
+
+    var r = (color >> 16) & 0xFF;
+    var g = (color >>8) & 0xFF;
+    var b = (color) & 0xFF;
+
+    if (alpha < 255)
+    {
+        var pixel = bitmap.GetPixel(x, y);
+
+        r = (byte)Math.Min(255, ((r * alpha) >> 8) + pixel.R);
+        g = (byte)Math.Min(255, ((g * alpha) >> 8) + pixel.G);
+        b = (byte)Math.Min(255, ((b * alpha) >> 8) + pixel.B);
+    }
+    bitmap.SetPixel(x, y, Color.FromArgb(255, r, g, b));
+    //display.Show(bitmap);
+}
+
+float MIN(float a, float b) => a < b ? a : b;
+float MAX(float a, float b) => a > b ? a : b;
+float ABS(float v) => (float)Math.Abs(v);
+float TRUNC(float v) => (float)Math.Floor(v);
+byte ALPHA(float a) => (byte)MIN(255, a * 255);
+
+void triangle(float x1, float y1, float x2, float y2, float x3, float y3)
 {
     if (y2 < y1)
     {
-        swap(ref x1, ref x2);
-        swap(ref y1, ref y2);
+        SWAP(ref y1, ref y2);
+        SWAP(ref x1, ref x2);
     }
     if (y3 < y1)
     {
-        swap(ref x1, ref x3);
-        swap(ref y1, ref y3);
+        SWAP(ref y1, ref y3);
+        SWAP(ref x1, ref x3);
     }
     if (y3 < y2)
     {
-        swap(ref x2, ref x3);
-        swap(ref y2, ref y3);
+        SWAP(ref y2, ref y3);
+        SWAP(ref x2, ref x3);
     }
+
+    if (y1 == y2 && y1 == y3)
+        return;
+    if (x1 == x2 && x1 == x3)
+        return;
 
     if (y1 == y2)
     {
-        drawtriangledown_i(bitmap, x3, y3, x1 < x2 ? x1 : x2, x1 < x2 ? x2 : x1, y1, color);
+        triangle_basetop(x1, x2, y1, x3, y3, 0xFF0000);
     }
     else if (y2 == y3)
     {
-        drawtriangleup_i(bitmap, x1, y1, x2 < x3 ? x2 : x3, x2 < x3 ? x3 : x2, y2, color);
+        triangle_basebottom(x1, y1, x2, x3, y2, 0xFF0000);
     }
     else
     {
-        var x = x1 + (x3 - x1) * (y2 - y1) / (y3 - y1);
-        drawtriangleup_i(bitmap, x1, y1, x2 < x ? x2 : x, x2 < x ? x : x2, y2, color);
-        drawtriangledown_i(bitmap, x3, y3, x2 < x ? x2 : x, x2 < x ? x : x2, y2, color);
+        float dy12 = y2 - y1;
+        float dy13 = y3 - y1;
+        float mx = x1 + (x3 - x1) * dy12 / dy13;
+        triangle_basebottom(x1, y1, x2, mx, y2, 0xFF0000);
+        triangle_basetop(x2, mx, y2, x3, y3, 0xFF0000);
     }
 }
 
-void drawtriangleup_i(Bitmap bitmap, double xtop, double ytop, double xbottomleft, double xbottomright, double ybottom, int color)
+void triangle_basebottom(float x1, float y1, float x2a, float x2b, float y2, int color)
 {
-    var dxl = xbottomleft - xtop;
-    var dxr = xbottomright - xtop;
-    var dy = ybottom - ytop;
+    if (x2a > x2b) SWAP(ref x2a, ref x2b);
+    float y = y1;
+    float height = y2 - y1;
 
-    var y = ytop;
-    var xtl = xtop;
-    var xtr = xtop;
-
-    while (y<ybottom)
+    float dx_a = (x2a - x1) / height;
+    float dx_b = (x2b - x1) / height;
+    do
     {
-        var ynext = Math.Min(ybottom, (int)y + 1.0);
+        float ynext = MIN(TRUNC(y + 1), y2);
 
-        var yy = ynext - ytop;
-        var xbl = xtop + dxl * yy / dy;
-        var xbr = xtop + dxr * yy / dy;
-        drawscanline(bitmap, xtl, xtr, y, xbl, xbr, ynext, color);
+        float dy = y - y1;
+        float xtl = x1 + dy * dx_a;
+        float xtr = x1 + dy * dx_b;
 
-        xtl = xbl;
-        xtr = xbr;
+        dy = ynext - y1;
+        float xbl = x1 + dy * dx_a;
+        float xbr = x1 + dy * dx_b;
+
+        float dxl = ABS(xbl - xtl);
+        float dxr = ABS(xbr - xtr);
+        float xl = MIN(xtl, xbl);
+        float xr = MAX(xtr, xbr);
+
+        dy = ynext - y;
+        innerXLoop(y, xl, xr, dy, dxl, dxr, color);
+
         y = ynext;
-    }
+    } 
+    while (y < y2);
 }
 
-void drawtriangledown_i(Bitmap bitmap, double xbottom, double ybottom, double xtopleft, double xtopright, double ytop, int color)
+void triangle_basetop(float xbase1, float xbase2, float ybase, float xtop, float ytop, int color)
 {
-    var dxl = xbottom - xtopleft;
-    var dxr = xbottom - xtopright;
-    var dy = ybottom - ytop;
+    if (xbase1 > xbase2) SWAP(ref xbase1, ref xbase2);
+    float y = ybase;
+    float height = ytop - ybase;
 
-    var y = ytop;
-    var xtl = xtopleft;
-    var xtr = xtopright;
-
-    while (y < ybottom)
+    float dx_a = (xbase1 - xtop) / height;
+    float dx_b = (xbase2 - xtop) / height;
+    do
     {
-        var ynext = Math.Min(ybottom, (int)y + 1.0);
+        float ynext = MIN(TRUNC(y + 1), ytop);
 
-        var yy = ynext - ytop;
-        var xbl = xtopleft + dxl * yy / dy;
-        var xbr = xtopright + dxr * yy / dy;
-        drawscanline(bitmap, xtl, xtr, y, xbl, xbr, ynext, color);
+        float dy = ytop - y;
+        float xtl = xtop + dy * dx_a;
+        float xtr = xtop + dy * dx_b;
 
-        xtl = xbl;
-        xtr = xbr;
+        dy = ytop - ynext;
+        float xbl = xtop + dy * dx_a;
+        float xbr = xtop + dy * dx_b;
+
+        float dxl = ABS(xbl - xtl);
+        float dxr = ABS(xbr - xtr);
+        float xl = MIN(xtl, xbl);
+        float xr = MAX(xtr, xbr);
+        dy = ynext - y;
+
+        innerXLoop(y, xl, xr, dy, dxl, dxr, color);    
+
         y = ynext;
-    }
+
+    } while (y < ytop);
 }
 
-void drawscanline(Bitmap bitmap, double xtl, double xtr, double yt, double xbl, double xbr, double yb, int color)
+void innerXLoop(float y, float xl, float xr, float dy, float dxl, float dxr, int color)
 {
-    double lxl, lxr, lyl, lyr;
-    if (xbl < xtl)
+    float x = xl;
+    do
     {
-        lxl = xbl;
-        lyl = yb;
-        lxr = xtl;
-        lyr = yt;
-    }
-    else
-    {
-        lxl = xtl;
-        lyl = yt;
-        lxr = xbl;
-        lyr = yb;
-    }
-    double rxl, rxr, ryl, ryr;
-    if (xbr < xtr)
-    {
-        rxl = xbr;
-        ryl = yb;
-        rxr = xtr;
-        ryr = yt;
-    }
-    else
-    {
-        rxl = xtr;
-        ryl = yt;
-        rxr = xbr;
-        ryr = yb;
-    }
+        float xnext = MIN(xr, TRUNC(x + 1));
 
-    var dy = yb - yt;
-    var dyl = (lyr - lyl) / (lxr - lxl);
-    var dyr = (ryr - ryl) / (rxr - rxl);
+        float range = dy / dxl;
+        float yl1 = ((x - xl) * range);
+        float yl2 = ((xnext - xl) * range);
+        float ayl = MIN(dy, (yl1 + yl2) / 2);
 
-    var x = lxl;
-    while (x < rxr)
-    {
-        var xnext = Math.Min((int)x + 1.0, rxr);
-        var xc = (x + xnext) / 2;
+        range = dy / dxr;
+        float yr1 = ((xr - x) * range);
+        float yr2 = ((xr - xnext) * range);
+        float ayr = MIN(dy, (yr1 + yr2) / 2);
 
-        var yl = clip(lyl + dyl * (xc - lxl) / dy, yt, yb);
-        var yr = clip(ryl + dyr * (xc - rxl) / dy, yt, yb);
+        float axl = MIN(1, xnext - x);
+        float axr = MIN(1, xr - x);
 
-        // individual situations in left and right lines that all need separate handling
-        //
-        //     /  /      / |    /       / \      \  \      \    | \      \         /
-        //    /  /      /  |   /       /   \      \  \      \   |  \      \       /
-        //  L/  /R    L/   |  /R      /     \      \  \      \  |   \      \     /
-        //  /| /      /    | /       /       \      \ |\      \ |    \      \   /
-        // / |/      /     |/       /         \      \| \      \|     \      \ /
-        //   (1)        (2)            (3)            (4)        (5)         (6)
-        //
-
-        var ayt = yt;
-        var ayb = yb;
-        if (lyl > lyr)
-        {
-            if (rxl < lxr)
-            {   // 1
-                if (xc < rxl)
-                {
-                    ayt = yl;
-                }
-                else if (xc < lxr)
-                {
-                    ayt = yl;
-                    ayb = yr;
-                }
-                else
-                {
-                    ayb = yr;
-                }
-
-            }
-            else if (ryl > ryr)
-            {   // 2
-                if (xc < lxr)
-                {
-                    ayt = yl;
-                }
-                else if (xc > rxl)
-                {
-                    ayb = yr;
-                }
-            }
-            else
-            {   // 3
-                if (xc < lxr)
-                {
-                    ayt = yl;
-                }
-                else if (xc > rxl)
-                {
-                    ayt = yr;
-                }
-            }
-        }
-        else if (rxl < lxr)
-        {   // 4
-            if (xc < rxl)
-            {
-                ayb = yl;
-            }
-            else if (xc < rxl)
-            {
-                ayt = yr;
-                ayb = yl;
-            }
-            else
-            {
-                ayt = yr;
-            }
-        }
-        else if (ryl < ryr)
-        {   // 5
-            if (xc < lxr)
-            {
-                ayb = yl;
-            }
-            else if (xc > rxl)
-            {
-                ayt = yr;
-            }
-        }
-        else
-        {   // 6
-            if (xc < lxr)
-            {
-                ayb = yl;
-            }
-            else if (xc > rxl)
-            {
-                ayb = yr;
-            }
-        }
-        var alpha = (xnext - x) * (ayb - ayt);
-        alpha = Math.Pow(alpha, 1.5);
-
-        bitmap.SetPixel((int)x, (int)yt, color, alpha);
+        float area = MIN(axl, axr) * MIN(ayl, ayr);
+        byte alpha = (byte)TRUNC(area * 255);
+        blendpixel((int)x, (int)y, color, alpha);
 
         x = xnext;
     }
+    while (x < xr);
 }
 
-void drawline(Bitmap bitmap, double sx, double sy, double ex, double ey, double thickness, int color)
+
+void rect(float x, float y, float dx, float dy, int color)
 {
-    var dx = ex - sx;
-    var dy = ey - sy;
-    var l = Math.Sqrt(dx * dx + dy * dy);
-    var ux = dx / l;
-    var uy = dy / l;
-    var px = -uy;
-    var py = ux;
+    var x2 = x + dx;
+    var y1 = (int)y;
 
-    var ox = thickness * px / 2;
-    var oy = thickness * py / 2;
-
-    var x1 = (double)(sx + ox);
-    var y1 = (double)(sy + oy);
-    var x2 = (double)(sx - ox);
-    var y2 = (double)(sy - oy);
-    var x3 = (double)(ex + ox);
-    var y3 = (double)(ey + oy);
-    var x4 = (double)(ex - ox);
-    var y4 = (double)(ey - oy);
-
-    drawtriangle(bitmap, x1, y1, x2, y2, x4, y4, color);
-    drawtriangle(bitmap, x1, y1, x3, y3, x4, y4, color);
-}
-
-var l = 1;
-for (; ; )
-{
-    //if (++l == 3) l = 0;
-    //bitmap.SelectLut(l == 0 ? 0x11 : 0x12);
-
-    bitmap.WriteBytes(0x10);
-    for (int i = 0; i < 256; ++i)
+    var ay = y - TRUNC(y);
+    if (ay > 0)
     {
-        bitmap.WriteBytes((byte)(255 - i));
+        rectscanline(x, x2, y1++, 1 - ay, color);
     }
-    //bitmap.WriteBytes(0x12);
-
-    for (int x = 0; x < 64; ++x)
+    var y2 = (int)(y + dy);
+    while (y1 < y2)
     {
-        for (int y = 0; y < 10; ++y)
+        rectscanline(x, x2, y1++, 1, color);
+    }
+    ay = y + dy - y1;
+    if (ay > 0)
+    {
+        rectscanline(x, x2, y1, ay, color);
+    }
+}
+
+void rectscanline(float x1, float x2, int y, float ay, int color)
+{
+    if (x1 > x2) SWAP(ref x1, ref x2);
+
+    var ix1 = (int)x1;
+    var ix2 = (int)x2;
+
+    if (ix1 == ix2)
+    {
+        float ax = ix2 - ix2;
+        blendpixel(ix1, y, color, ALPHA(ax * ay));
+    }
+    else
+    {
+        if (ix1 < x1)
         {
-            var c = x * 2;
-            bitmap.SetPixel(x, y, c | (c << 8) | (c << 16));
+            blendpixel(ix1, y, color, ALPHA((1 - x1 + ix1) * ay));
+            ix1++;
+        }
+        while (ix1 < ix2)
+        {
+            blendpixel(ix1, y, color, ALPHA(ay));
+            ix1++;
+        }
+        if (ix2 < x2)
+        {
+            blendpixel(ix1, y, color, ALPHA((x2 - ix2) * ay));
         }
     }
-}
-
-int sw = 0;
-for (; ; )
-{
-    bitmap.WriteBytes(0x11);
-    bitmap.Clear();
-
-    for (int i = 0; i < 12; ++i)
-    {
-        var a = Math.PI * 2 * i / 12f;
-        var (x1, y1) = RotatedCenter(30 * 0.9f, a);
-        var (x2, y2) = RotatedCenter(30 * 1f, a);
-        drawline(bitmap, x1, y1, x2, y2, 1.5, 0xFFFFFF);
-    }
-
-    var now = DateTime.Now;
-    var seconds = (now.Second + now.Millisecond / 1000f) / 60;
-    var minutes = (float)((now.Minute + seconds) / 60.0);
-    var hours = (float)((now.Hour % 12 + minutes) / 12.0);
-
-    var angle1 = (hours - 0.25) * Math.PI * 2;
-    var (sx, sy) = RotatedCenter(30 * 0.2, angle1);
-    var (ex, ey) = RotatedCenter(30 * 0.6, angle1);
-    drawline(bitmap, sx, sy, ex, ey, 3, 0xFFFFFF);
-
-    var angle2 = (minutes - 0.25) * Math.PI * 2;
-    (sx, sy) = RotatedCenter(30 * 0.2, angle2);
-    (ex, ey) = RotatedCenter(30 * 0.8, angle2);
-    drawline(bitmap, sx, sy, ex, ey, 2, 0xFFFFFF);
-
-    var angle3 = (seconds - 0.25) * Math.PI * 2;
-    (sx, sy) = RotatedCenter(30 * 0.1, angle3);
-    (ex, ey) = RotatedCenter(30 * 0.9, angle3);
-    drawline(bitmap, sx, sy, ex, ey, 1, 0xFF0000);
-
-    var sd = sw++;
-    bitmap.SelectScreen(sd, sw);
-    //bitmap.SelectScreen(0,0);
-}
-
-(double, double) RotatedCenter(double distance, double angle)
-{
-    var x = (double)(32 + distance * Math.Cos(angle));
-    var y = (double)(32 + distance * Math.Sin(angle));
-    return (x, y);
 }
