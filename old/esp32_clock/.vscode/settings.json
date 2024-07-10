@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "cmath": "cpp"
+    },
+    "idf.flashType": "JTAG",
+    "idf.adapterTargetName": "esp32"
+}

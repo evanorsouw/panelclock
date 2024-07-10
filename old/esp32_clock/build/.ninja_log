@@ -1,0 +1,6 @@
+# ninja log v5
+1	310449	0	CMakeFiles/confserver	7e5183438db07f8e
+1	310449	0	D:/projects/fpgaclock/sw/esp32_clock/build/CMakeFiles/confserver	7e5183438db07f8e
+5	10686	7330111223591721	build.ninja	fd1e13bdad9554a0
+0	520193239	0	CMakeFiles/confserver	7e5183438db07f8e
+0	520193239	0	D:/projects/fpgaclock/sw/esp32_clock/build/CMakeFiles/confserver	7e5183438db07f8e
