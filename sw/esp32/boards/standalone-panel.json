@@ -23,7 +23,8 @@
   },
   "frameworks": [
     "arduino",
-    "espidf"
+    "espidf",
+    "zephyr"
   ],
   "name": "Standalonepanel WROVER",
   "upload": {

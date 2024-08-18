@@ -21,6 +21,7 @@ public:
     {
         _screenVisible = 0;
         _screenWrite = 0;
+        _spi.start();
     }
 
     // select a screen to copy data to (not neccesarily the same as being written to)

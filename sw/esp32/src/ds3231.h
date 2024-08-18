@@ -27,6 +27,8 @@ public:
     DS3231(I2CWrapper *i2c)
     {
         _i2c = i2c;
+        _tod1 = {0};
+        _tod2 = {0};
         _lastReadTod = &_tod1;
     }
 

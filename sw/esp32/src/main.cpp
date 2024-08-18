@@ -11,16 +11,26 @@
 #include "spiwrapper.h"
 #include "i2cwrapper.h"
 
+#include "application.h"
 #include "bitmap.h"
 #include "color.h"
 #include "fpgaconfigurator.h"
 #include "graphics.h"
 #include "ledpanel.h"
 #include "ds3231.h"
+#include "environment_weerlive.h"
 #include "mpu6050.h"
+#include "max3421e.h"
+#include "wificlient.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
 #define BUTTON_TEST   GPIO_NUM_32 // 0=pressed
+
+#define USB_SPI_CLK          GPIO_NUM_14
+#define USB_SPI_MOSI         GPIO_NUM_12
+#define USB_SPI_MISO         GPIO_NUM_13
+#define USB_SPI_CS           GPIO_NUM_27
+#define USB_SPI_INT          GPIO_NUM_15
 
 #define FPGA_SPI_CLK         GPIO_NUM_21
 #define FPGA_SPI_MOSI        GPIO_NUM_25
@@ -29,81 +39,9 @@
 #define I2C_SDA              GPIO_NUM_18
 #define I2C_CLK              GPIO_NUM_5
 
-SpiWrapper espSPI(SPI2_HOST, FPGA_SPI_CLK,FPGA_SPI_MOSI, FPGA_SPI_MISO, 5000000);
-I2CWrapper espI2C(0, I2C_CLK, I2C_SDA);
-FpgaConfigurator FpgaConfig(&espSPI, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
-
-
 bool getButton()
 {
   return !gpio_get_level(BUTTON_TEST);
-}
-
-void setLed(bool on)
-{
-  gpio_set_level(LED_TEST, on);
-}
-
-void animate()
-{
-    Bitmap drawing(10,10,3);
-    drawing.fill(Color::black);    
-    drawing.set(1,1,Color::red);
-    drawing.set(2,1,Color::green);
-    drawing.set(3,1,Color::blue);
-    drawing.set(1,2,Color::green);
-    drawing.set(2,2,Color::blue);
-    drawing.set(3,2,Color::red);
-    drawing.set(1,3,Color::blue);
-    drawing.set(2,3,Color::red);
-    drawing.set(3,3,Color::green);
-    LedPanel panel(128, 64, espSPI);
-
-    int dir = 1;
-    int x = 1;
-    int y = 1;
-    for (;;)
-    {
-        drawing.copyTo(panel, x, y);
-
-        x += dir;
-        if (x == 100 || x == 1)
-        {
-            dir = -dir;
-            y++;
-            if (y == 50)
-                y = 0;
-        }
-
-        while (!getButton())
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-        vTaskDelay(25 / portTICK_PERIOD_MS);
-    }
-}
-
-void drawtext()
-{
-    LedPanel panel(128, 64, espSPI);
-    Bitmap screen(128,64,3);
-    screen.fill(Color::black);
-    screen.copyTo(panel, 0, 0);
-
-    Graphics g;
-    g.setfont("luteouse", 30, 28);
-
-    auto x = 5.0f;
-    auto y = 32.0f;
-    for (;;)
-    {
-        screen.fill(Color::black);
-        g.text(screen, x, y, "02:41", Color::white);
-        screen.copyTo(panel, 0, 0);
-
-        x = x + 0.1;
-        y = y + 0.05;
-        while (!getButton())
-            ;
-    }
 }
 
 void waitKey()
@@ -114,100 +52,60 @@ void waitKey()
     vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
-void drawtriangle()
+void setLed(bool on)
 {
-    LedPanel panel(128, 64, espSPI);
-    Bitmap screen(128,64,3);
-    screen.fill(Color::black);
-    screen.copyTo(panel, 0, 0);
+  gpio_set_level(LED_TEST, on);
+}
 
-    Graphics g;
+void dousb()
+{
+    printf("*** MAX3421E ***\n");
 
-    float angle = (float)(1);
-    int visible = 0;
+    SpiWrapper spi(SPI3_HOST, USB_SPI_CLK, USB_SPI_MOSI, USB_SPI_MISO, 100000, true);
+    spi.start();
+
+    MAX3421E usb(&spi, USB_SPI_CS);
+
+    printf("constructed\n");
+
+    usb.start();
+    printf("started\n");
+
+    uint8_t last_hrsl = 0xFE;
+    uint8_t last_hirq = 0xFE;
+    uint8_t last_mode = 0xFE;
+    uint8_t last_revision = 0xFE;
     for (;;)
     {
-        screen.fill(Color::black);
+        usb.writeReg(MODE, MODE_HOST);
+        auto hrsl = usb.readReg(HRSL);  // F8 00
+        auto hirq = usb.readReg(HIRQ);  // C8 00
+        auto mode = usb.readReg(MODE);  // D8 00
+        auto revision = usb.readReg(REVISION);
 
-        auto x1 = 32 + cos(angle) * 5; 
-        auto y1 = 32 + sin(angle) * 5; 
-        auto x2 = 32 + cos(angle) * 30; 
-        auto y2 = 32 + sin(angle) * 30; 
+        if (hrsl != last_hrsl || hirq != last_hirq || last_mode != mode || revision != last_revision)
+        {
+            last_hrsl = hrsl;
+            last_hirq = hirq;
+            last_mode = mode;
+            last_revision = revision;
+            printf("hrsl=0x%02X, hirq=%s,%s,%s,%s,%s,%s,%s,%s, mode=0x%02X, revion=0x%02X\n", 
+            hrsl, 
+            (hirq&HIRQ_BUSEVENT) ? "BUSEVENT" : "-",
+            (hirq&HIRQ_RWU) ? "RWUIRQ" : "-",   
+            (hirq&HIRQ_RCVDAV) ? "RCVDAV" : "-",
+            (hirq&HIRQ_SNDBAV) ? "SNDBAV" : "-",
+            (hirq&HIRQ_SUSDN) ? "SUSDN" : "-",
+            (hirq&HIRQ_CONDET) ? "CONDET" : "-",
+            (hirq&HIRQ_FRAME) ? "FRAME" : "-", 
+            (hirq&HIRQ_HXFRDN) ? "HXFRDN" : "-", 
+            mode, revision);
 
-        g.line(screen, x1,y1,x2,y2,2,Color::red);
-        screen.copyTo(panel, 0, 0);
-       
-        angle += 0.005;
+            usb.writeHIRQ(hirq);
+        }
+
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
-}
-
-
-void screen_flicker()
-{
-    LedPanel panel(128, 64, espSPI);    
-    Bitmap screen(128,64,3);
-
-    Graphics g;
-    g.setfont("luteouse", 12, 24);
-
-    for (int i=0; i<128; ++i)
-    {
-        g.rect(screen, i, 1, 1, 62, Color(i/2,i/2,i/2));
-    }
-    g.text(screen, 10,30,"Eric van Orsouw", Color::white);
-
-    while (true)
-        screen.copyTo(panel,0,0);
-}
-
-void select_screens()
-{    
-    LedPanel panel(128, 64, espSPI);    
-    Bitmap screen(128,64,3);
-
-    Graphics g;
-    g.setfont("luteouse", 20, 24);
-
-    for (int i=0; i<16; ++i)
-    {
-        panel.selectScreen(i);
-        printf("select screen %d\n", i);
-        screen.fill(Color(i&1?0x20:0x00,i&2?0x20:0x00,i&4?0x20:0x00));
-
-        char buf[20];
-        sprintf(buf, "%d", i);
-        g.text(screen, 10,30, buf, Color::white);
-        screen.copyTo(panel, 0, 0);
-    }
-
-    int i = 0;
-    for(;;)
-    {
-        printf("show screen %d\n", i);
-
-        panel.showScreen(i);
-        waitKey();
-
-        i = (i + 1) & 7;
-    }
-
-
-}
-
-void read_tod()
-{
-    I2CWrapper i2c(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
-    i2c.start();
-
-    DS3231 rtc(&i2c);
-
-    for (;;)
-    {
-        rtc.readTimeFromChip();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
-    i2c.end();
 }
 
 void read_orientation()
@@ -228,83 +126,6 @@ void read_orientation()
 }
 
 
-void statemachine(void * parameter)
-{
-  auto interval = 50;
-  auto state = 0;
-  auto lastButton = 0;
-  auto stable = 0;
-  auto choice = 0;
-  for(;;)
-  {
-    vTaskDelay(interval / portTICK_PERIOD_MS);
-    auto button = getButton();
-    if (button == lastButton)
-    {
-      stable += interval;
-      switch (state)
-      {
-        case 0: // idle
-          if (stable > 1000 && button)
-          {
-            state = 1;
-            choice = 0;
-            setLed(false);
-          }
-          break;
-        case 1: // counting key presses
-          if (choice == 0 && stable > 15000)
-          {
-            state = 0;
-          }
-          else if (choice > 0 && stable > 1500)
-          {
-            switch (choice)
-            {
-              case 1:
-                drawtriangle();
-                break;
-              case 2:
-                read_orientation();
-                break;
-              case 3:
-                read_tod();
-                break;
-              case 4:
-                drawtext();
-                break;
-              case 5:
-                animate();
-                break;
-              default:  // unknown command, restart
-                break;
-            }
-            state = 0;
-          }
-          break;        
-      }
-    }
-    else
-    {
-      switch (state)
-      {
-        case 0:
-          setLed(button);
-          break;
-        case 1:
-          setLed(button);
-          if (button && !lastButton)
-          {
-            choice++;
-          }
-      }
-      lastButton = button;      
-      stable = 0;
-    }
-  }
-}
-
-
 void init_spiffs()
 {
     esp_vfs_spiffs_conf_t spiffs_config = {
@@ -316,29 +137,52 @@ void init_spiffs()
     esp_vfs_spiffs_register(&spiffs_config);
 }
 
-void setup() 
+void configureFPGA(SpiWrapper *spi)
 {
-    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
-    gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
-    gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
-    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
-    gpio_set_direction(BUTTON_TEST, GPIO_MODE_INPUT);
-
-    init_spiffs();
-
+    FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
     FpgaConfig.configure();
+}
 
-    espSPI.start();
+void foregroundtasks(void * parameter)
+{
+    for(;;) ((Application*)parameter)->foreground();
+}
 
-    xTaskCreate(statemachine, "test", 80000, NULL, 1, NULL);
+void backgroundtasks(void *parameter)
+{
+    for (;;) ((Application*)parameter)->background();
 }
 
 extern "C" {
 
 void app_main() 
 {
-  printf("Application starting\n");
-  setup();      
+    printf("Application starting\n");
+
+    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
+    gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
+    gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
+    gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_INPUT);
+    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
+    gpio_set_direction(BUTTON_TEST, GPIO_MODE_INPUT);
+
+    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 5000000, false);
+
+    init_spiffs();
+    configureFPGA(spi);
+    
+    auto graphics = new Graphics();
+    auto panel = new LedPanel(128, 64, *spi);
+    auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
+    i2c->start();
+    auto rtc = new DS3231(i2c);
+    auto environment = new EnvironmentWeerlive("demo", "Amsterdam");
+    auto system = new System();
+    
+    auto app = new Application(*graphics, *panel, *rtc, *environment, *system);
+
+    xTaskCreate(foregroundtasks, "application", 60000, app, 1, nullptr);
+    xTaskCreate(backgroundtasks, "background", 16000, app, 1, nullptr);
 }
 
 }
