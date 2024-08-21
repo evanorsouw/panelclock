@@ -17,26 +17,26 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
     switch (evt->event_id) 
     {
         case HTTP_EVENT_ERROR:
-            printf("http error\n");
+            //printf("http error\n");
             break;
         case HTTP_EVENT_ON_CONNECTED:
-            printf("http connected\n");
+            //printf("http connected\n");
             break;
         case HTTP_EVENT_HEADER_SENT:
-            printf("http header sent\n");
+            //printf("http header sent\n");
             break;
         case HTTP_EVENT_ON_HEADER:
-            printf("http header key=%s, value=%s\n", evt->header_key, evt->header_value);
+            //printf("http header key=%s, value=%s\n", evt->header_key, evt->header_value);
             break;
         case HTTP_EVENT_ON_DATA:
-            printf("http received data %d bytes\n", evt->data_len);
+            //printf("http received data %d bytes\n", evt->data_len);
             handler(evt->data, evt->data_len);
             break;
         case HTTP_EVENT_ON_FINISH:
-            printf("http finish\n");
+            //printf("http finish\n");
             break;
         case HTTP_EVENT_DISCONNECTED:
-            printf("http disconnected\n");
+            //printf("http disconnected\n");
             break;        
         default:
             break;
@@ -46,7 +46,6 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 
 int HTTPClient::get(const char *url, std::function<void(void*,int)> handler)
 {
-printf("here: 1\n");
     esp_http_client_config_t config = 
     {
         .url= url,
@@ -58,18 +57,19 @@ printf("here: 1\n");
         .crt_bundle_attach = esp_crt_bundle_attach
     };
 
-    printf("GET %s\n", url);
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
     if (err != ESP_OK) 
     {
         esp_http_client_cleanup(client);
-        printf("HTTP GET request failed: %s", esp_err_to_name(err));
-        return false;
+        printf("GET '%s' failed: %s\n", url, esp_err_to_name(err));
+        return -1;
     }
 
     auto status = esp_http_client_get_status_code(client);
     esp_http_client_cleanup(client);
+
+    printf("GET '%s' => STATUS %d\n", url, status);
 
     return status;
 }

@@ -9,6 +9,13 @@
 #include "color.h"
 #include "schrift.h"
 
+struct textinfo
+{
+    float dx;
+    float dy;
+    float ybase;
+};
+
 class Graphics
 {
 private:
@@ -28,6 +35,8 @@ public:
     void rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color);
     void line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color);
     void setfont(const char *name, float sizex, float sizey);
+    
+    textinfo textsize(const char *txt);
     float text(Bitmap &tgt, float x, float y, const char *txt, Color color);
     void triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, float x3, float y3, Color color);
 

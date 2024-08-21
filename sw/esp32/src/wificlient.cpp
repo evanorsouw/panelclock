@@ -1,8 +1,17 @@
 
 #include <cstring>
+#include "esp_log.h"
 #include "wificlient.h"
 
 #define WIFI_CONNECTED_BIT (0x0001)
+
+WifiClient::WifiClient(std::string sid, std::string password)
+{
+    _sid = sid;
+    _password = password;
+    _eventGroup = xEventGroupCreate();
+    esp_log_level_set("wifi", ESP_LOG_NONE);
+}
 
 void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
@@ -53,10 +62,8 @@ bool WifiClient::waitForConnection(int timeoutMs) const
 {
     if (!_connected)
     {
-        printf("waiting for wifi connected...\n");
         auto ticks = (timeoutMs == 0) ? portMAX_DELAY : timeoutMs / portTICK_PERIOD_MS;
         xEventGroupWaitBits(_eventGroup, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, ticks);
-        printf("wifi connected!\n");
     }
     return _connected;
 }

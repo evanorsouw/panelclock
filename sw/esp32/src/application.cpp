@@ -9,10 +9,14 @@ void Application::foreground()
 {
     auto now = _system.now();
 
-    auto msSinceMidnight = ((now.hour * 60 + now.min) * 60 + now.sec) * 1000 + now.millies;
+    auto msSinceMidnight = ((now.hour() * 60 + now.min()) * 60 + now.sec()) * 1000 + now.millies();
+    monitorRefreshRate(msSinceMidnight);
 
     _screen.fill(Color::black);
     drawClock(0, msSinceMidnight);
+    drawDateTime(now);
+    drawWeather();
+    drawIcons();
 
     _screen.copyTo(_panel, 0, 0);
     swapScreens();
@@ -62,6 +66,56 @@ void Application::drawClock(float x, long msSinceMidnight)
     drawCenterLine(seconds, 0.1f, 0.9f, refSize / 60, Color::red);
 }
 
+void Application::drawDateTime(const timeinfo &now)
+{
+    char buf[40];
+
+    _graphics.setfont(_timefont, 8, 11);
+    sprintf(buf, "%02d", now.sec());
+    auto sizesec = _graphics.textsize(buf);
+    _graphics.text(_screen, 
+        127 - sizesec.dx, 
+        sizesec.ybase - 1, 
+        buf, Color::white);
+    sizesec = _graphics.textsize("88");
+
+    _graphics.setfont(_timefont, 12, 14);
+    sprintf(buf, "%02d:%02d", now.hour(), now.min());
+    auto sizehm = _graphics.textsize(buf);
+    _graphics.text(_screen, 
+        127 - sizesec.dx - sizehm.dx - 2, 
+        sizehm.ybase - 2, 
+        buf, Color::white);
+
+    auto txt = std::string(_system.translate(now.dayOfWeek()));
+    txt[0] = std::toupper(txt[0]);
+    _graphics.setfont(_textfont, 9, 11);
+    auto size = _graphics.textsize(txt.c_str());
+    _graphics.text(_screen, 
+        127 - size.dx - 1, 
+        20.4, 
+        txt.c_str(), Color::white);
+
+    auto month = _system.translate(now.monthName(false));
+    sprintf(buf, "%d %c%s", now.mday(), std::toupper(month[0]), month+1);
+    _graphics.setfont(_textfont, 9, 11);
+    size = _graphics.textsize(buf);
+    _graphics.text(_screen, 
+        127 - size.dx - 1, 
+        32.3, 
+        buf, Color::white);
+}
+
+void Application::drawIcons()
+{
+
+}
+
+void Application::drawWeather()
+{
+
+}
+
 void Application::drawCenterLine(float index, float l1, float l2, float thickness, Color color)
 {
     auto angle = M_PI * 2.0f * index - M_PI / 2.0;
@@ -77,8 +131,25 @@ void Application::drawCenterLine(float index, float l1, float l2, float thicknes
 
 void Application::swapScreens()
 {
-    _panel.showScreen(_iVisibleScreen);
-    _iVisibleScreen = 1 - _iVisibleScreen;
-    _panel.selectScreen(_iVisibleScreen);
+    _panel.showScreen(_iWriteScreen);
+    if (++_iWriteScreen == 4)
+        _iWriteScreen = 0;
+    _panel.selectScreen(_iWriteScreen);
 }
 
+void Application::monitorRefreshRate(long now)
+{
+    _refreshCount++;
+    auto elapsed = now - _refreshCountStart;
+    if (elapsed < 0 || elapsed > 30000)
+    {
+        _refreshCount = 0;
+        _refreshCountStart = now;
+    }
+    else if (elapsed > 10000)
+    {
+        printf("refreshrate %d fps\n", _refreshCount /10);
+        _refreshCount = 0;
+        _refreshCountStart += 10000;
+    }
+}

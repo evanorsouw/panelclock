@@ -2,10 +2,31 @@
 #include "environment_weerlive.h"
 #include "httpclient.h"
 
+static struct {
+    const char *imageName;
+    weathertype type;
+} weathertypes[] = {
+    { "bewolkt", weathertype::clouded },
+    { "bliksem", weathertype::lightning },
+    { "buien", weathertype::showers },
+    { "hagel", weathertype::hail },
+    { "halfbewolkt", weathertype::partlycloudy },
+    { "halfbewolkt_regen", weathertype::cloudyrain },
+    { "helderenacht", weathertype::clearnight },
+    { "lichtbewolkt", weathertype::cloudy },
+    { "mist", weathertype::fog },
+    { "nachtbewolkt", weathertype::cloudednight },
+    { "nachtmist", weathertype::nightfog },
+    { "regen", weathertype::rain },
+    { "sneeuw", weathertype::snow },
+    { "zonnig", weathertype::sunny },
+    { "zwaarbewolkt", weathertype::heavyclouds }
+};
+
 void EnvironmentWeerlive::update()
 {
     HTTPClient client;
-    auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey + "&locatie=" + _location;
+    auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
 
     _state = ParseState::WaitArray;
     JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
@@ -29,19 +50,16 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
     case ParseState::WaitArray:
         if (json.item == JsonItem::Array && !strcmp(json.name, "liveweer"))
         {
-            printf("got start array\n");
             _state = ParseState::WaitObject1;
         }
         break;
     case ParseState::WaitObject1:
         if (json.item == JsonItem::Object)
         {
-            printf("got object 1\n");
             _state = ParseState::Reading;
         }
         break;
     case ParseState::Reading:
-        printf("object %s\n", json.name);
         switch (json.item)
         {
         case JsonItem::End:
@@ -66,7 +84,9 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
                 _airpressure = (float)json.number;
             break;
         case JsonItem::String:
-            if (!strcmp(json.name, "sup"))
+            if (!strcmp(json.name, "image"))
+                _weather = parseWeather(json.string);
+            else if (!strcmp(json.name, "sup"))
                 _sunrise = parseTime(json.string);
             else if (!strcmp(json.name, "sunder"))
                 _sunset = parseTime(json.string);
@@ -87,7 +107,6 @@ tm EnvironmentWeerlive::parseTime(const char *s)
     tm when = { 0 };
     int offset;
     auto n = sscanf(s, "%d:%d%n", &when.tm_hour, &when.tm_min, &offset);
-    printf("%s => n=%d, offset=%d\n", s, n, offset);
     if (n == 2 && offset == strlen(s))
         return when;
 
@@ -95,3 +114,12 @@ tm EnvironmentWeerlive::parseTime(const char *s)
     return tm { 0 };
 }
 
+weathertype EnvironmentWeerlive::parseWeather(const char *image)
+{
+    for (int i=0; i<(sizeof(weathertypes) / sizeof(weathertypes[0])); ++i)
+    {
+        if (!strcmp(image, weathertypes[i].imageName))
+            return weathertypes[i].type;
+    }
+    return weathertype::unknown;
+}

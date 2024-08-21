@@ -5,7 +5,8 @@
 #include <string>
 #include <time.h>
 
-enum weathertype {
+enum class weathertype {
+    unknown,
     // bewolkt
     clouded,
     // bliksem

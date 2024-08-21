@@ -3,16 +3,18 @@
 
 #include "environment.h"
 #include "jsonparser.h"
+#include "settings.h"
 
 class EnvironmentWeerlive : public Environment
 {
 private:
-    std::string _accesskey;
-    std::string _location;
+    Setting *_accesskey;
+    Setting *_location;
     enum class ParseState { WaitArray, WaitObject1, Reading, Completed };
     ParseState _state;
 
     bool _valid;
+    uint64_t _timestamp;
     tm _sunset;
     tm _sunrise;
     float _temperature;
@@ -26,9 +28,9 @@ public:
     /// @param accesskey the accesskey to their API, request one at their site.
     /// @param location the location name you want the info for. 
     /// E.g. "Amsterdam" or longitude/lattitude longitude e.g. "52.0910879,5.1124231"
-    EnvironmentWeerlive(std::string accesskey, std::string location)
+    EnvironmentWeerlive(Setting *key, Setting *location)
     {
-        _accesskey = accesskey;
+        _accesskey = key;
         _location = location;
         _valid = false;
     }
@@ -47,6 +49,7 @@ public:
 
 private:
     bool handleJson(const JsonEntry &json);
+    weathertype parseWeather(const char *image);
     tm parseTime(const char *s);
 };
 

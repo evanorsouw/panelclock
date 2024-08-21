@@ -24,12 +24,7 @@ private:
     char _ip[40];
 
 public:
-    WifiClient(std::string sid, std::string password)
-    {
-        _sid = sid;
-        _password = password;
-        _eventGroup = xEventGroupCreate();
-    }
+    WifiClient(std::string sid, std::string password);
     virtual ~WifiClient();
 
     void stayConnected();

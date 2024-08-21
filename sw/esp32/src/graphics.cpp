@@ -145,6 +145,37 @@ float Graphics::text(Bitmap &tgt, float x, float y, const char *txt, Color color
     return x;
 }
 
+textinfo Graphics::textsize(const char *txt)
+{
+    SFT sft;
+    sft.font = _activeFont;
+    sft.xScale = _activeFontSizeX;
+    sft.yScale = _activeFontSizeY;
+    sft.flags = SFT_DOWNWARD_Y;
+
+    SFT_LMetrics lmtx;
+    sft_lmetrics(&sft, &lmtx); 
+
+    struct textinfo size = { 
+        .dy = lmtx.ascender + lmtx.descender,
+        .ybase = lmtx.ascender };
+
+    auto len = strlen(txt);
+    for (int i=0; i<len; ++i)
+    {
+        SFT_Glyph glyph;
+        sft_lookup(&sft, txt[i], &glyph);
+        if (glyph == 0)
+            continue;
+
+        SFT_GMetrics mtx;
+        sft_gmetrics(&sft, glyph, &mtx);
+
+        size.dx += mtx.advanceWidth;
+    }
+    return size;
+}
+
 void Graphics::assureMaskSize(int dx, int dy)
 {
     if (dx > _mask.width || dy > _mask.height)

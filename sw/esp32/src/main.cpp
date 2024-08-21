@@ -12,6 +12,7 @@
 #include "i2cwrapper.h"
 
 #include "application.h"
+#include "appsettings.h"
 #include "bitmap.h"
 #include "color.h"
 #include "fpgaconfigurator.h"
@@ -171,17 +172,20 @@ void app_main()
     init_spiffs();
     configureFPGA(spi);
     
+    auto settings = new AppSettings();
+    settings->loadSettings();
+
     auto graphics = new Graphics();
     auto panel = new LedPanel(128, 64, *spi);
     auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
     i2c->start();
     auto rtc = new DS3231(i2c);
-    auto environment = new EnvironmentWeerlive("demo", "Amsterdam");
-    auto system = new System();
+    auto environment = new EnvironmentWeerlive(settings->WeerliveKey(), settings->WeerliveLocation());
+    auto system = new System(settings);
     
     auto app = new Application(*graphics, *panel, *rtc, *environment, *system);
 
-    xTaskCreate(foregroundtasks, "application", 60000, app, 1, nullptr);
+    xTaskCreate(foregroundtasks, "application", 80000, app, 1, nullptr);
     xTaskCreate(backgroundtasks, "background", 16000, app, 1, nullptr);
 }
 
