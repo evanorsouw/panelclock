@@ -43,8 +43,6 @@ struct Environment
 {
     virtual ~Environment() {}
 
-    virtual void update() = 0;
-
     virtual bool valid() const = 0; 
     virtual tm sunset() const = 0;
     virtual tm sunrise() const = 0;

@@ -48,17 +48,15 @@ public:
 
     void read(uint8_t slaveaddr, uint8_t reg, uint8_t *data, int len)
     {
-        printf("i2c.read(%d,%d,%p,%d) => ", slaveaddr, reg, data, len);
-        auto result = i2c_master_write_read_device(_port, slaveaddr, &reg, 1, data, len, _timeout);
-        printf("result = %d\n", result);
+        //printf("i2c.read(%d,%d,%p,%d) => ", slaveaddr, reg, data, len);
+        i2c_master_write_read_device(_port, slaveaddr, &reg, 1, data, len, _timeout);
     }
 
     void write(uint8_t slaveaddr, uint8_t reg, uint8_t data)
     {
         uint8_t buf[2] = { reg, data };
-        printf("i2c.write(%d,%d,%d) => ", slaveaddr, reg, data);
-        auto result = i2c_master_write_to_device(_port, slaveaddr, buf, 2, _timeout);
-        printf("result = %d\n", result);
+        //printf("i2c.write(%d,%d,%d) => ", slaveaddr, reg, data);
+        i2c_master_write_to_device(_port, slaveaddr, buf, 2, _timeout);
     }
 };
 

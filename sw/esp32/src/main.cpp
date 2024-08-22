@@ -22,6 +22,7 @@
 #include "environment_weerlive.h"
 #include "mpu6050.h"
 #include "max3421e.h"
+#include "timeupdater.h"
 #include "wificlient.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
@@ -146,12 +147,12 @@ void configureFPGA(SpiWrapper *spi)
 
 void foregroundtasks(void * parameter)
 {
-    for(;;) ((Application*)parameter)->foreground();
+    for(;;) ((Application*)parameter)->renderTask();
 }
 
 void backgroundtasks(void *parameter)
 {
-    for (;;) ((Application*)parameter)->background();
+    for (;;) ((Application*)parameter)->displayTask();
 }
 
 extern "C" {
@@ -167,7 +168,7 @@ void app_main()
     gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
     gpio_set_direction(BUTTON_TEST, GPIO_MODE_INPUT);
 
-    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 5000000, false);
+    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
 
     init_spiffs();
     configureFPGA(spi);
@@ -180,13 +181,17 @@ void app_main()
     auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
     i2c->start();
     auto rtc = new DS3231(i2c);
-    auto environment = new EnvironmentWeerlive(settings->WeerliveKey(), settings->WeerliveLocation());
     auto system = new System(settings);
+
+    auto environment = new EnvironmentWeerlive(system, settings->WeerliveKey(), settings->WeerliveLocation());
     
     auto app = new Application(*graphics, *panel, *rtc, *environment, *system);
+    auto timeupdater = new TimeUpdater(*rtc);
 
-    xTaskCreate(foregroundtasks, "application", 80000, app, 1, nullptr);
-    xTaskCreate(backgroundtasks, "background", 16000, app, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->renderTask();  }, "render", 80000, app, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 4000, app, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((TimeUpdater*)arg)->updateTask(); }, "timemgt", 4000, timeupdater, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 12000, environment, 1, nullptr);
 }
 
 }

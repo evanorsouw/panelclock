@@ -4,10 +4,12 @@
 #include "environment.h"
 #include "jsonparser.h"
 #include "settings.h"
+#include "system.h"
 
 class EnvironmentWeerlive : public Environment
 {
 private:
+    System *_system;
     Setting *_accesskey;
     Setting *_location;
     enum class ParseState { WaitArray, WaitObject1, Reading, Completed };
@@ -28,14 +30,15 @@ public:
     /// @param accesskey the accesskey to their API, request one at their site.
     /// @param location the location name you want the info for. 
     /// E.g. "Amsterdam" or longitude/lattitude longitude e.g. "52.0910879,5.1124231"
-    EnvironmentWeerlive(Setting *key, Setting *location)
+    EnvironmentWeerlive(System *system, Setting *key, Setting *location)
     {
+        _system = system;
         _accesskey = key;
         _location = location;
         _valid = false;
     }
 
-    void update();
+    void updateTask();
 
     bool valid() const { return _valid; };
     tm sunset() const { return _sunset; }

@@ -23,8 +23,9 @@ static struct {
     { "zwaarbewolkt", weathertype::heavyclouds }
 };
 
-void EnvironmentWeerlive::update()
+void EnvironmentWeerlive::updateTask()
 {
+    _system->waitForInternet();
     HTTPClient client;
     auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
 
@@ -41,6 +42,8 @@ void EnvironmentWeerlive::update()
         airpressure(),
         sunrise().tm_mday, sunrise().tm_mon, sunrise().tm_year, sunrise().tm_hour, sunrise().tm_min, sunrise().tm_sec, 
         sunset().tm_mday, sunset().tm_mon, sunset().tm_year, sunset().tm_hour, sunset().tm_min, sunset().tm_sec);
+
+    vTaskDelay(600000 / portTICK_PERIOD_MS);
 }
 
 bool EnvironmentWeerlive::handleJson(const JsonEntry &json)

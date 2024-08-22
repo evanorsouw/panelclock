@@ -26,7 +26,7 @@ private:
 public:
     WifiClient(std::string sid, std::string password);
     virtual ~WifiClient();
-
+    
     void stayConnected();
     bool isConnected() const { return _connected; }
     const char *ip() const { return _ip; }
