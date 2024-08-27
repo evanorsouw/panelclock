@@ -359,5 +359,5 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
     }
 
     auto s = _fontIcons9->textsize("0");
-    _graphics.text(screen, _fontIcons9, cx - s.dx/2, cy - 1 + s.dy/2, "\x0a", yellowgold);
+    _graphics.text(screen, _fontIcons9, cx - s.dx/2, cy - 1 + s.dy/2, "0", yellowgold);
 }
