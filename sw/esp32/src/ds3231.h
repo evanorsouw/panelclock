@@ -5,13 +5,13 @@
 #include "i2cwrapper.h"
 
 struct tod {
-    int year;
-    uint8_t mon;
-    uint8_t mday;
-    uint8_t wday;
-    uint8_t hour;
-    uint8_t min;
-    uint8_t sec;
+    int year;       // 1900..2099
+    uint8_t mon;    // 0..11
+    uint8_t mday;   // 1..31
+    uint8_t wday;   // 0..6
+    uint8_t hour;   // 0..23
+    uint8_t min;    // 0..59
+    uint8_t sec;    // 0..59
 };
 
 class DS3231
@@ -55,6 +55,17 @@ public:
             _lastReadTod->sec);
     }
 
+    void setTime(tod *now)
+    {
+        // _i2c->write(SLAVE_ADDR, 0, dec2bcd(now->sec));
+        // _i2c->write(SLAVE_ADDR, 1, dec2bcd(now->min));
+        // _i2c->write(SLAVE_ADDR, 2, dec2bcd(now->hour));
+        //_i2c->write(SLAVE_ADDR, 3, dec2bcd(now->wday + 1));
+        // _i2c->write(SLAVE_ADDR, 4, dec2bcd(now->mday));
+         _i2c->write(SLAVE_ADDR, 5, dec2bcd(now->mon + 1) | ((now->year >= 2000) ? 0x80 : 0x00));
+        // _i2c->write(SLAVE_ADDR, 6, dec2bcd(now->year % 100));
+    }
+
     tod *getTime() const { return _lastReadTod; }
 
 private: 
@@ -63,9 +74,9 @@ private:
         tod->sec = bcd2dec(buf[0]);
         tod->min = bcd2dec(buf[1]);
         tod->hour = bcd2dec(buf[2]);
-        tod->wday = bcd2dec(buf[3]);
+        tod->wday = bcd2dec(buf[3]) - 1;
         tod->mday = bcd2dec(buf[4]);
-        tod->mon = bcd2dec(buf[5] & 0x7F);
+        tod->mon = bcd2dec(buf[5] & 0x7F) - 1;
         tod->year = 1900 + bcd2dec(buf[6]) + ((buf[5] & 0x80) ? 100 : 0);
         return tod;
     }
@@ -73,6 +84,10 @@ private:
      uint8_t bcd2dec(uint8_t bcd)
      {
         return (bcd >> 4) * 10 + (bcd & 0xF);
+     }
+     uint8_t dec2bcd(uint8_t dec)
+     {
+        return ((dec / 10) << 4) | (dec % 10);
      }
 };
 

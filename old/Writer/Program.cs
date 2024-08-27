@@ -48,7 +48,7 @@ namespace WhiteMagic.PanelClock
             IConfiguration config = new ConfigurationBuilder()
                 .SetBasePath(System.IO.Directory.GetCurrentDirectory())
 #if true
-                .AddJsonFile("d:\\projects\\fpgaclock\\sw\\Writer\\appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("d:\\projects\\fpgaclock\\old\\Writer\\appsettings.json", optional: true, reloadOnChange: true)
 #else
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
 #endif

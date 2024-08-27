@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="1024"
+   width="1024"
+   viewBox="0 0 10240 10240"
+   fill="#ffffff"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="wifi.svg"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.70973558"
+     inkscape:cx="646.01524"
+     inkscape:cy="517.79847"
+     inkscape:window-width="2560"
+     inkscape:window-height="1377"
+     inkscape:window-x="2552"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <path
+     d="M 9381.3831,3255.6448 C 8296.3087,2052.1986 6757.4759,1381.4254 5120,1381.4254 c -1637.476,0 -3176.3088,670.7732 -4261.38311,1874.2194 -78.9145,78.9145 -59.18588,217.0149 19.72863,276.2008 l 591.85878,512.9443 c 78.9145,78.9145 197.2862,59.1858 276.2007,-19.7287 a 4616.4984,4616.4984 0 0 1 6747.1899,0 c 78.9145,78.9145 197.2863,78.9145 276.2008,19.7287 l 591.8588,-512.9443 c 78.9145,-78.9145 98.6431,-197.2863 19.7286,-276.2008 z M 5120,4143.433 c -828.6023,0 -1617.7473,355.1152 -2170.1489,986.4313 -78.9145,78.9145 -59.1858,217.0148 19.7287,295.9293 l 631.316,473.4871 c 78.9145,59.1858 197.2862,59.1858 256.4721,-19.7287 a 1716.3904,1716.3904 0 0 1 2505.5355,-19.7286 c 59.1858,78.9145 177.5576,78.9145 256.4721,19.7286 l 631.316,-473.487 c 98.6431,-78.9145 98.6431,-197.2861 19.7286,-295.9294 A 2860.6507,2860.6507 0 0 0 5120,4143.433 Z m 19.7286,2742.2789 c 532.6729,0 986.4313,434.0298 986.4313,986.4313 0,552.4015 -434.0298,986.4313 -986.4313,986.4313 -552.4015,0 -986.4313,-434.0298 -986.4313,-986.4313 0,-552.4015 453.7584,-986.4313 986.4313,-986.4313 z"
+     id="path1"
+     style="fill:#000000;fill-opacity:1;stroke-width:19.7286" />
+</svg>

@@ -32,7 +32,7 @@ public:
     int millies() const { return _millies; }
 
     const char *dayOfWeek(bool full=true) const { return full ? _weekdaysFull[wday()] : _weekdaysCompact[wday()]; }    
-    const char *monthName(bool full=true) const { return full ? _monthsFull[mon()] : _monthsCompact[mon()] ; }    
+    const char *monthName(bool full=true) const { return full ? _monthsFull[mon()-1] : _monthsCompact[mon()-1] ; }    
 };
 
 #endif

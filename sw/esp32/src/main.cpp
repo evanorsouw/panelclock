@@ -176,8 +176,8 @@ void app_main()
     auto settings = new AppSettings();
     settings->loadSettings();
 
-    auto graphics = new Graphics();
     auto panel = new LedPanel(128, 64, *spi);
+    auto graphics = new Graphics(panel->dx(), panel->dy());
     auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
     i2c->start();
     auto rtc = new DS3231(i2c);
@@ -185,7 +185,7 @@ void app_main()
 
     auto environment = new EnvironmentWeerlive(system, settings->WeerliveKey(), settings->WeerliveLocation());
     
-    auto app = new Application(*graphics, *panel, *rtc, *environment, *system);
+    auto app = new Application(*graphics, *panel, *environment, *system);
     auto timeupdater = new TimeUpdater(*rtc);
 
     xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->renderTask();  }, "render", 80000, app, 1, nullptr);

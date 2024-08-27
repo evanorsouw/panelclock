@@ -1,4 +1,6 @@
 
+#include <numbers>
+
 #include "environment_weerlive.h"
 #include "httpclient.h"
 
@@ -6,9 +8,9 @@ static struct {
     const char *imageName;
     weathertype type;
 } weathertypes[] = {
-    { "bewolkt", weathertype::clouded },
     { "bliksem", weathertype::lightning },
     { "buien", weathertype::showers },
+    { "bewolkt", weathertype::clouded },
     { "hagel", weathertype::hail },
     { "halfbewolkt", weathertype::partlycloudy },
     { "halfbewolkt_regen", weathertype::cloudyrain },
@@ -27,23 +29,26 @@ void EnvironmentWeerlive::updateTask()
 {
     _system->waitForInternet();
     HTTPClient client;
-    auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
+    auto url = std::string("http://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
 
     _state = ParseState::WaitArray;
     JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
     auto ok = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
-
-    printf("temp=%f, gtemp=%f, wndspeed=%f, windangle=%f, weather=%d, airpress=%f, rise=%04d-%02d-%02d %02d:%02d:%02d, set=%04d-%02d-%02d %02d:%02d:%02d\n",
-        temperature(),
-        windchill(),
-        windspeed(),
-        windangle(),
-        (int)weathertype(),
-        airpressure(),
-        sunrise().tm_mday, sunrise().tm_mon, sunrise().tm_year, sunrise().tm_hour, sunrise().tm_min, sunrise().tm_sec, 
-        sunset().tm_mday, sunset().tm_mon, sunset().tm_year, sunset().tm_hour, sunset().tm_min, sunset().tm_sec);
-
-    vTaskDelay(600000 / portTICK_PERIOD_MS);
+    auto delayMs = 30 * 1000;
+    if (ok)
+    {
+        delayMs = 10 * 60 * 1000;
+        printf("temp=%f, gtemp=%f, wndspeed=%f, windangle=%f, weather=%d, airpress=%f, rise=%04d-%02d-%02d %02d:%02d:%02d, set=%04d-%02d-%02d %02d:%02d:%02d\n",
+            temperature(),
+            windchill(),
+            windspeed(),
+            windangle(),
+            (int)weather(),
+            airpressure(),
+            sunrise().tm_mday, sunrise().tm_mon, sunrise().tm_year, sunrise().tm_hour, sunrise().tm_min, sunrise().tm_sec, 
+            sunset().tm_mday, sunset().tm_mon, sunset().tm_year, sunset().tm_hour, sunset().tm_min, sunset().tm_sec);
+    }
+    vTaskDelay(delayMs / portTICK_PERIOD_MS);
 }
 
 bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
@@ -80,7 +85,7 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
             else if (!strcmp(json.name, "gtemp"))
                 _windchill = (float)json.number;
             else if (!strcmp(json.name, "windrgr"))
-                _windangle = (float)json.number;
+                _windangle = (float)json.number / 180 * std::numbers::pi;
             else if (!strcmp(json.name, "windms"))
                 _windspeed = (float)json.number;
             else if (!strcmp(json.name, "luchtd"))

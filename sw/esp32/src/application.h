@@ -3,63 +3,62 @@
 
 #include <limits>
 
+#include "animation.h"
 #include "bitmap.h"
 #include "ds3231.h"
 #include "environment.h"
 #include "graphics.h"
 #include "ledpanel.h"
+#include "spline.h"
 #include "system.h"
 
 class Application
 {
 private:
-    const char *_timefont = "arial-bold-digits";
-    const char *_textfont = "arial-rounded-ascii";
-
     Graphics &_graphics;
     LedPanel &_panel;
-    DS3231 &_rtc;
     Environment &_environment;
-    System &_system;    
+    System &_system;
     QueueHandle_t _hRenderQueue;
     QueueHandle_t _hDisplayQueue;
+    Font *_fonttimeLarge;
+    Font *_fonttimeSmall;
+    Font *_fontdate;
+    Font *_fontweatherL;
+    Font *_fontweatherS;
+    Font *_fontIcons8;
+    Font *_fontIcons9;
     int _refreshCount;
     long _refreshCountStart;
     int _iShowScreen;
+    long _msSinceMidnight;
+    int _bootAnimationPhase;
+    int64_t _bootStart;
+    std::vector<Animation> _bootAnimations;
 
 public:
-    Application(Graphics &graphics, LedPanel &panel, DS3231 &rtc, Environment &env, System &sys)
-        : _graphics(graphics)
-        , _panel(panel)
-        , _rtc(rtc)
-        , _environment(env)
-        , _system(sys)
-    {
-        _iShowScreen = 0;
-        _refreshCountStart = std::numeric_limits<long>::max();
-
-        // 2 screen bitmap, 1 being copied, the other for rendering the next one
-        _hRenderQueue = xQueueCreate(2, sizeof(Bitmap *));
-        auto screen = new Bitmap(panel.dx(), panel.dy(), 3);
-        xQueueSend(_hRenderQueue, &screen, 0);
-        screen = new Bitmap(panel.dx(), panel.dy(), 3);
-        xQueueSend(_hRenderQueue, &screen, 0);
-
-        _hDisplayQueue = xQueueCreate(2, sizeof(Bitmap *));
-    }
+    Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys);
 
     void renderTask();
     void displayTask();
 
 private:
-    void drawClock(Bitmap &screen, float x, long msSinceMidnight);
+    bool runBootAnimation(Bitmap &screen);
+    void drawClock(Bitmap &screen, float x);
     void drawDateTime(Bitmap &screen, const timeinfo &now);
     void drawIcons(Bitmap &screen);
     void drawWeather(Bitmap &screen);
+    void drawWindAngle(Bitmap &screen);
     void drawCenterLine(Bitmap &screen, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color);
     void sendScreen();
     void showScreenOnPanel();
     void monitorRefreshRate(long ms);
+    float phase(float ms, bool wave);
+    void drawSun(Bitmap &screen, float x, float y, float dx, float dy);
+    long drawtime() { return _msSinceMidnight; }    
+
+    bool animateBackground(Bitmap &screen, float when);
+    bool animatePackageBox(Bitmap &screen, float when);
 };
 
 #endif

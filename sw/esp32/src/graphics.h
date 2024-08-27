@@ -2,54 +2,53 @@
 #ifndef _GRAPHICS_H_
 #define _GRAPHICS_H_
 
-#include <map>
 #include <cmath>
-
+#include <map>
+#
 #include "bitmap.h"
 #include "color.h"
-#include "schrift.h"
+#include "font.h"
 
-struct textinfo
+struct irect
 {
-    float dx;
-    float dy;
-    float ybase;
+    irect () : irect(0,0,0,0) {}
+    irect (int x1, int y1, int x2, int y2) : x1(x1), y1(y1), x2(x2), y2(y2) {}
+    irect join(const irect &rhs)
+    {
+        return irect(std::min(x1,rhs.x1), std::min(y1,rhs.y1), std::max(x2, rhs.x2), std::max(y2, rhs.y2));
+    }
+    int x1;
+    int y1;
+    int x2;
+    int y2;
 };
 
 class Graphics
 {
 private:
-    static std::map<const char *, SFT_Font *> _fonts;
-    SFT_Font *_activeFont;
-    float _activeFontSizeX;
-    float _activeFontSizeY;
-    SFT_Image _mask;
+    Bitmap _rasterizeMask;
 
 public:
-    Graphics()
-    {
-        _mask = {0};
-        setfont("modern.ttf", 10, 12);
-    }
+    Graphics(int dx, int dy)
+        : _rasterizeMask(dx, dy, 1)
+    { }
 
     void rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color);
-    void line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color);
-    void setfont(const char *name, float sizex, float sizey);
-    
-    textinfo textsize(const char *txt);
-    float text(Bitmap &tgt, float x, float y, const char *txt, Color color);
+    void line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color);    
+    float text(Bitmap &tgt, Font *font, float x, float y, const char *txt, Color color);
     void triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, float x3, float y3, Color color);
+    void ellipse(Bitmap &tgt, float x, float y, float dx, float dy, float thickness, Color color);
 
 private:
-    SFT_Font *getfont(const char *name);
-    SFT_Font *loadfont(const char *fontname);
-    void assureMaskSize(int dx, int dy);
     void clip(int &srcoffset, int &tgtoffset, int &size, int max);
 
-    void triangleBaseTop(Bitmap &tgt, float xbase1, float xbase2, float ybase, float xtop, float ytop, Color color);
-    void triangleBaseBottom(Bitmap &tgt, float xtop, float ytop, float xbase1, float xbase2, float ybase, Color color);
-    void trianglescanline(Bitmap &tgt, float y, float xl, float xr, float dy, float dxl, float dxr, Color color);
-    void rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, Color color);
+    irect rasterizeTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
+    void triangleBaseTop(float xbase1, float xbase2, float ybase, float xtop, float ytop);
+    void triangleBaseBottom(float xtop, float ytop, float xbase1, float xbase2, float ybase);
+    void trianglescanline(float y, float xl, float xr, float dy, float dxl, float dxr);
+    void rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, const Color color);
+    void clearRasterizedMask(irect area);
+    void mergeRasterizedMask(Bitmap &tgt, const Color color, irect area);
 
     void SWAP(float &a, float &b) { float tmp=a; a=b; b=tmp; }
     float MIN(float a, float b) { return a < b ? a : b; }

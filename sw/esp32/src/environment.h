@@ -7,36 +7,21 @@
 
 enum class weathertype {
     unknown,
-    // bewolkt
-    clouded,
-    // bliksem
-    lightning,
-    // buien
-    showers,
-    // hagel
-    hail,
-    // halfbewolkt
-    partlycloudy,
-    // halfbewolkt_regen
-    cloudyrain,
-    // helderenacht
-    clearnight,
-    // lichtbewolkt
-    cloudy,
-    // mist
-    fog,
-    // nachtbewolkt
-    cloudednight,
-    // nachtmist
-    nightfog,
-    // regen
-    rain,
-    // sneeuw
-    snow,
-    // zonnig
-    sunny,
-    // zwaarbewolkt
-    heavyclouds,
+    clouded,      // bewolkt    
+    lightning,    // bliksem    
+    showers,      // buien    
+    hail,         // hagel    
+    partlycloudy, // halfbewolkt    
+    cloudyrain,   // halfbewolkt_regen    
+    clearnight,   // helderenacht    
+    cloudy,       // lichtbewolkt    
+    fog,          // mist    
+    cloudednight, // nachtbewolkt    
+    nightfog,     // nachtmist
+    rain,         // regen    
+    snow,         // regen    
+    sunny,        // zonnig    
+    heavyclouds,  // zonnig
 };
 
 struct Environment
@@ -46,12 +31,12 @@ struct Environment
     virtual bool valid() const = 0; 
     virtual tm sunset() const = 0;
     virtual tm sunrise() const = 0;
-    virtual float temperature() const = 0;
-    virtual float windchill() const = 0;
+    virtual float temperature() const = 0;      // degrees
+    virtual float windchill() const = 0;        // degrees
     virtual weathertype weather() const = 0;
-    virtual float windangle() const = 0;
-    virtual float windspeed() const = 0;
-    virtual float airpressure() const = 0;
+    virtual float windangle() const = 0;        // radians
+    virtual float windspeed() const = 0;        // ms/s
+    virtual float airpressure() const = 0;      // mbar
 };
 
 #endif

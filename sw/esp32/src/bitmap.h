@@ -68,6 +68,16 @@ public:
         }
     }
 
+    void add(int x, int y, const uint8_t alpha)
+    {
+        if (_bpp == 1)
+        {
+            auto pt = getptr(x, y);
+            pt[0] = clip(pt[0] + alpha);
+        }
+    }
+
+
     void set(int x, int y, const Color color)
     {
         auto pt = getptr(x, y);
@@ -95,12 +105,9 @@ public:
 
             auto pt = getptr(x, y);
             auto ialpha = (uint8_t)255 - alpha;
-            // pt[0] = clip((pt[0] * ialpha + color.r() * alpha) >> 9);
-            // pt[1] = clip((pt[1] * ialpha + color.g() * alpha) >> 9);
-            // pt[2] = clip((pt[2] * ialpha + color.b() * alpha) >> 9);
-            pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
-            pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
-            pt[2] = clip(pt[2] + ((color.b() * alpha) >> 8));
+            pt[0] = clip((pt[0] * ialpha + color.r() * alpha) >> 8);
+            pt[1] = clip((pt[1] * ialpha + color.g() * alpha) >> 8);
+            pt[2] = clip((pt[2] * ialpha + color.b() * alpha) >> 8);
         }
     }
 
