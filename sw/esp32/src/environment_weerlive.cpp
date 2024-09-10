@@ -29,13 +29,14 @@ void EnvironmentWeerlive::updateTask()
 {
     _system->waitForInternet();
     HTTPClient client;
-    auto url = std::string("http://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
+    auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
 
     _state = ParseState::WaitArray;
     JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
 
     clearValues();
-    _valid = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
+    auto status = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
+    _valid = status == 200;
     
     auto delayMs = 30 * 1000;
     if (_valid)

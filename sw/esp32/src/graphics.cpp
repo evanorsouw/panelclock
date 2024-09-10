@@ -49,6 +49,8 @@ void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float t
     auto py = dx;
 
     auto length = sqrt(px * px + py * py);
+    if (length == 0.0f)
+        return;
 
     auto upx = px / length;
     auto upy = py / length;

@@ -1,6 +1,7 @@
 #ifndef _BOOTANIMATIONS_H_
 #define _BOOTANIMATIONS_H_
 
+#include <cstdlib>
 #include "animation.h"
 #include "color.h"
 #include "spline.h"
@@ -116,19 +117,41 @@ private:
     }
 };
 
-class AnimationWhiteMagicText : public Animation
+class AnimationWhiteMagic : public Animation
 {
 private:
-    Spline _spline;
     Font *_font;
 
 public:
-    AnimationWhiteMagicText(Graphics &graphics, Font *font, float start, float end)        
+    AnimationWhiteMagic(Graphics &graphics, Font *font, float start, float end)        
         : Animation(graphics, start, end) 
+    { 
+        _font = font;
+    }
+
+protected:
+    void drawWhiteMagic(Bitmap &screen) { drawWhiteMagic(screen, Color::white, irect(0,0,128,64), 0.0f, Mode::Set); }
+    void drawWhiteMagic(Bitmap &screen, Color color, irect cliparea, float xoffset, Mode mode)
+    {
+        auto txt = "White|Magic";
+        auto size = _font->textsize(txt);
+        _graphics.setcliparea(cliparea);
+        _graphics.text(screen, _font, (128 - size.dx)/2 + xoffset, (64 - size.dy) / 2 + _font->ascend(), txt, color, mode);
+        _graphics.clearcliparea();
+    }
+};
+
+class AnimationWhiteMagicText : public AnimationWhiteMagic
+{
+private:
+    Spline _spline;
+
+public:
+    AnimationWhiteMagicText(Graphics &graphics, Font *font, float start, float end)        
+        : AnimationWhiteMagic(graphics, font, start, end) 
     { 
         std::vector<point> points = { point(3,0), point(3,0), point(50,0), point(0,0), point(200,0), point(200,0) };
         _spline = Spline(points, 2);
-        _font = font;
     }
 
 private:
@@ -143,26 +166,15 @@ private:
             auto dy = std::min(when * 150, 40.0f);
             _graphics.rect(screen, x, 31.5 -dy / 2, 3, dy, Color::white);
         }
-
-        auto txt = "White|Magic";
-        auto size = _font->textsize(txt);
-        _graphics.setcliparea(irect(0,0,x,64));
-        _graphics.text(screen, _font, 9, 40, txt, Color::white);
-        _graphics.clearcliparea();
+        drawWhiteMagic(screen, Color::white, irect(0,0,x,64),0.0f,Mode::Set);
     }
 };
 
-class AnimationWhiteMagicColorShift : public Animation
+class AnimationWhiteMagicColorShift : public AnimationWhiteMagic
 {
-private:
-    Font *_font;
-
 public:
     AnimationWhiteMagicColorShift(Graphics &graphics, Font *font, float start, float end)        
-        : Animation(graphics, start, end) 
-    { 
-        _font = font;
-    }
+        : AnimationWhiteMagic(graphics, font, start, end) { }
 
 private:
     void animate(Bitmap &screen, float when)
@@ -174,10 +186,48 @@ private:
         if (when > 1.0f)
             d = 0;
 
-        auto txt = "White|Magic";
-        _graphics.text(screen, _font, 9 - d * 2, 40, txt, Color::red, Mode::Add);
-        _graphics.text(screen, _font, 9 + d * 1.5, 40, txt, Color::green, Mode::Add);
-        _graphics.text(screen, _font, 9 - d, 40, txt, Color::blue, Mode::Add);
+        auto cliparea = irect(0,0,128,64);
+        drawWhiteMagic(screen, Color::red, cliparea, -d * 1.2, Mode::Add);
+        drawWhiteMagic(screen, Color::green, cliparea, d*1.5f, Mode::Add);
+        drawWhiteMagic(screen, Color::blue, cliparea, -d, Mode::Add);
+    }
+};
+
+class AnimationWhiteMagicRemove : public AnimationWhiteMagic
+{
+private:
+    Bitmap _wm;
+
+public:
+    AnimationWhiteMagicRemove(Graphics &graphics, Font *font, float start, float end)        
+        : AnimationWhiteMagic(graphics, font, start, end) 
+        , _wm(128, 64, 3)
+    { 
+        _wm.fill(Color::black);
+        drawWhiteMagic(_wm);
+    }
+
+private:
+    void animate(Bitmap &screen, float when)
+    {     
+        if (when < 0.0f)
+            return;
+
+        auto dx = ((int)(when * 128) / 4) * 4;
+        _graphics.rect(_wm, 0, 0, dx, 64, Color::black);
+        for (int ix=0; ix<5; ++ix)
+        {
+            for (auto iy=0; iy<16; ++iy)
+            {
+                auto x = dx + ix * 4;
+                auto y = iy * 4;
+                if (std::rand() % 6 > ix)
+                {
+                    _graphics.rect(_wm, x, y, 4, 4, Color::black);
+                }
+            }
+        }
+        _wm.copyTo(screen, 0, 0);
     }
 };
 

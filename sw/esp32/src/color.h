@@ -46,6 +46,8 @@ public:
     static Color magenta;
     static Color silver;
     static Color gray;
+    static Color lightgray;
+    static Color darkgray;
     static Color maroon;
     static Color olive;
     static Color green;

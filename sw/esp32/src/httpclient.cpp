@@ -48,7 +48,7 @@ int HTTPClient::get(const char *url, std::function<void(void*,int)> handler)
 {
     esp_http_client_config_t config = { 0 } ;
     config.url = url;
-    config.method=HTTP_METHOD_GET;
+    config.method = HTTP_METHOD_GET;
     config.disable_auto_redirect = true;
     config.event_handler = HTTPClient::eventHandler;
     config.user_data = &handler;
