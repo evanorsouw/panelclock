@@ -6,6 +6,8 @@
 #include <cmath>
 
 struct point {
+    point() :x(0), y(0) {}
+    point(float ax, float ay) : x(ax), y(ay) {}
     float x;
     float y;
 };

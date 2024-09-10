@@ -159,7 +159,7 @@ extern "C" {
 
 void app_main() 
 {
-    printf("Application starting\n");
+    printf("application starting\n");
 
     gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
@@ -192,6 +192,8 @@ void app_main()
     xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 4000, app, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((TimeUpdater*)arg)->updateTask(); }, "timemgt", 4000, timeupdater, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 12000, environment, 1, nullptr);
+
+    printf("application started\n");
 }
 
 }

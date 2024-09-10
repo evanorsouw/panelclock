@@ -68,29 +68,38 @@ public:
         }
     }
 
-    void add(int x, int y, const uint8_t alpha)
+    void add(int x, int y, uint8_t alpha)
     {
-        if (_bpp == 1)
-        {
-            auto pt = getptr(x, y);
-            pt[0] = clip(pt[0] + alpha);
-        }
+        assert( _bpp == 1 );
+        auto pt = getptr(x, y);
+        pt[0] = clip(pt[0] + alpha);
     }
 
-
-    void set(int x, int y, const Color color)
+    void add(int x, int y, const Color color, uint8_t alpha)
     {
+        assert( _bpp == 3 );
         auto pt = getptr(x, y);
-        if (_bpp == 1)
+        if (alpha == 255)
         {
-            *pt = color.b();
+            pt[0] = clip(pt[0] + color.r());
+            pt[1] = clip(pt[1] + color.g());
+            pt[2] = clip(pt[2] + color.b());
         }
         else
         {
-            pt[0] = color.r();
-            pt[1] = color.g();
-            pt[2] = color.b();
+            pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
+            pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
+            pt[2] = clip(pt[2] + ((color.b() * alpha) >> 8));
         }
+    }
+
+    void set(int x, int y, const Color color)
+    {
+        assert( _bpp == 3);
+        auto pt = getptr(x, y);
+        pt[0] = color.r();
+        pt[1] = color.g();
+        pt[2] = color.b();
     }
 
     void set(int x, int y, const Color color, uint8_t alpha)
@@ -113,9 +122,8 @@ public:
 
     Color get(int x, int y)
     {
+        assert( _bpp == 3 );
         auto ps = getptr(x, y);
-        if (_bpp == 1)
-            return *ps;
         return Color(ps[0], ps[1], ps[2]);
     }
 

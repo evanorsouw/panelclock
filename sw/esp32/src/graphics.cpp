@@ -15,25 +15,28 @@
   #define LOG(...)
 #endif
 
-void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color)
+void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color, Mode mode)
 {
+    if (!clip(x, dx, tgt.dx()) || !clip(y, dy, tgt.dy()))
+        return;
+
     auto x2 = x + dx;
     auto y1 = (int)y;
 
     auto ay = y - TRUNC(y);
     if (ay > 0)
     {
-        rectscanline(tgt, x, x2, y1++, 1 - ay, color);
+        rectscanline(tgt, x, x2, y1++, 1 - ay, color, mode);
     }
     auto y2 = (int)(y + dy);
     while (y1 < y2)
     {
-        rectscanline(tgt, x, x2, y1++, 1, color);
+        rectscanline(tgt, x, x2, y1++, 1, color, mode);
     }
     ay = y + dy - y1;
     if (ay > 0)
     {
-        rectscanline(tgt, x, x2, y1, ay, color);
+        rectscanline(tgt, x, x2, y1, ay, color, mode);
     }
 }
 
@@ -73,7 +76,7 @@ void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float t
     mergeRasterizedMask(tgt, color, r1.join(r2));
 }
 
-float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt, Color color)
+float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt, Color color, Mode mode)
 {    
     SFT_Image txtMask { .pixels = _rasterizeMask.getptr(0,0) };
 
@@ -103,6 +106,33 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
         auto dy = mtx.minHeight;
         clip(sx, tx, dx, tgt.dx());
         clip(sy, ty, dy, tgt.dy());
+        if (_clipping)
+        { 
+            if (tx < _cliparea.x1)           
+            {
+                auto d = _cliparea.x1 - tx;
+                tx += d;
+                sx += d;
+                dx -= d;
+            }
+            if (tx + dx > _cliparea.x2)
+            {
+                auto d = tx + dx - _cliparea.x2;
+                dx -= d;                
+            }
+            if (ty < _cliparea.y1)           
+            {
+                auto d = _cliparea.y1 - ty;
+                ty += d;
+                sy += d;
+                dy -= d;
+            }
+            if (ty + dy > _cliparea.y2)
+            {
+                auto d = ty + dy - _cliparea.y2;
+                dy -= d;                
+            }
+        }
 
         if (dx > 0 && dy > 0)
         {
@@ -110,18 +140,17 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
             txtMask.height = dy;
             sft_render(&sft, glyph, txtMask);
 
-            if (dx > 0 && dy > 0)
+            auto pm = (uint8_t*)txtMask.pixels;
+            for (auto iy=sy; iy < dy; iy++)
             {
-                auto pm = (uint8_t*)txtMask.pixels;
-                for (auto iy=0; iy < dy; iy++)
+                for (auto ix=sx; ix < dx; ++ix)
                 {
-                    for (auto ix=0; ix < dx; ++ix)
-                    {
-                        auto alpha = pm[ix];
-                        tgt.set((int)tx + ix, ty + iy, color, alpha);
-                    }
-                    pm += txtMask.width;
+                    auto alpha = pm[ix];
+                    mode == Mode::Set
+                        ? tgt.set((int)tx + ix, ty + iy, color, alpha)
+                        : tgt.add((int)tx + ix, ty + iy, color, alpha);
                 }
+                pm += txtMask.width;
             }
         }
         x += mtx.advanceWidth;
@@ -132,6 +161,20 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
 void Graphics::ellipse(Bitmap &tgt, float x, float y, float dx, float dy, float thickness, Color color)
 {
 
+}
+
+bool Graphics::clip(float &x, float &dx, float max)
+{
+    if (x < 0)
+    {
+        dx += x;
+        x = 0;
+    }
+    if (x + dx > max)
+    {
+        dx = max - x;
+    }
+    return dx > 0.0f;
 }
 
 void Graphics::clip(int &srcoffset, int &tgtoffset, int &size, int max)
@@ -309,7 +352,7 @@ void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl
     while (x < xr);
 }
 
-void Graphics::rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, Color color)
+void Graphics::rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, Color color, Mode mode)
 {
     if (x1 > x2) SWAP(x1, x2);
 
@@ -319,22 +362,30 @@ void Graphics::rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, Co
     if (ix1 == ix2)
     {
         float ax = ix2 - ix2;
-        tgt.set(ix1, y, color, ALPHA(ax * ay));
+        mode == Mode::Set
+            ? tgt.set(ix1, y, color, ALPHA(ax * ay))
+            : tgt.add(ix1, y, color, ALPHA(ax * ay));
     }
     else
     {
         if (ix1 < x1)
         {
-            tgt.set(ix1, y, color, ALPHA((1 - x1 + ix1) * ay));
+            mode == Mode::Set
+                ? tgt.set(ix1, y, color, ALPHA((1 - x1 + ix1) * ay))
+                : tgt.add(ix1, y, color, ALPHA((1 - x1 + ix1) * ay));
             ix1++;
         }
         while (ix1 < ix2)
         {
-            tgt.set(ix1++, y, color, ALPHA(ay));
+            mode == Mode::Set
+                ? tgt.set(ix1++, y, color, ALPHA(ay))
+                : tgt.add(ix1++, y, color, ALPHA(ay));
         }
         if (ix2 < x2)
         {
-            tgt.set(ix1, y, color, ALPHA((x2-ix2) * ay));
+            mode == Mode::Set
+                ? tgt.set(ix1, y, color, ALPHA((x2-ix2) * ay))
+                : tgt.set(ix1, y, color, ALPHA((x2-ix2) * ay));
         }
     }
 }

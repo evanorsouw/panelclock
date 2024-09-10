@@ -5,6 +5,7 @@
 #include <esp_timer.h>
 
 #include "application.h"
+#include "bootanimations.h"
 #include "color.h"
 #include "spline.h"
 
@@ -29,12 +30,13 @@ Application::Application(Graphics &graphics, LedPanel &panel, Environment &env, 
     _fonttimeSmall = Font::getFont("arial-bold-digits", 9, 11);
     _fonttimeLarge = Font::getFont("arial-bold-digits", 14, 14);
     _fontdate = Font::getFont("arial-rounded-stripped", 11, 11);
+    _fontWhiteMagic = Font::getFont("arial-rounded-stripped", 20, 28);
     _fontweatherL = Font::getFont("arial-rounded-stripped", 9, 10);
     _fontweatherS = Font::getFont("arial-rounded-stripped", 7, 7);
     _fontIcons8 = Font::getFont("panelicons", 8, 8);
     _fontIcons9 = Font::getFont("panelicons", 9, 9);
 
-    _bootAnimationPhase = 2;
+    _bootAnimationPhase = 0;
 }
 
 void Application::renderTask()
@@ -69,98 +71,39 @@ void Application::displayTask()
 
 bool Application::runBootAnimation(Bitmap &screen)
 {   
-    auto when = esp_timer_get_time() - _bootStart;
     auto busy = false;
 
     if (_bootAnimationPhase == 0)
     {
-        busy = true;
+        _bootStart = esp_timer_get_time();
         _bootAnimationPhase++;
-        _bootAnimations.push_back(Animation(0.0f, 0.5f, [&](float when) { animateBackground(screen, when); }));
+        _bootAnimations.push_back(new AnimationBackground(_graphics, 0.0f, 0.4f));
+        _bootAnimations.push_back(new AnimationDissolveWhiteSquares(_graphics, 0.0f, 1.6f));
+        _bootAnimations.push_back(new AnimationColoredSquares(_graphics, 0.0f, 2.0f));
+        _bootAnimations.push_back(new AnimationWhiteMagicText(_graphics, _fontWhiteMagic, 2.0f, 3.8f));
+        _bootAnimations.push_back(new AnimationWhiteMagicColorShift(_graphics, _fontWhiteMagic, 3.8f, 5.0f));
+        _bootAnimations.push_back(new Animation(_graphics, 0.0f, 8.0f));
     }
-    else if (_bootAnimationPhase == 1)
+
+    float when = (esp_timer_get_time() - _bootStart) / 1000000.0f;
+    if (_bootAnimationPhase == 1)
     {
         for (auto it : _bootAnimations) 
         {
-             busy |= it.run(when); 
+             busy |= it->run(screen, when); 
+        }
+        if (!busy)
+        {
+            while (!_bootAnimations.empty())
+            {
+                delete _bootAnimations.front();
+                _bootAnimations.erase(_bootAnimations.begin());
+            }
+            _bootAnimationPhase = 2;
         }
     }
-    return busy;
+    return _bootAnimationPhase < 2;
 }
-
-bool Application::animateBackground(Bitmap &screen, float when)
-{
-    _graphics.rect(screen, 0x06, 0x27, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x05, 0x28, 0x15, 0x13, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x06, 0x3B, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x01, 0x2D, 0x04, 0x04, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x01, 0x34, 0x04, 0x04, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x0A, 0x32, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-    _graphics.rect(screen, 0x12, 0x32, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-    _graphics.rect(screen, 0x0E, 0x2D, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-    _graphics.rect(screen, 0x14, 0x28, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-    _graphics.rect(screen, 0x0D, 0x25, 0x04, 0x02, Color(0x00, 0x00, 0x00));
-    _graphics.rect(screen, 0x0D, 0x27, 0x04, 0x02, Color(0xFF, 0xFF, 0xFF));
-
-    return true;
-}
-
-bool Application::animatePackageBox(Bitmap &screen, float when)
-{
-    return true;
-}
-//     if (_elapsed)
-
-//     if (_iStartAnimation == 0)
-//     {
-//         _startAnimationSpline = Spline(std::vector<point> {
-//             point(23,28),
-//             point(100,10),
-//             point(40,35)
-//         }, 2);
-//     }
-//     auto intensity = 31 - _iStartAnimation;
-//     auto color = Color(intensity, intensity, intensity);
-//     if (_iStartAnimation < 31)
-//     {
-//         _graphics.rect(screen, 0x00, 0x00, 0x80, 0x40, color);
-//     }
-//     _graphics.rect(screen, 0x06, 0x27, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x05, 0x28, 0x15, 0x13, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x06, 0x3B, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x01, 0x2D, 0x04, 0x04, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x01, 0x34, 0x04, 0x04, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x0A, 0x32, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-//     _graphics.rect(screen, 0x12, 0x32, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-//     _graphics.rect(screen, 0x0E, 0x2D, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-//     _graphics.rect(screen, 0x14, 0x28, 0x04, 0x04, Color(0xFF, 0xFF, 0xFF));
-//     _graphics.rect(screen, 0x0D, 0x25, 0x04, 0x02, Color(0x00, 0x00, 0x00));
-//     _graphics.rect(screen, 0x0D, 0x27, 0x04, 0x02, Color(0xFF, 0xFF, 0xFF));
-//     if (_iStartAnimation < 31)
-//     {
-//         _graphics.rect(screen, 0x02, 0x2E, 0x06, 0x02, color);
-//         _graphics.rect(screen, 0x02, 0x35, 0x06, 0x02, color);
-//     }
-
-//     auto tb = 0.0f;
-//     if (_iStartAnimation > 31)
-//     {
-//         tb = ((float)_iStartAnimation - 31) / (200-31);
-//     }
-//     auto pb = _startAnimationSpline.get(tb);
-//     _graphics.rect(screen, pb.x, pb.y, 0x04, 0x04, Color(0x00, 0x00, 0xFF));
-
-//     _graphics.rect(screen, 0x12, 0x20, 0x04, 0x04, Color(0xFF, 0x00, 0x00));
-//     _graphics.rect(screen, 0x18, 0x22, 0x04, 0x04, Color(0x00, 0xFF, 0x00));
-
-
-
-//     if (_iStartAnimation == 200)
-//     {
-//         _bootAnimationRunning = false;
-//     }
-//     _iStartAnimation++;
-// }
 
 void Application::drawClock(Bitmap &screen, float x)
 {
@@ -238,54 +181,71 @@ void Application::drawWeather(Bitmap &screen)
     auto const imagedy = 26;
     char buf1[20], buf2[20];
 
-    sprintf(buf1, "%dms", (int)(_environment.windspeed() + 0.5f));
+    auto windspeed = _environment.windspeed();
+    sprintf(buf1, "%dms", (int)(windspeed.value() + 0.5f));
     auto size = _fontweatherL->textsize(buf1);
     auto xms = 128 - imagedx - 1 - size.dx;
     auto ybase = 50.2f;
-    _graphics.text(screen, _fontweatherL,
-        xms, 
-        ybase, 
-        buf1, Color::white);
+    if(windspeed.isValid())
+    {
+        _graphics.text(screen, _fontweatherL,
+            xms, 
+            ybase, 
+            buf1, Color::white);
+    }
 
-    sprintf(buf1, "%.1f°", _environment.temperature());
+    auto temperature = _environment.temperature();
+    sprintf(buf1, "%.1f°", temperature.value());
     auto size1 =_fontweatherL->textsize(buf1);
     ybase += _fontweatherL->ascend() + 1;
 
-    sprintf(buf2, "(%.1f)", _environment.windchill());
+    auto windchill = _environment.windchill();
+    sprintf(buf2, "(%.1f)", windchill.value());
     auto size2 = _fontweatherS->textsize(buf2);
 
-    _graphics.text(screen, _fontweatherS,
-        128 - imagedx - 1 - size2.dx,
-        ybase - 2,
-        buf2, Color::white);
-
-    _graphics.text(screen, _fontweatherL,
-        128 - imagedx - 1 - size2.dx - size1.dx, 
-        ybase,
-        buf1, Color::white);
-
+    if (windchill.isValid())
+    {
+        _graphics.text(screen, _fontweatherS,
+            128 - imagedx - 1 - size2.dx,
+            ybase - 2,
+            buf2, Color::white);
+    }
+    if (temperature.isValid())
+    {
+        _graphics.text(screen, _fontweatherL,
+            128 - imagedx - 1 - size2.dx - size1.dx, 
+            ybase,
+            buf1, Color::white);
+    }
     auto arrowsize = 14;
     auto x = xms - arrowsize;
     auto y = 36;
 
-    auto pw = arrowsize / 21.0f;
-    auto d = arrowsize - pw - 1.0f;
-    auto cx = x + (pw + d) / 2.0f;
-    auto cy = y + (pw + d) / 2.0f;
-    auto angle = _environment.windangle() * (float)std::numbers::pi * 2.0f + phase(9000,true) * phase(800,true) * 0.1;
-    auto x1 = cx - d * 0.5f * std::cos(angle);
-    auto y1 = cy - d * 0.5f * std::sin(angle);
-    auto x3 = cx + d * 0.25f * std::cos(angle);
-    auto y3 = cy + d * 0.25f * std::sin(angle);
-    auto x2 = cx + d * 0.5f * std::cos(angle - 0.6f);
-    auto y2 = cy + d * 0.5f * std::sin(angle - 0.6f);
-    auto x4 = cx + d * 0.5f * std::cos(angle + 0.6f);
-    auto y4 = cy + d * 0.5f * std::sin(angle + 0.6f);
+    auto windangle = _environment.windangle();
+    if (windangle.isValid())
+    {
+        auto pw = arrowsize / 21.0f;
+        auto d = arrowsize - pw - 1.0f;
+        auto cx = x + (pw + d) / 2.0f;
+        auto cy = y + (pw + d) / 2.0f;
+        auto angle = windangle.value() * (float)std::numbers::pi * 2.0f + phase(9000,true) * phase(800,true) * 0.1;
+        auto x1 = cx - d * 0.5f * std::cos(angle);
+        auto y1 = cy - d * 0.5f * std::sin(angle);
+        auto x3 = cx + d * 0.25f * std::cos(angle);
+        auto y3 = cy + d * 0.25f * std::sin(angle);
+        auto x2 = cx + d * 0.5f * std::cos(angle - 0.6f);
+        auto y2 = cy + d * 0.5f * std::sin(angle - 0.6f);
+        auto x4 = cx + d * 0.5f * std::cos(angle + 0.6f);
+        auto y4 = cy + d * 0.5f * std::sin(angle + 0.6f);
 
-     _graphics.triangle(screen, x1, y1, x3, y3, x4, y4, Color(0x33, 0xcc, 0xff));
-     _graphics.triangle(screen, x1, y1, x2, y2, x3, y3, Color::white);
-
-    drawSun(screen, _panel.dx() - imagedx, _panel.dy() - imagedy, imagedx, imagedy);
+        _graphics.triangle(screen, x1, y1, x3, y3, x4, y4, Color(0x33, 0xcc, 0xff));
+        _graphics.triangle(screen, x1, y1, x2, y2, x3, y3, Color::white);
+    }
+    auto weather = _environment.weather();
+    if (weather.isValid())
+    {
+        drawSun(screen, _panel.dx() - imagedx, _panel.dy() - imagedy, imagedx, imagedy);
+    }
 }
 
 void Application::drawCenterLine(Bitmap &screen, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)

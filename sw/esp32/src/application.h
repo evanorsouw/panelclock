@@ -9,7 +9,6 @@
 #include "environment.h"
 #include "graphics.h"
 #include "ledpanel.h"
-#include "spline.h"
 #include "system.h"
 
 class Application
@@ -24,6 +23,7 @@ private:
     Font *_fonttimeLarge;
     Font *_fonttimeSmall;
     Font *_fontdate;
+    Font *_fontWhiteMagic;
     Font *_fontweatherL;
     Font *_fontweatherS;
     Font *_fontIcons8;
@@ -34,7 +34,7 @@ private:
     long _msSinceMidnight;
     int _bootAnimationPhase;
     int64_t _bootStart;
-    std::vector<Animation> _bootAnimations;
+    std::vector<Animation*> _bootAnimations;
 
 public:
     Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys);
@@ -56,9 +56,6 @@ private:
     float phase(float ms, bool wave);
     void drawSun(Bitmap &screen, float x, float y, float dx, float dy);
     long drawtime() { return _msSinceMidnight; }    
-
-    bool animateBackground(Bitmap &screen, float when);
-    bool animatePackageBox(Bitmap &screen, float when);
 };
 
 #endif

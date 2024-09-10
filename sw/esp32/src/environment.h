@@ -24,19 +24,33 @@ enum class weathertype {
     heavyclouds,  // zonnig
 };
 
+template<class T>
+class optional
+{
+private:
+    bool _valid = false;
+    T _value;
+    
+public:
+    void set(const T &value) { _value = value; _valid = true; }
+    void clear() { _valid = false; }
+    bool isValid() const { return _valid; }
+    const T &value() const { return _value; }
+};
+
 struct Environment
 {
     virtual ~Environment() {}
 
-    virtual bool valid() const = 0; 
-    virtual tm sunset() const = 0;
-    virtual tm sunrise() const = 0;
-    virtual float temperature() const = 0;      // degrees
-    virtual float windchill() const = 0;        // degrees
-    virtual weathertype weather() const = 0;
-    virtual float windangle() const = 0;        // radians
-    virtual float windspeed() const = 0;        // ms/s
-    virtual float airpressure() const = 0;      // mbar
+    virtual bool valid() const = 0;
+    virtual optional<tm> sunset() const = 0;
+    virtual optional<tm> sunrise() const = 0;
+    virtual optional<float> temperature() const = 0;      // degrees
+    virtual optional<float> windchill() const = 0;        // degrees
+    virtual optional<weathertype> weather() const = 0;
+    virtual optional<float> windangle() const = 0;        // radians
+    virtual optional<float> windspeed() const = 0;        // ms/s
+    virtual optional<float> airpressure() const = 0;      // mbar
 };
 
 #endif

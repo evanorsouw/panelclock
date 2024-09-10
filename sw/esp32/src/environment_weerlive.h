@@ -16,15 +16,15 @@ private:
     ParseState _state;
 
     bool _valid;
-    uint64_t _timestamp;
-    tm _sunset;
-    tm _sunrise;
-    float _temperature;
-    float _windchill;
-    weathertype _weather;
-    float _windangle;
-    float _windspeed;
-    float _airpressure;
+    optional<uint64_t> _timestamp;
+    optional<tm> _sunset;
+    optional<tm> _sunrise;
+    optional<float> _temperature;
+    optional<float> _windchill;
+    optional<weathertype> _weather;
+    optional<float> _windangle;
+    optional<float> _windspeed;
+    optional<float> _airpressure;
 
 public:
     /// @param accesskey the accesskey to their API, request one at their site.
@@ -41,19 +41,20 @@ public:
     void updateTask();
 
     bool valid() const { return _valid; };
-    tm sunset() const { return _sunset; }
-    tm sunrise() const { return _sunrise; }
-    float temperature() const { return _temperature; }
-    float windchill() const { return _windchill; }
-    weathertype weather() const { return _weather; }
-    float windangle() const { return _windangle; }
-    float windspeed() const { return _windspeed; };
-    float airpressure() const { return _airpressure; };
+    optional<tm> sunset() const { return _sunset; }
+    optional<tm> sunrise() const { return _sunrise; }
+    optional<float> temperature() const { return _temperature; }
+    optional<float> windchill() const { return _windchill; }
+    optional<weathertype> weather() const { return _weather; }
+    optional<float> windangle() const { return _windangle; }
+    optional<float> windspeed() const { return _windspeed; };
+    optional<float> airpressure() const { return _airpressure; };
 
 private:
     bool handleJson(const JsonEntry &json);
     weathertype parseWeather(const char *image);
     tm parseTime(const char *s);
+    void clearValues();
 };
 
 #endif

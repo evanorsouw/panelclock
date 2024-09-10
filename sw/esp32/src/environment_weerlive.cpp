@@ -33,20 +33,33 @@ void EnvironmentWeerlive::updateTask()
 
     _state = ParseState::WaitArray;
     JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
-    auto ok = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
+
+    clearValues();
+    _valid = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
+    
     auto delayMs = 30 * 1000;
-    if (ok)
+    if (_valid)
     {
         delayMs = 10 * 60 * 1000;
-        printf("temp=%f, gtemp=%f, wndspeed=%f, windangle=%f, weather=%d, airpress=%f, rise=%04d-%02d-%02d %02d:%02d:%02d, set=%04d-%02d-%02d %02d:%02d:%02d\n",
-            temperature(),
-            windchill(),
-            windspeed(),
-            windangle(),
-            (int)weather(),
-            airpressure(),
-            sunrise().tm_mday, sunrise().tm_mon, sunrise().tm_year, sunrise().tm_hour, sunrise().tm_min, sunrise().tm_sec, 
-            sunset().tm_mday, sunset().tm_mon, sunset().tm_year, sunset().tm_hour, sunset().tm_min, sunset().tm_sec);
+        if (temperature().isValid())
+            printf("temp=%f ", temperature().value());
+        if (windchill().isValid())
+            printf("gtemp=%f ", windchill().value());
+        if (windspeed().isValid())
+            printf("windspeed=%f ", windspeed().value());
+        if (windangle().isValid())
+            printf("windangle=%f ", windangle().value());
+        if (weather().isValid())
+            printf("weather=%d ", (int)weather().value());
+        if (airpressure().isValid())
+            printf("airpressure=%f ", airpressure().value());
+        if (sunrise().isValid())
+            printf("%04d-%02d-%02d %02d:%02d:%02d ", 
+                sunrise().value().tm_year, sunrise().value().tm_mon, sunrise().value().tm_mday, sunrise().value().tm_hour, sunrise().value().tm_min, sunrise().value().tm_sec);
+        if (sunset().isValid())
+            printf("%04d-%02d-%02d %02d:%02d:%02d ", 
+                sunset().value().tm_year, sunset().value().tm_mon, sunset().value().tm_mday, sunset().value().tm_hour, sunset().value().tm_min, sunset().value().tm_sec);
+        printf("\n");
     }
     vTaskDelay(delayMs / portTICK_PERIOD_MS);
 }
@@ -81,23 +94,23 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
             break;  // structure not as expected
         case JsonItem::Number:
             if (!strcmp(json.name, "temp"))
-                _temperature = (float)json.number;
+                _temperature.set((float)json.number);
             else if (!strcmp(json.name, "gtemp"))
-                _windchill = (float)json.number;
+                _windchill.set((float)json.number);
             else if (!strcmp(json.name, "windrgr"))
-                _windangle = (float)json.number / 180 * std::numbers::pi;
+                _windangle.set((float)json.number / 180 * std::numbers::pi);
             else if (!strcmp(json.name, "windms"))
-                _windspeed = (float)json.number;
+                _windspeed.set((float)json.number);
             else if (!strcmp(json.name, "luchtd"))
-                _airpressure = (float)json.number;
+                _airpressure.set((float)json.number);
             break;
         case JsonItem::String:
             if (!strcmp(json.name, "image"))
-                _weather = parseWeather(json.string);
+                _weather.set(parseWeather(json.string));
             else if (!strcmp(json.name, "sup"))
-                _sunrise = parseTime(json.string);
+                _sunrise.set(parseTime(json.string));
             else if (!strcmp(json.name, "sunder"))
-                _sunset = parseTime(json.string);
+                _sunset.set(parseTime(json.string));
             break;        
         default:
             // ignored
@@ -130,4 +143,16 @@ weathertype EnvironmentWeerlive::parseWeather(const char *image)
             return weathertypes[i].type;
     }
     return weathertype::unknown;
+}
+
+void EnvironmentWeerlive::clearValues()
+{
+    _sunset.clear();
+    _sunrise.clear();
+    _temperature.clear();
+    _windchill.clear();
+    _weather.clear();
+    _windangle.clear();
+    _windspeed.clear();
+    _airpressure.clear();
 }

@@ -46,16 +46,17 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 
 int HTTPClient::get(const char *url, std::function<void(void*,int)> handler)
 {
-    esp_http_client_config_t config = 
-    {
-        .url= url,
-        .method=HTTP_METHOD_GET,
-        .disable_auto_redirect = true,
-        .event_handler = HTTPClient::eventHandler,
-        .transport_type = HTTP_TRANSPORT_OVER_SSL,
-        .user_data = &handler,
-        .crt_bundle_attach = esp_crt_bundle_attach
-    };
+    esp_http_client_config_t config = { 0 } ;
+    config.url = url;
+    config.method=HTTP_METHOD_GET;
+    config.disable_auto_redirect = true;
+    config.event_handler = HTTPClient::eventHandler;
+    config.user_data = &handler;
+
+    // play the ssl game but don't check certificates because there is
+    // no infrastructure to periodically update root certificates.
+    config.transport_type = HTTP_TRANSPORT_OVER_SSL;
+    config.cert_pem = nullptr;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);

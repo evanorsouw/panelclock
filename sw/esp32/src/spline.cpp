@@ -36,8 +36,18 @@ float Spline::basisFunction(int i, int k, float t)
 
 point Spline::get(float t) 
 {
-    point point = {0.0, 0.0};
     int n = _controlPoints.size() - 1;
+    if (n < 2)
+    {
+        if (n == 0 || t < 0.0f)
+            return _controlPoints[0];
+        if (t > 1.0f)
+            return _controlPoints[1];
+        auto dx = _controlPoints[1].x - _controlPoints[0].x;
+        auto dy = _controlPoints[1].y - _controlPoints[0].y;
+        return point(_controlPoints[0].x + dx * t, _controlPoints[0].y + dy * t);
+    }
+    point point = {0.0, 0.0};
     for (int i = 0; i <= n; ++i) {
         float b = basisFunction(i, _degree + 1, t);
         point.x += b * _controlPoints[i].x;
