@@ -12,19 +12,11 @@ private:
     System *_system;
     Setting *_accesskey;
     Setting *_location;
-    enum class ParseState { WaitArray, WaitObject1, Reading, Completed };
+    enum class ParseState { WaitArray, WaitObject1, Reading, Completed, Failed };
     ParseState _state;
-
-    bool _valid;
     optional<uint64_t> _timestamp;
-    optional<tm> _sunset;
-    optional<tm> _sunrise;
-    optional<float> _temperature;
-    optional<float> _windchill;
-    optional<weathertype> _weather;
-    optional<float> _windangle;
-    optional<float> _windspeed;
-    optional<float> _airpressure;
+    EnvironmentValues _parsedValues;
+    EnvironmentValues _values;
 
 public:
     /// @param accesskey the accesskey to their API, request one at their site.
@@ -35,24 +27,25 @@ public:
         _system = system;
         _accesskey = key;
         _location = location;
-        _valid = false;
+        _parsedValues.clear();
     }
 
     void updateTask();
 
-    bool valid() const { return _valid; };
-    optional<tm> sunset() const { return _sunset; }
-    optional<tm> sunrise() const { return _sunrise; }
-    optional<float> temperature() const { return _temperature; }
-    optional<float> windchill() const { return _windchill; }
-    optional<weathertype> weather() const { return _weather; }
-    optional<float> windangle() const { return _windangle; }
-    optional<float> windspeed() const { return _windspeed; };
-    optional<float> airpressure() const { return _airpressure; };
+    bool valid() const { return _values.valid; };
+    optional<tm> sunset() const { return _values.sunset; }
+    optional<tm> sunrise() const { return _values.sunrise; }
+    optional<float> temperature() const { return _values.temperature; }
+    optional<float> windchill() const { return _values.windchill; }
+    optional<weathertype> weather() const { return _values.weather; }
+    optional<float> windangle() const { return _values.windangle; }
+    optional<float> windspeed() const { return _values.windspeed; };
+    optional<float> airpressure() const { return _values.airpressure; };
 
 private:
     bool handleJson(const JsonEntry &json);
     weathertype parseWeather(const char *image);
+    float parseWindr(const char *r);
     tm parseTime(const char *s);
     void clearValues();
 };

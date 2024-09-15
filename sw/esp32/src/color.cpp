@@ -23,3 +23,17 @@ Color Color::navy = Color(0xFF000080);
 Color Color::brown = Color(0xFFA52A2A);
 Color Color::orangered = Color(0xFFFF4500);
 Color Color::skyblue = Color(0xFF87CEEB);
+
+Color Color::gradient(const Color &from, const Color &to, float p)
+{
+    if (p < 0.0)
+        return from;
+    if (p > 1.0)
+        return to;
+    auto dr = to.r() - from.r();
+    auto dg = to.g() - from.g();
+    auto db = to.b() - from.b();
+    return Color(from.r() + dr * p, from.g() + dg * p, from.b() + db * p);
+}
+
+

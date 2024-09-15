@@ -35,7 +35,6 @@ Application::Application(Graphics &graphics, LedPanel &panel, Environment &env, 
     _fontweatherL = Font::getFont("arial-rounded-stripped", 9, 10);
     _fontweatherS = Font::getFont("arial-rounded-stripped", 7, 7);
     _fontIcons4 = Font::getFont("panelicons", 4, 4);
-    _fontIcons8 = Font::getFont("panelicons", 8, 8);
     _fontIcons9 = Font::getFont("panelicons", 9, 9);
     _fontIcons18 = Font::getFont("panelicons", 18, 18);
     _fontIcons22 = Font::getFont("panelicons", 22, 22);
@@ -50,7 +49,7 @@ void Application::renderTask()
 
     auto now = _system.now();
     _msSinceMidnight = ((now.hour() * 60 + now.min()) * 60 + now.sec()) * 1000 + now.millies();
-    monitorRefreshRate(_msSinceMidnight);
+    monitorRefreshRate();
 
     screen->fill(Color::black);
 
@@ -185,6 +184,9 @@ void Application::drawWeather(Bitmap &screen)
 {
     char buf1[20], buf2[20];
 
+    if (!_environment.valid())
+        return;
+
     auto windspeed = _environment.windspeed();
     sprintf(buf1, "%dms", (int)(windspeed.value() + 0.5f));
     auto size = _fontweatherL->textsize(buf1);
@@ -232,15 +234,15 @@ void Application::drawWeather(Bitmap &screen)
         auto d = arrowsize - pw - 1.0f;
         auto cx = x + (pw + d) / 2.0f;
         auto cy = y + (pw + d) / 2.0f;
-        auto angle = windangle.value() * (float)std::numbers::pi * 2.0f + phase(9000,true) * phase(800,true) * 0.1;
-        auto x1 = cx - d * 0.5f * std::cos(angle);
-        auto y1 = cy - d * 0.5f * std::sin(angle);
-        auto x3 = cx + d * 0.25f * std::cos(angle);
-        auto y3 = cy + d * 0.25f * std::sin(angle);
-        auto x2 = cx + d * 0.5f * std::cos(angle - 0.6f);
-        auto y2 = cy + d * 0.5f * std::sin(angle - 0.6f);
-        auto x4 = cx + d * 0.5f * std::cos(angle + 0.6f);
-        auto y4 = cy + d * 0.5f * std::sin(angle + 0.6f);
+        auto angle = windangle.value() + phase(9000,true) * phase(800,true) * 0.1;
+        auto x1 = cx + d * 0.5f * std::cos(angle);
+        auto y1 = cy + d * 0.5f * std::sin(angle);
+        auto x3 = cx - d * 0.25f * std::cos(angle);
+        auto y3 = cy - d * 0.25f * std::sin(angle);
+        auto x2 = cx - d * 0.5f * std::cos(angle - 0.6f);
+        auto y2 = cy - d * 0.5f * std::sin(angle - 0.6f);
+        auto x4 = cx - d * 0.5f * std::cos(angle + 0.6f);
+        auto y4 = cy - d * 0.5f * std::sin(angle + 0.6f);
 
         _graphics.triangle(screen, x1, y1, x3, y3, x4, y4, Color(0x33, 0xcc, 0xff));
         _graphics.triangle(screen, x1, y1, x2, y2, x3, y3, Color::white);
@@ -297,8 +299,8 @@ void Application::drawWeatherImage(Bitmap &screen)
         drawFog(screen, px, py, pdx, pdy);
         break;
     case weathertype::cloudednight: // nachtbewolkt    
-        drawCloud(screen, px, py, pdx, pdy, Color::white, Color::darkgray);
         drawMoon(screen, px, py, pdx, pdy, Color::white);
+        drawCloud(screen, px, py, pdx, pdy, Color::white, Color::darkgray);
         break;
     case weathertype::nightfog:     // nachtmist
         drawMoon(screen, px, py, pdx, pdy, Color::lightgray);
@@ -341,18 +343,18 @@ void Application::showScreenOnPanel()
     _panel.selectScreen(_iShowScreen);
 }
 
-void Application::monitorRefreshRate(long now)
+void Application::monitorRefreshRate()
 {
     _refreshCount++;
-    auto elapsed = now - _refreshCountStart;
+    auto elapsed = drawtime() - _refreshCountStart;
     if (elapsed < 0 || elapsed > 30000)
     {
         _refreshCount = 0;
-        _refreshCountStart = now;
+        _refreshCountStart = drawtime();
     }
     else if (elapsed > 10000)
     {
-        printf("refreshrate %d fps\n", _refreshCount /10);
+        printf("%d fps\n", _refreshCount /10);
         _refreshCount = 0;
         _refreshCountStart += 10000;
     }
@@ -378,7 +380,32 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
     auto p2 = phase(3000,true) * 0.1f + 1.0f;
     auto pw = std::max(1.0f, size / 22.0f);
 
-    auto yellowgold = Color(250,250,210);
+    auto horizoncolor = Color(226,90,56);
+    auto nooncolor = Color(255,242,127);
+    auto color = nooncolor;
+
+    if (_environment.sunrise().isValid() && _environment.sunset().isValid())
+    {
+        auto tnow = (int)(drawtime() / 1000 / 60);
+        auto rise = _environment.sunrise().value();
+        auto trise = rise.tm_hour * 60 + rise.tm_min;
+        auto set = _environment.sunset().value();
+        auto tset = set.tm_hour * 60 + set.tm_min;
+
+        //printf("color: tnow=%d, trise=%d, tset=%d\n", tnow, trise, tset);
+
+        if (tnow < trise || tnow > tset)
+        {
+            color = horizoncolor;
+        }
+        else 
+        {
+            auto drise = std::min(120, std::abs(tnow - trise));
+            auto dset = std::min(120, std::abs(tset - tnow));
+            auto d = std::min(dset, drise) / 120.0;
+            color = Color::gradient(horizoncolor, nooncolor, d);
+        }
+    }
     auto max = size * 0.35f * p2;
     auto cx = x + width / 2;
     auto cy = y + height / 2;
@@ -387,21 +414,21 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
         auto angle = (float)std::numbers::pi / 4 * i + p1 * (float)std::numbers::pi;
         auto dx = max * std::cos(angle);
         auto dy = max * std::sin(angle);
-        _graphics.line(screen, cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, yellowgold);
+        _graphics.line(screen, cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
     }
 
     auto s = _fontIcons9->textsize("0");
-    _graphics.text(screen, _fontIcons9, cx - s.dx/2, cy - 1 + s.dy/2, "0", yellowgold);
+    _graphics.text(screen, _fontIcons9, cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
 }
 
 void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, float height, Color pen, Color fill)
 {
-    auto cx = x + phase(25000, true) * (width - 18);
+    auto cx = x + phase(21000, true) * (width - 18);
     auto cy = y + (height - 18) / 2 + 18 - 4;
     _graphics.text(screen, _fontIcons18, cx, cy, "B", fill);
     _graphics.text(screen, _fontIcons18, cx, cy, "A", pen);
 
-    cx = x + phase(25000, true, 3000) * (width - 22);
+    cx = x + phase(22000, true, 3000) * (width - 22);
     cy = y + (height - 22) / 2 + 22 + 2;
     _graphics.text(screen, _fontIcons22, cx, cy, "B", fill);
     _graphics.text(screen, _fontIcons22, cx, cy, "A", pen);
@@ -409,7 +436,7 @@ void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, flo
 
 float Application::drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color pen, Color fill)
 {
-    auto tx = x + phase(25000, true, 3000) * (dx - 22);
+    auto tx = x + phase(21000, true, 3000) * (dx - 22);
     auto ty = y + (dy - 22) / 2 + 22 - 2;
     _graphics.text(screen, _fontIcons22, tx, ty, "B", fill);
     _graphics.text(screen, _fontIcons22, tx, ty, "A", pen);

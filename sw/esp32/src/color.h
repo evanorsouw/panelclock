@@ -28,6 +28,10 @@ public:
         _color.cmp.a = a;
     }
 
+    static Color gradient(const Color &from, const Color &to, float p);
+
+    Color &operator=(const Color &rhs) { _color.argb = rhs._color.argb; return *this; }
+
     bool isgray() const { return _color.cmp.r == _color.cmp.g && _color.cmp.r == _color.cmp.b; }
     uint8_t r() const { return _color.cmp.r; }
     uint8_t g() const { return _color.cmp.g; }

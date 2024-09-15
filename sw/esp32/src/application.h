@@ -30,7 +30,6 @@ private:
     Font *_fontweatherL;
     Font *_fontweatherS;
     Font *_fontIcons4;
-    Font *_fontIcons8;
     Font *_fontIcons9;
     Font *_fontIcons18;
     Font *_fontIcons22;
@@ -59,7 +58,7 @@ private:
     void drawCenterLine(Bitmap &screen, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color);
     void sendScreen();
     void showScreenOnPanel();
-    void monitorRefreshRate(long ms);
+    void monitorRefreshRate();
     float phase(int ms, bool wave, int offsetms=0);
     void drawSun(Bitmap &screen, float x, float y, float dx, float dy);
     float drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color line, Color fill);

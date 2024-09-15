@@ -11,7 +11,7 @@ public:
     virtual ~HTTPClient() {}
 
     int get(const char *url, uint8_t *buf, int bufLen);
-    int get(const char *url, std::function<void(void*,int)> handler);
+    int get(const char *url, std::function<void(uint8_t*,int)> handler);
 
 private:
     static esp_err_t eventHandler(esp_http_client_event_t *evt);

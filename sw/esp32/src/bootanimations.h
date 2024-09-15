@@ -187,8 +187,8 @@ private:
             d = 0;
 
         auto cliparea = irect(0,0,128,64);
-        drawWhiteMagic(screen, Color::red, cliparea, -d * 1.2, Mode::Add);
-        drawWhiteMagic(screen, Color::green, cliparea, d*1.5f, Mode::Add);
+        drawWhiteMagic(screen, Color::red, cliparea, -d * 1.5, Mode::Add);
+        drawWhiteMagic(screen, Color::green, cliparea, d, Mode::Add);
         drawWhiteMagic(screen, Color::blue, cliparea, -d, Mode::Add);
     }
 };

@@ -17,12 +17,34 @@ static struct {
     { "helderenacht", weathertype::clearnight },
     { "lichtbewolkt", weathertype::cloudy },
     { "mist", weathertype::fog },
-    { "nachtbewolkt", weathertype::cloudednight },
+    { "wolkennacht", weathertype::cloudednight },
     { "nachtmist", weathertype::nightfog },
     { "regen", weathertype::rain },
     { "sneeuw", weathertype::snow },
     { "zonnig", weathertype::sunny },
     { "zwaarbewolkt", weathertype::heavyclouds }
+};
+
+static struct {
+    const char *r;
+    float angle;
+} windrs[] = {
+    { "O", 180 },
+    { "ONO", 157.5 },
+    { "NO", 135 },
+    { "NNO", 112.55 },
+    { "N", 90 },
+    { "NNW", 67.5 },
+    { "NW", 45 },
+    { "WNW", 22.5 },
+    { "W", 0 },
+    { "WZW", 337.5 },
+    { "ZW", 315 },
+    { "ZZW", 292.5 },
+    { "Z", 270 },
+    { "ZZO", 247.5 },
+    { "ZO", 225 },
+    { "OZO", 202.5 }
 };
 
 void EnvironmentWeerlive::updateTask()
@@ -32,28 +54,28 @@ void EnvironmentWeerlive::updateTask()
     auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
 
     _state = ParseState::WaitArray;
+    _parsedValues.clear();
     JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
 
-    clearValues();
-    auto status = client.get(url.c_str(), [&](void *data, int len) { parser.parse((char *)data, len); });
-    _valid = status == 200;
+    client.get(url.c_str(), [&](uint8_t *data, int len) { parser.parse((char *)data, len); });
+    _values = _parsedValues;
     
     auto delayMs = 30 * 1000;
-    if (_valid)
+    if (valid())
     {
         delayMs = 10 * 60 * 1000;
         if (temperature().isValid())
-            printf("temp=%f ", temperature().value());
+            printf("temp=%.1f ", temperature().value());
         if (windchill().isValid())
-            printf("gtemp=%f ", windchill().value());
+            printf("gtemp=%.1f ", windchill().value());
         if (windspeed().isValid())
-            printf("windspeed=%f ", windspeed().value());
+            printf("windspeed=%.1f ", windspeed().value());
         if (windangle().isValid())
-            printf("windangle=%f ", windangle().value());
+            printf("windangle=%.2f ", windangle().value());
         if (weather().isValid())
             printf("weather=%d ", (int)weather().value());
         if (airpressure().isValid())
-            printf("airpressure=%f ", airpressure().value());
+            printf("airpressure=%.1f ", airpressure().value());
         if (sunrise().isValid())
             printf("%04d-%02d-%02d %02d:%02d:%02d ", 
                 sunrise().value().tm_year, sunrise().value().tm_mon, sunrise().value().tm_mday, sunrise().value().tm_hour, sunrise().value().tm_min, sunrise().value().tm_sec);
@@ -62,17 +84,31 @@ void EnvironmentWeerlive::updateTask()
                 sunset().value().tm_year, sunset().value().tm_mon, sunset().value().tm_mday, sunset().value().tm_hour, sunset().value().tm_min, sunset().value().tm_sec);
         printf("\n");
     }
+
+    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
+
     vTaskDelay(delayMs / portTICK_PERIOD_MS);
 }
 
 bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
 {
+    if (json.item == JsonItem::Error)
+    {
+        if (_state != ParseState::Failed)
+        {
+            printf("parsing of weerlive request failed, error='%s'\n", json.string);
+            _state = ParseState::Failed;
+        }
+        return true;
+    }
+
     switch (_state)
     {
     case ParseState::WaitArray:
         if (json.item == JsonItem::Array && !strcmp(json.name, "liveweer"))
         {
-            _state = ParseState::WaitObject1;
+           _state = ParseState::WaitObject1;
         }
         break;
     case ParseState::WaitObject1:
@@ -82,36 +118,39 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
         }
         break;
     case ParseState::Reading:
+        //printf("got element '%s'(%d)='%d','%f','%s'\n", json.name, (int)json.item, json.boolean, json.number, json.string);
         switch (json.item)
         {
-        case JsonItem::End:
-            _state = ParseState::Completed;
-            _valid = true;
-            break;
-        case JsonItem::Array:
-        case JsonItem::Object:
         case JsonItem::Close:
             _state = ParseState::Completed;
+            //printf("object closed, parsing completed\n");
+            _parsedValues.valid = true;
+            break;
+        case JsonItem::End:
+        case JsonItem::Array:
+        case JsonItem::Object:
+            printf("got unexpected token=%s(%d) parsing failed\n", json.name, (int)json.item);
+            _state = ParseState::Failed;
             break;  // structure not as expected
         case JsonItem::Number:
             if (!strcmp(json.name, "temp"))
-                _temperature.set((float)json.number);
+                _parsedValues.temperature.set((float)json.number);
             else if (!strcmp(json.name, "gtemp"))
-                _windchill.set((float)json.number);
-            else if (!strcmp(json.name, "windrgr"))
-                _windangle.set((float)json.number / 180 * std::numbers::pi);
+                _parsedValues.windchill.set((float)json.number);
             else if (!strcmp(json.name, "windms"))
-                _windspeed.set((float)json.number);
+                _parsedValues.windspeed.set((float)json.number);
             else if (!strcmp(json.name, "luchtd"))
-                _airpressure.set((float)json.number);
+                _parsedValues.airpressure.set((float)json.number);
             break;
         case JsonItem::String:
             if (!strcmp(json.name, "image"))
-                _weather.set(parseWeather(json.string));
+                _parsedValues.weather.set(parseWeather(json.string));
             else if (!strcmp(json.name, "sup"))
-                _sunrise.set(parseTime(json.string));
+                _parsedValues.sunrise.set(parseTime(json.string));
             else if (!strcmp(json.name, "sunder"))
-                _sunset.set(parseTime(json.string));
+                _parsedValues.sunset.set(parseTime(json.string));
+            else if (!strcmp(json.name, "windr"))
+                _parsedValues.windangle.set(parseWindr(json.string));
             break;        
         default:
             // ignored
@@ -120,6 +159,8 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
         break;
     case ParseState::Completed:
         break;
+    case ParseState::Failed:
+        return true;
     }
     return false;
 }
@@ -146,14 +187,12 @@ weathertype EnvironmentWeerlive::parseWeather(const char *image)
     return weathertype::unknown;
 }
 
-void EnvironmentWeerlive::clearValues()
+float EnvironmentWeerlive::parseWindr(const char *r)
 {
-    _sunset.clear();
-    _sunrise.clear();
-    _temperature.clear();
-    _windchill.clear();
-    _weather.clear();
-    _windangle.clear();
-    _windspeed.clear();
-    _airpressure.clear();
+    for (int i=0; i<(sizeof(weathertypes) / sizeof(weathertypes[0])); ++i)
+    {
+        if (!strcmp(r, windrs[i].r))
+            return windrs[i].angle / 180 * std::numbers::pi;
+    }
+    return 0.0f;
 }

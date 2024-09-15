@@ -32,10 +32,38 @@ private:
     T _value;
     
 public:
+    optional(){}
+    optional(const optional &rhs) : _valid(rhs._valid), _value(rhs._value) {}
     void set(const T &value) { _value = value; _valid = true; }
     void clear() { _valid = false; }
     bool isValid() const { return _valid; }
     const T &value() const { return _value; }
+};
+
+struct EnvironmentValues
+{
+    bool valid;
+    optional<tm> sunset;
+    optional<tm> sunrise;
+    optional<float> temperature;
+    optional<float> windchill;
+    optional<weathertype> weather;
+    optional<float> windangle;
+    optional<float> windspeed;
+    optional<float> airpressure;
+
+    void clear()
+    {
+        valid = false;
+        sunset.clear();
+        sunrise.clear();
+        temperature.clear();
+        windchill.clear();
+        weather.clear();
+        windangle.clear();
+        windspeed.clear();
+        airpressure.clear();
+    }
 };
 
 struct Environment

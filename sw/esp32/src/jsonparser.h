@@ -43,9 +43,10 @@ public:
     /**
      * @brief Construct a new JsonParser using the provided handler
      * 
-     * @param handler lambda that is called for each received Json object.
-     * The handler returns true if this object is to be parsed and false
-     * when the remainder can be skipped entirely.
+     * @param handler lambda that is called for each received Json object/array.
+     * The handler returns true if we are interested in nested values of this
+     * object/array and false if not. When returning false, nested values of 
+     * the array/object are no provided, but siblings and higher levels still are. 
      * The return value has no meaning for booleans, numbers, strings or null values, 
      * but only for objects and arrays. When the handler returns false on the start
      * of an object/array (based on name) then no subsequent close is given to
@@ -82,7 +83,7 @@ private:
     JsonToken parseNumberToken();
     JsonToken parseLiteralToken();
 
-    void finishWithUnexpectedToken();
+    void finishWithUnexpectedToken(JsonToken token);
     void finishWithError(const char *msg);
     void finishWithItem(JsonItem item);
     void returnItem(JsonItem item);

@@ -44,7 +44,7 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-int HTTPClient::get(const char *url, std::function<void(void*,int)> handler)
+int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
 {
     esp_http_client_config_t config = { 0 } ;
     config.url = url;
