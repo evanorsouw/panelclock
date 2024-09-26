@@ -21,6 +21,11 @@ public:
         _buffer = nullptr;
         assureRoomFor(initialCapacity);
     }
+    virtual ~Buffer()
+    {
+        delete[] _buffer;
+        _buffer = nullptr;
+    }
 
     int capacity() const { return _capacity; }
     int size() const { return _size; }
