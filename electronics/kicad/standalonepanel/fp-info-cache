@@ -1,4 +1,4 @@
-23828008873868905
+23833191561775719
 0_project
 ESP32-WROVER-E
 ESP32-WROVER-E: https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32e_esp32-wroom-32ue_datasheet_en.pdf
@@ -35,6 +35,13 @@ QFN 0.5
 24
 24
 0_project
+JST_VH_1x04_P3.96mm_Horizontal
+JST VH series connector, B4PS-VH (http://www.jst-mfg.com/product/pdf/eng/eVH.pdf), generated with kicad-footprint-generator
+connector JST VH top entry
+0
+4
+4
+0_project
 Oscillator_SMD_EuroQuartz_XO91-4Pin_7.0x5.0mm_HandSoldering
 Miniature Crystal Clock Oscillator EuroQuartz XO91 series, http://cdn-reichelt.de/documents/datenblatt/B400/XO91.pdf, hand-soldering, 7.0x5.0mm^2 package
 SMD SMT crystal oscillator hand-soldering
@@ -49,12 +56,26 @@ PQFP QFP
 32
 32
 0_project
+QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.7mm
+QFN, 24 Pin (http://www.alfarzpp.lv/eng/sc/AS3330.pdf), generated with kicad-footprint-generator ipc_noLead_generator.py
+QFN NoLead
+0
+29
+25
+0_project
 SOT23-5-SC189_SEM
 
 SC189ZSKTRT 
 0
 5
 5
+0_project
+SW_Tactile_SKHH_Angled
+tactile switch 6mm ALPS SKHH right angle http://www.alps.com/prod/info/E/HTML/Tact/SnapIn/SKHH/SKHHLUA010.html
+tactile switch 6mm ALPS SKHH right angle
+0
+4
+2
 0_project
 USB-A TH Female
 http://www.connfly.com/userfiles/image/UpLoadFile/File/2013/5/6/DS1095.pdf

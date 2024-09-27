@@ -59,14 +59,18 @@
         }
       ],
       "drc_exclusions": [
-        "clearance|84567470|126945270|d8284148-f1a1-49fc-ad9c-507f5b543ae4|d6e99436-0578-4306-a474-084ee9dda19e",
-        "clearance|88179000|126671900|9f35f9a3-ab25-48d0-a6eb-d9a4de2f5ace|50e80ec9-06f5-45fa-af05-19612e294f17",
-        "courtyards_overlap|143272001|112142001|13f8b2fc-75cd-40ed-b5cd-3d1357884867|ad82cc97-1f8b-460f-8451-cdc52be3e0f2",
-        "courtyards_overlap|155131999|122601001|4457b00d-9423-460c-b9da-8005a844322a|ad82cc97-1f8b-460f-8451-cdc52be3e0f2",
-        "silk_overlap|146602750|112282000|3f4778fe-c371-4294-8934-282e54c8b40c|867f7f6e-dc32-495c-b6db-50d38f9ef120",
-        "silk_overlap|146837250|112282000|3f4778fe-c371-4294-8934-282e54c8b40c|c52da09c-57fb-4ea7-8983-64d286e505d3",
-        "solder_mask_bridge|74750000|137775000|d15aa23d-a891-4f7c-9809-c10b1400bebe|6ceedcc4-c923-4d99-8da0-b247182d9084",
-        "solder_mask_bridge|85229000|126009000|033c4a04-b0fe-4f02-9c0f-7f0c9130e1a6|899b59a8-168e-4a0b-99e6-f707afd5bf43"
+        "courtyards_overlap|127049999|110260428|3e9368f4-b7ce-4800-ac7e-2a5566bffc53|d759d141-acd6-4744-90eb-9b2cdd1084c6",
+        "courtyards_overlap|79906250|109907501|a26385c9-2d2e-4613-bb33-c82c6a203ec9|d9b0299c-2f15-4cda-885d-5c02127d6ffd",
+        "lib_footprint_mismatch|127650000|133837500|7263076a-c300-4b10-b3f1-e9284e90fe4d|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|137944999|112900000|51cc18c9-d0af-432f-9809-3ccc784e32d2|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|68772500|121750000|f2c3d1ab-5241-4d78-b5b1-912e82ad8d70|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|77000000|142000000|6ec7bb2c-66a0-446e-8885-ac30aa8719b6|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|81650000|129275000|dd467320-f967-4d05-9850-cd04dd76d2c7|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|81650000|134275000|4aec5b0e-fd96-4486-9ca2-f363a28dea4f|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|87000000|142000000|5b048892-9382-40b6-943d-6ca5b7f37bf9|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|88800000|129300000|64885e8f-4c7c-48d2-b2ca-a6dc5488c8ac|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|88800000|134300000|a117124b-2348-4ae9-bda0-ed95d5878c1b|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|97000000|142000000|6623ec00-7c8d-4800-9b15-360ad9414553|00000000-0000-0000-0000-000000000000"
       ],
       "meta": {
         "version": 2
@@ -197,7 +201,9 @@
         0.3,
         0.6,
         0.8,
-        1.0
+        1.0,
+        1.5,
+        2.0
       ],
       "tuning_pattern_settings": {
         "diff_pair_defaults": {
@@ -436,7 +442,7 @@
       "different_unit_net": "error",
       "duplicate_reference": "error",
       "duplicate_sheet_names": "error",
-      "endpoint_off_grid": "warning",
+      "endpoint_off_grid": "ignore",
       "extra_units": "error",
       "global_label_dangling": "warning",
       "hier_label_mismatch": "error",
@@ -565,11 +571,35 @@
           "label": "DNP",
           "name": "${DNP}",
           "show": true
+        },
+        {
+          "group_by": false,
+          "label": "#",
+          "name": "${ITEM_NUMBER}",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "PCBValue",
+          "name": "PCBValue",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Description",
+          "name": "Description",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "PCBTXT",
+          "name": "PCBTXT",
+          "show": false
         }
       ],
       "filter_string": "",
       "group_symbols": true,
-      "name": "Grouped By Value",
+      "name": "",
       "sort_asc": true,
       "sort_field": "Reference"
     },
