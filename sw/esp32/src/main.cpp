@@ -21,18 +21,11 @@
 #include "ds3231.h"
 #include "environment_weerlive.h"
 #include "mpu6050.h"
-#include "max3421e.h"
 #include "timeupdater.h"
 #include "wificlient.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
 #define BUTTON_TEST   GPIO_NUM_32 // 0=pressed
-
-#define USB_SPI_CLK          GPIO_NUM_14
-#define USB_SPI_MOSI         GPIO_NUM_12
-#define USB_SPI_MISO         GPIO_NUM_13
-#define USB_SPI_CS           GPIO_NUM_27
-#define USB_SPI_INT          GPIO_NUM_15
 
 #define FPGA_SPI_CLK         GPIO_NUM_21
 #define FPGA_SPI_MOSI        GPIO_NUM_25
@@ -57,57 +50,6 @@ void waitKey()
 void setLed(bool on)
 {
   gpio_set_level(LED_TEST, on);
-}
-
-void dousb()
-{
-    printf("*** MAX3421E ***\n");
-
-    SpiWrapper spi(SPI3_HOST, USB_SPI_CLK, USB_SPI_MOSI, USB_SPI_MISO, 100000, true);
-    spi.start();
-
-    MAX3421E usb(&spi, USB_SPI_CS);
-
-    printf("constructed\n");
-
-    usb.start();
-    printf("started\n");
-
-    uint8_t last_hrsl = 0xFE;
-    uint8_t last_hirq = 0xFE;
-    uint8_t last_mode = 0xFE;
-    uint8_t last_revision = 0xFE;
-    for (;;)
-    {
-        usb.writeReg(MODE, MODE_HOST);
-        auto hrsl = usb.readReg(HRSL);  // F8 00
-        auto hirq = usb.readReg(HIRQ);  // C8 00
-        auto mode = usb.readReg(MODE);  // D8 00
-        auto revision = usb.readReg(REVISION);
-
-        if (hrsl != last_hrsl || hirq != last_hirq || last_mode != mode || revision != last_revision)
-        {
-            last_hrsl = hrsl;
-            last_hirq = hirq;
-            last_mode = mode;
-            last_revision = revision;
-            printf("hrsl=0x%02X, hirq=%s,%s,%s,%s,%s,%s,%s,%s, mode=0x%02X, revion=0x%02X\n", 
-            hrsl, 
-            (hirq&HIRQ_BUSEVENT) ? "BUSEVENT" : "-",
-            (hirq&HIRQ_RWU) ? "RWUIRQ" : "-",   
-            (hirq&HIRQ_RCVDAV) ? "RCVDAV" : "-",
-            (hirq&HIRQ_SNDBAV) ? "SNDBAV" : "-",
-            (hirq&HIRQ_SUSDN) ? "SUSDN" : "-",
-            (hirq&HIRQ_CONDET) ? "CONDET" : "-",
-            (hirq&HIRQ_FRAME) ? "FRAME" : "-", 
-            (hirq&HIRQ_HXFRDN) ? "HXFRDN" : "-", 
-            mode, revision);
-
-            usb.writeHIRQ(hirq);
-        }
-
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-    }
 }
 
 void read_orientation()

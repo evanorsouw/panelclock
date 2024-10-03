@@ -21,6 +21,10 @@ public:
     Setting(std::string name, float v) : _name(name) { _value.f = v; }
     Setting(std::string name, bool v) : _name(name) { _value.b = v; }
 
+    void set(float v) { _value.f = v; }
+    void set(const char * v) { _value.s = v; }
+    void set(bool v) { _value.b = v; }
+
     std::string name() const { return _name; }
     float asfloat() const { return _value.f; }
     bool asbool() const { return _value.b; }
@@ -40,7 +44,22 @@ public:
     bool saveSettings();
 
     template <class T>
-    Setting *addSetting(const char *name, T value) { return _settings[name] = new Setting(name, value); }    
+    Setting *addSetting(const char *name, T value) 
+    {
+        Setting *setting;
+        auto it = std::find_if(_settings.begin(), _settings.end(), [&](std::pair<std::string, Setting*> kv) { return kv.first == name; });
+        if (it == _settings.end())
+        {
+            setting = new Setting(name, value);
+            _settings[name] = setting;            
+        }
+        else
+        {
+            setting = it->second;
+            setting->set(value);
+        }
+        return setting;
+    }    
     Setting *getSetting(const char *name) const 
     { 
         auto it = _settings.find(name);

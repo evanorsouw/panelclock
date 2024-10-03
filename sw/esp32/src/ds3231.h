@@ -46,24 +46,25 @@ public:
         {
             printf("%02x ", buf[i]);
         }
-        printf(" => %04d-%02d-%02d %02d:%02d:%02d\n", 
+        printf(" => %04d-%02d-%02d %02d:%02d:%02d (wday:%d)\n", 
             _lastReadTod->year,
-            _lastReadTod->mon,
+            _lastReadTod->mon + 1,
             _lastReadTod->mday,
             _lastReadTod->hour,
             _lastReadTod->min,
-            _lastReadTod->sec);
+            _lastReadTod->sec,
+            _lastReadTod->wday);
     }
 
     void setTime(tod *now)
     {
-        // _i2c->write(SLAVE_ADDR, 0, dec2bcd(now->sec));
-        // _i2c->write(SLAVE_ADDR, 1, dec2bcd(now->min));
-        // _i2c->write(SLAVE_ADDR, 2, dec2bcd(now->hour));
-        //_i2c->write(SLAVE_ADDR, 3, dec2bcd(now->wday + 1));
-        // _i2c->write(SLAVE_ADDR, 4, dec2bcd(now->mday));
-         _i2c->write(SLAVE_ADDR, 5, dec2bcd(now->mon + 1) | ((now->year >= 2000) ? 0x80 : 0x00));
-        // _i2c->write(SLAVE_ADDR, 6, dec2bcd(now->year % 100));
+        _i2c->write(SLAVE_ADDR, 0, dec2bcd(now->sec));
+        _i2c->write(SLAVE_ADDR, 1, dec2bcd(now->min));
+        _i2c->write(SLAVE_ADDR, 2, dec2bcd(now->hour));
+        _i2c->write(SLAVE_ADDR, 3, dec2bcd(now->wday + 1));
+        _i2c->write(SLAVE_ADDR, 4, dec2bcd(now->mday));
+        _i2c->write(SLAVE_ADDR, 5, dec2bcd(now->mon + 1) | ((now->year >= 2000) ? 0x80 : 0x00));
+        _i2c->write(SLAVE_ADDR, 6, dec2bcd(now->year % 100));
     }
 
     tod *getTime() const { return _lastReadTod; }
@@ -85,6 +86,7 @@ private:
      {
         return (bcd >> 4) * 10 + (bcd & 0xF);
      }
+     
      uint8_t dec2bcd(uint8_t dec)
      {
         return ((dec / 10) << 4) | (dec % 10);
