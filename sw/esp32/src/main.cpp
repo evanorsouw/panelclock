@@ -52,6 +52,12 @@ void setLed(bool on)
   gpio_set_level(LED_TEST, on);
 }
 
+void handleUserInput()
+{
+    setLed(getButton());
+    vTaskDelay(5);
+}
+
 void read_orientation()
 {
     I2CWrapper i2c(0, I2C_CLK, I2C_SDA);
@@ -103,7 +109,6 @@ void app_main()
 {
     printf("application starting\n");
 
-    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_INPUT);
@@ -120,7 +125,7 @@ void app_main()
 
     auto panel = new LedPanel(128, 64, *spi);
     auto graphics = new Graphics(panel->dx(), panel->dy());
-    auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK);        // note lines swapped on PCB
+    auto i2c = new I2CWrapper(0, I2C_CLK, I2C_SDA);
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings);
@@ -133,6 +138,7 @@ void app_main()
     xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->renderTask();  }, "render", 80000, app, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 4000, app, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((TimeUpdater*)arg)->updateTask(); }, "timemgt", 4000, timeupdater, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) handleUserInput(); }, "userinput", 4000, timeupdater, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 12000, environment, 1, nullptr);
 
     printf("application started\n");

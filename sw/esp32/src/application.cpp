@@ -49,7 +49,7 @@ void Application::renderTask()
 
     auto now = _system.now();
     _msSinceMidnight = ((now.hour() * 60 + now.min()) * 60 + now.sec()) * 1000 + now.millies();
-    //monitorRefreshRate();
+     monitorRefreshRate();
 
     screen->fill(Color::black);
 
