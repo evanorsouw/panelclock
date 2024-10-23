@@ -100,7 +100,7 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
         SFT_GMetrics mtx;
         sft_gmetrics(&sft, glyph, &mtx);
         tx += std::floor(mtx.leftSideBearing);
-        ty = ty + mtx.yOffset + 1;
+        ty += mtx.yOffset + 1;
 
         auto sx = 0;
         auto sy = 0;
@@ -138,19 +138,19 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
 
         if (dx > 0 && dy > 0)
         {
-            txtMask.width = dx;
-            txtMask.height = dy;
+            txtMask.width = mtx.minWidth;
+            txtMask.height = mtx.minHeight;
             sft_render(&sft, glyph, txtMask);
 
-            auto pm = (uint8_t*)txtMask.pixels;
-            for (auto iy=sy; iy < dy; iy++)
+            auto pm = (uint8_t*)txtMask.pixels + sx + sy * txtMask.width;
+            for (auto iy=0; iy < dy; iy++)
             {
-                for (auto ix=sx; ix < dx; ++ix)
+                for (auto ix=0; ix < dx; ++ix)
                 {
                     auto alpha = pm[ix];
                     mode == Mode::Set
-                        ? tgt.set((int)tx + ix, ty + iy, color, alpha)
-                        : tgt.add((int)tx + ix, ty + iy, color, alpha);
+                        ? tgt.set(tx + ix, ty + iy, color, alpha)
+                        : tgt.add(tx + ix, ty + iy, color, alpha);
                 }
                 pm += txtMask.width;
             }
