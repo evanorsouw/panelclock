@@ -41,23 +41,19 @@ public:
 
         _lastReadTod = extractTime(_lastReadTod == &_tod1 ? &_tod2 : &_tod1, buf);
 
-        printf("time: ");
+        printf("rtc read time: ");
         for (int i=0; i<sizeof(buf); ++i)
         {
             printf("%02x ", buf[i]);
         }
-        printf(" => %04d-%02d-%02d %02d:%02d:%02d (wday:%d)\n", 
-            _lastReadTod->year,
-            _lastReadTod->mon + 1,
-            _lastReadTod->mday,
-            _lastReadTod->hour,
-            _lastReadTod->min,
-            _lastReadTod->sec,
-            _lastReadTod->wday);
+        printTod(_lastReadTod);
     }
 
     void setTime(tod *now)
     {
+        printf("rtc write time: ");
+        printTod(now);        
+
         _i2c->write(SLAVE_ADDR, 0, dec2bcd(now->sec));
         _i2c->write(SLAVE_ADDR, 1, dec2bcd(now->min));
         _i2c->write(SLAVE_ADDR, 2, dec2bcd(now->hour));
@@ -91,6 +87,14 @@ private:
      {
         return ((dec / 10) << 4) | (dec % 10);
      }
+
+    void printTod(tod *now)
+    {
+        printf(" => %04d-%02d-%02d %02d:%02d:%02d (wday:%d)\n", 
+            now->year, now->mon + 1, now->mday,
+            now->hour, now->min, now->sec,
+            now->wday);
+    }
 };
 
 #endif

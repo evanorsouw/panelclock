@@ -15,17 +15,20 @@
 #include "appsettings.h"
 #include "bitmap.h"
 #include "color.h"
+#include "ds3231.h"
+#include "environment_weerlive.h"
 #include "fpgaconfigurator.h"
 #include "graphics.h"
 #include "ledpanel.h"
-#include "ds3231.h"
-#include "environment_weerlive.h"
 #include "mpu6050.h"
-#include "timeupdater.h"
+#include "timesyncer.h"
+#include "userinput_keys.h"
 #include "wificlient.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
-#define BUTTON_TEST   GPIO_NUM_32 // 0=pressed
+#define BUTTON_SET    GPIO_NUM_32
+#define BUTTON_UP     GPIO_NUM_35
+#define BUTTON_DOWN   GPIO_NUM_34
 
 #define FPGA_SPI_CLK         GPIO_NUM_21
 #define FPGA_SPI_MOSI        GPIO_NUM_25
@@ -33,30 +36,6 @@
 #define FPGA_RESET           GPIO_NUM_19
 #define I2C_SDA              GPIO_NUM_18
 #define I2C_CLK              GPIO_NUM_5
-
-bool getButton()
-{
-  return !gpio_get_level(BUTTON_TEST);
-}
-
-void waitKey()
-{
-    while (!getButton());
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    while (getButton());
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-}
-
-void setLed(bool on)
-{
-  gpio_set_level(LED_TEST, on);
-}
-
-void handleUserInput()
-{
-    setLed(getButton());
-    vTaskDelay(5);
-}
 
 void read_orientation()
 {
@@ -113,7 +92,9 @@ void app_main()
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_INPUT);
     gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
-    gpio_set_direction(BUTTON_TEST, GPIO_MODE_INPUT);
+    gpio_set_direction(BUTTON_SET, GPIO_MODE_INPUT);
+    gpio_set_direction(BUTTON_UP, GPIO_MODE_INPUT);
+    gpio_set_direction(BUTTON_DOWN, GPIO_MODE_INPUT);
 
     auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
 
@@ -125,21 +106,22 @@ void app_main()
 
     auto panel = new LedPanel(128, 64, *spi);
     auto graphics = new Graphics(panel->dx(), panel->dy());
-    auto i2c = new I2CWrapper(0, I2C_CLK, I2C_SDA);
+    //auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK); // v2 pcb
+    auto i2c = new I2CWrapper(0, I2C_CLK, I2C_SDA); // v3 pcb
     i2c->start();
     auto rtc = new DS3231(i2c);
-    auto system = new System(settings);
-
+    auto system = new System(settings, rtc);
+    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, *system);
     auto environment = new EnvironmentWeerlive(system, settings->WeerliveKey(), settings->WeerliveLocation());
     
-    auto app = new Application(*graphics, *panel, *environment, *system);
-    auto timeupdater = new TimeUpdater(*rtc);
+    auto app = new Application(*graphics, *panel, *environment, *system, *userinput);
+    auto timeupdater = new TimeSyncer(*rtc);
 
     xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->renderTask();  }, "render", 80000, app, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 4000, app, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((TimeUpdater*)arg)->updateTask(); }, "timemgt", 4000, timeupdater, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) handleUserInput(); }, "userinput", 4000, timeupdater, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 12000, environment, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 2000, app, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((TimeSyncer*)arg)->updateTask(); }, "timemgt", 2000, timeupdater, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 8000, environment, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 2000, userinput, 1, nullptr);
 
     printf("application started\n");
 }

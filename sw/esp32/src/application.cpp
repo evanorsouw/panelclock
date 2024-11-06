@@ -10,13 +10,15 @@
 #include "color.h"
 #include "spline.h"
 
-Application::Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys)
+Application::Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys, UserInput &userinput)
     : _graphics(graphics)
     , _panel(panel)
     , _environment(env)
     , _system(sys)
+    , _userinput(userinput)
 {
     _iShowScreen = 0;
+    _uimode = UIMode::BootAnimation;
     _refreshCountStart = std::numeric_limits<long>::max();
 
     // 2 screen bitmap, 1 being copied, the other for rendering the next one
@@ -40,6 +42,7 @@ Application::Application(Graphics &graphics, LedPanel &panel, Environment &env, 
     _fontIcons22 = Font::getFont("panelicons", 22, 22);
 
     _bootAnimationPhase = 0;
+    _configurationui = new ConfigurationUI(graphics, env, sys, userinput, _fontdate);
 }
 
 void Application::renderTask()
@@ -53,12 +56,20 @@ void Application::renderTask()
 
     screen->fill(Color::black);
 
-    if (!runBootAnimation(*screen))
+    switch (_uimode)
     {
-        drawClock(*screen, 0);
-        drawDateTime(*screen, now);
-        drawWeather(*screen);
-        drawIcons(*screen);
+        case UIMode::BootAnimation:
+            runBootAnimation(*screen);
+            break;
+        case UIMode::DateTime:
+            runProduction(*screen, now);
+            break;
+        case UIMode::Configuration:
+            if (_configurationui->render(*screen))
+            {
+                _uimode = UIMode::DateTime;
+            }
+            break;
     }
     xQueueSend(_hDisplayQueue, &screen, 1000);
 }
@@ -72,7 +83,7 @@ void Application::displayTask()
     xQueueSend(_hRenderQueue, &screen, 1000);
 }
 
-bool Application::runBootAnimation(Bitmap &screen)
+void Application::runBootAnimation(Bitmap &screen)
 {   
     if (_bootAnimationPhase == 0)
     {
@@ -104,7 +115,18 @@ bool Application::runBootAnimation(Bitmap &screen)
             _bootAnimationPhase = 2;
         }
     }
-    return _bootAnimationPhase < 2;
+    if (_bootAnimationPhase == 2)
+    {
+        _uimode = UIMode::DateTime;
+    }
+}
+
+void Application::runProduction(Bitmap &screen, const timeinfo &now)
+{
+    drawClock(screen, 0);
+    drawDateTime(screen, now);
+    drawWeather(screen);
+    productionUserInteraction();
 }
 
 void Application::drawClock(Bitmap &screen, float x)
@@ -170,14 +192,6 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
         127 - size.dx - 1, 
         ybase, 
         buf, Color::white);
-}
-
-void Application::drawIcons(Bitmap &screen)
-{
-    if (!_system.gotInternet())
-    {
-        _graphics.text(screen, _fontIcons9, 60, 8, "G", Color::red);
-    }
 }
 
 void Application::drawWeather(Bitmap &screen)
@@ -578,5 +592,15 @@ void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy)
         {
             _graphics.rect(screen, x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), Color::white);
         }
+    }
+}
+
+void Application::productionUserInteraction()
+{
+    if (_userinput.hasKeyDown(UserInput::KEY_SET, 1000))
+    {
+        _uimode = UIMode::Configuration;
+        _userinput.flush();
+        _configurationui->startConfigurationSession();
     }
 }

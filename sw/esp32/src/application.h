@@ -5,14 +5,19 @@
 
 #include "animation.h"
 #include "bitmap.h"
+#include "configurationui.h"
 #include "ds3231.h"
 #include "environment.h"
 #include "graphics.h"
 #include "ledpanel.h"
 #include "system.h"
+#include "userinput.h"
 
 class Application
 {
+private:
+    enum class UIMode { BootAnimation, DateTime, Configuration };
+    
 private:
     int const WeatherImageDx = 32;
     int const WeatherImageDy = 26;
@@ -21,6 +26,7 @@ private:
     LedPanel &_panel;
     Environment &_environment;
     System &_system;
+    UserInput &_userinput;
     QueueHandle_t _hRenderQueue;
     QueueHandle_t _hDisplayQueue;
     Font *_fonttimeLarge;
@@ -33,6 +39,7 @@ private:
     Font *_fontIcons9;
     Font *_fontIcons18;
     Font *_fontIcons22;
+    UIMode _uimode;
     int _refreshCount;
     long _refreshCountStart;
     int _iShowScreen;
@@ -40,18 +47,20 @@ private:
     int _bootAnimationPhase;
     int64_t _bootStart;
     std::vector<Animation*> _bootAnimations;
+    ConfigurationUI *_configurationui;
 
 public:
-    Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys);
+    Application(Graphics &graphics, LedPanel &panel, Environment &env, System &sys, UserInput &userinput);
 
     void renderTask();
     void displayTask();
 
 private:
-    bool runBootAnimation(Bitmap &screen);
+    void runBootAnimation(Bitmap &screen);
+    void runProduction(Bitmap &screen, const timeinfo &now);
+    void runConfiguration(Bitmap &screen);
     void drawClock(Bitmap &screen, float x);
     void drawDateTime(Bitmap &screen, const timeinfo &now);
-    void drawIcons(Bitmap &screen);
     void drawWeather(Bitmap &screen);
     void drawWeatherImage(Bitmap &screen);
     void drawWindAngle(Bitmap &screen);
@@ -71,6 +80,7 @@ private:
     void drawFog(Bitmap &screen, float x, float y, float dx, float dy);
     void drawSnow(Bitmap &screen, float x, float y, float dx, float dy);
     long drawtime() { return _msSinceMidnight; }    
+    void productionUserInteraction();
 };
 
 #endif

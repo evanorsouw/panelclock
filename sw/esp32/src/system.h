@@ -3,6 +3,7 @@
 #define _SYSTEM_H_
 
 #include "appsettings.h"
+#include "ds3231.h"
 #include "wificlient.h"
 #include "translator.h"
 #include "timeinfo.h"
@@ -12,54 +13,32 @@ class System
 private:
     WifiClient *_wifi;
     AppSettings *_settings;
+    DS3231 *_rtc;
     Translator *_translator;
 
 public:
-    System(AppSettings *settings) 
-    {
-        _settings = settings;
-        _wifi = nullptr;
-        _translator = new Translator(settings->Language());
-        startWifi();
-    }
+    System(AppSettings *settings, DS3231 *rtc);
+    virtual ~System();
 
-    virtual ~System()
-    {
-        delete _translator;
-        stopWifi();
-    }
+    void scanAPs();
+    void connectWifi();
+    int nAPs() const { return _wifi->nAPs(); }
+    const char *APSID(int i) const { return _wifi->APSID(i); }
 
-    bool gotInternet() const { return _wifi->isConnected(); }
+    bool wifiConnecting() const { return _wifi->isConnecting(); }
+    bool wifiConnected() const { return _wifi->isConnected(); }
+    bool wifiScanning() const { return _wifi->isScanning(); }
+
     bool waitForInternet(int timeout = 0) const { return _wifi->waitForConnection(timeout); }
-    timeinfo now() const
-    {
-        struct timeval tv;
-        gettimeofday(&tv, nullptr);
-        return timeinfo(tv);
-    }
-
+    const char *IPAddress() const { return _wifi->ip(); }
+    timeinfo now() const;
+    void now(timeinfo &now);
     const char *translate(const char *in) { return _translator->translate(in); }
+    AppSettings &settings() const { return *_settings; }
 
 private:
-    void startWifi()
-    {
-        if (!_wifi)
-        {
-            _wifi = new WifiClient(
-                _settings->WifiSid()->asstring(), 
-                _settings->WifiPassword()->asstring());
-            _wifi->stayConnected();
-        }
-    }
-
-    void stopWifi()
-    {
-        if (_wifi)
-        {
-            delete _wifi;
-            _wifi = nullptr;
-        }
-    }
+    void startWifi();
+    void stopWifi();
 };
 
 #endif

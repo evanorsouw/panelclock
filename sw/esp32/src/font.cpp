@@ -51,7 +51,7 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
         }
         if (sftfont != nullptr)
         {
-            printf("loaded font='%s', size=%d @%p\n", fontname, sftfont->size, sftfont->memory);
+            printf("loaded font='%s' (size=%d, @%p)\n", fontname, sftfont->size, sftfont->memory);
             info = _loadedFonts[fontname] = fontinfo { 
                 .font = sftfont,
                 .usecount = 0
@@ -66,8 +66,6 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
     }
 
     it->second.usecount++;
-    printf("usecount for font %s: %d\n", it->first, it->second.usecount);
-
     SFT sft = {
 	    .font = info.font,
         .xScale = dx,
@@ -80,6 +78,11 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
 
     vTaskDelay(10);
     auto font = new Font(fontname, sft, lmetrics, dx, dy);
+
+    printf("usecount for font %s: %d, height=%.1f, ascend=%.1f, descend=%.1f\n", 
+        it->first, it->second.usecount, 
+        font->height(), font->ascend(), font->descend());
+
     return font;
 }
 

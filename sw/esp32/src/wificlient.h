@@ -3,15 +3,18 @@
 #define _WIFI_H_
 
 #include <string>
+#include <vector>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
-//#include "esp_mac.h"
 
 #include "esp_wifi.h"
+
+enum class WifiMode { Init, Scanning, Connecting, Connected };
 
 class WifiClient
 {
 private:
+    static const int MAXAP = 4;
     wifi_init_config_t _config;
     wifi_config_t _wifiConfig;
     esp_event_handler_instance_t _handlerWifi;
@@ -20,17 +23,27 @@ private:
     std::string _password;
     esp_netif_ip_info_t _ipinfo;
     EventGroupHandle_t _eventGroup;
-    long _connected;
     char _ip[40];
+    wifi_scan_config_t _scanConfig;
+    char _appoints[MAXAP][32];
+    int _nAccessPoints;
+    WifiMode _mode;
 
 public:
-    WifiClient(std::string sid, std::string password);
+    WifiClient();
     virtual ~WifiClient();
     
-    void stayConnected();
-    bool isConnected() const { return _connected; }
+    bool isConnecting() const { return _mode == WifiMode::Connecting; }
+    bool isConnected() const { return _mode == WifiMode::Connected; }
+    bool isScanning() const { return _mode == WifiMode::Scanning; }
     const char *ip() const { return _ip; }
     bool waitForConnection(int timeoutMs) const;
+
+    void scanAPs();
+    void connect(const char *sid, const char *password);
+    
+    int nAPs() const { return _nAccessPoints; }
+    const char *APSID(int i) const { return (i >=0 && i< _nAccessPoints) ? _appoints[i] : "<empty>"; }
 
 private:
     static void eventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -38,6 +51,7 @@ private:
         ((WifiClient*)arg)->eventHandler(event_base, event_id, event_data);
     }
     void eventHandler(esp_event_base_t event_base, int32_t event_id, void* event_data);
+    void initializeWifi();
 };
 
 #endif

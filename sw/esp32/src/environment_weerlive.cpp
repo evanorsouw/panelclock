@@ -84,10 +84,6 @@ void EnvironmentWeerlive::updateTask()
                 sunset().value().tm_year, sunset().value().tm_mon, sunset().value().tm_mday, sunset().value().tm_hour, sunset().value().tm_min, sunset().value().tm_sec);
         printf("\n");
     }
-
-    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
-
     vTaskDelay(delayMs / portTICK_PERIOD_MS);
 }
 
