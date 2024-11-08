@@ -1,6 +1,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <map>
 #include "esp_log.h"
 #include "wificlient.h"
 
@@ -13,9 +14,9 @@ WifiClient::WifiClient()
     _ip[0] = 0;
     _eventGroup = xEventGroupCreate();
     _mode = WifiMode::Init;
-    _nAccessPoints = 0;
 
-    esp_log_level_set("wifi", ESP_LOG_DEBUG);
+    _nAccessPoints = 0;
+    memset(&_appoints, 0, sizeof(apinfo) * MAXAP);
 
     initializeWifi();
 }
@@ -57,22 +58,11 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
         {            
             uint16_t ap_count = 0;
             esp_wifi_scan_get_ap_num(&ap_count);
-            printf("wifi scan complete, found (%d) aps: ", ap_count);
+            ap_count = std::min((uint16_t)MAXAP, ap_count);
+            esp_wifi_scan_get_ap_records(&ap_count, _scannedAppoints);
 
-            wifi_ap_record_t aps[16];
-            ap_count = std::min((uint16_t)16, ap_count);
-            esp_wifi_scan_get_ap_records(&ap_count, aps);
+            mergeScannedAccesspoints(ap_count);
 
-            auto nAP = 0;
-            for (auto i=0; i<ap_count && nAP < MAXAP; ++i)
-            {
-                printf("'%s' ", aps[i].ssid);
-                if (aps[i].ssid[0] == 0)
-                    continue;
-                strcpy(_appoints[nAP++], (const char *)aps[i].ssid);
-            }
-            _nAccessPoints = nAP;
-            printf("\n");
             if (_mode == WifiMode::Scanning)
             {
                 scanAPs();
@@ -123,31 +113,44 @@ void WifiClient::scanAPs()
     _scanConfig.scan_time.active.max = 5000;
     _scanConfig.show_hidden = true;    
 
-    ESP_ERROR_CHECK(esp_wifi_scan_start(&_scanConfig, false));
+    esp_wifi_disconnect();
+    esp_wifi_scan_start(&_scanConfig, false);
+    mergeScannedAccesspoints(0);
+}
+
+int WifiClient::nAPs() 
+{
+    std::lock_guard<std::mutex> lock(_apmutex);
+    return _nAccessPoints; 
+}
+
+const char *WifiClient::APSID(int i) 
+{ 
+    std::lock_guard<std::mutex> lock(_apmutex);
+    return (i >=0 && i< _nAccessPoints) ? _appoints[i].sid : "<empty>"; 
 }
 
 void WifiClient::connect(const char *sid, const char *password)
 {
-    printf("connecting to AP='%s', password='%s' (current mode=%d)\n", sid, password, (int)_mode);
+    printf("connecting to AP='%s', password='***' (current mode=%d)\n", sid, (int)_mode);
+
+    if (_mode == WifiMode::Connected && _sid == sid && _password == password)
+        return;
 
     if (_mode == WifiMode::Scanning)
     {
-        ESP_ERROR_CHECK(esp_wifi_scan_stop());
+        esp_wifi_scan_stop();
     }
 
-    if (_mode == WifiMode::Connected || _mode == WifiMode::Connecting)
-        return;
-
     _mode = WifiMode::Connecting;    
-
     _sid = sid;
     _password = password;
 
+    esp_wifi_stop();
     std::memcpy(_wifiConfig.sta.ssid, _sid.c_str(), std::min(_sid.length(), sizeof(wifi_sta_config_t::ssid)));
     std::memcpy(_wifiConfig.sta.password, _password.c_str(), std::min(_sid.length(), sizeof(wifi_sta_config_t::password)));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifiConfig));
-    ESP_ERROR_CHECK(esp_wifi_stop() );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    esp_wifi_start();
 }
 
 void WifiClient::initializeWifi()
@@ -179,4 +182,56 @@ void WifiClient::initializeWifi()
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifiConfig));
 
     printf("wifi initialization completed\n");
+}
+
+void WifiClient::mergeScannedAccesspoints(int count)
+{
+    std::lock_guard<std::mutex> lock(_apmutex);
+
+    auto now = xTaskGetTickCount();
+    auto timeout = CONFIG_FREERTOS_HZ * 120;
+
+    auto istore = 0;
+    for (int i=0; i<_nAccessPoints; ++i)
+    {
+        auto &ap = _appoints[i];
+        if (i != istore)
+        {
+            memcpy(_appoints + istore, _appoints + i, sizeof(apinfo));
+        }
+        auto age = now - ap.foundAtTicks;
+        istore += (age > timeout) ? 0 : 1;
+    }
+    _nAccessPoints = istore;
+
+    for (auto i=0; i<count; ++i)
+    {
+        auto sid = (const char *)_scannedAppoints[i].ssid;
+        if (!strcmp(sid, ""))
+            continue;
+    
+        for (istore=0; istore < _nAccessPoints; ++istore)
+        {
+            auto &ap = _appoints[istore];
+            if (!strcmp(ap.sid, sid))
+                break;
+        }
+        if (istore < MAXAP)
+        {
+            auto &ap = _appoints[istore];
+            strcpy(ap.sid, sid);
+            ap.foundAtTicks = now;
+            if (istore >= _nAccessPoints)
+            {
+                _nAccessPoints++;
+            }
+        }
+    }
+
+    printf("accesspoints: ");
+    for (int i=0; i<_nAccessPoints; ++i)
+    {
+        printf("'%s' (%ld)' ", _appoints[i].sid, now - _appoints[i].foundAtTicks);
+    }
+    printf("\n");
 }

@@ -3,7 +3,8 @@
 #define _WIFI_H_
 
 #include <string>
-#include <vector>
+#include <map>
+#include <mutex>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
@@ -14,7 +15,12 @@ enum class WifiMode { Init, Scanning, Connecting, Connected };
 class WifiClient
 {
 private:
-    static const int MAXAP = 4;
+    struct apinfo {
+        char sid[33];
+        TickType_t foundAtTicks;
+    };
+private:
+    static const int MAXAP = 16;
     wifi_init_config_t _config;
     wifi_config_t _wifiConfig;
     esp_event_handler_instance_t _handlerWifi;
@@ -25,8 +31,10 @@ private:
     EventGroupHandle_t _eventGroup;
     char _ip[40];
     wifi_scan_config_t _scanConfig;
-    char _appoints[MAXAP][32];
+    wifi_ap_record_t _scannedAppoints[MAXAP];
+    apinfo _appoints[MAXAP];
     int _nAccessPoints;
+    std::mutex _apmutex;
     WifiMode _mode;
 
 public:
@@ -40,10 +48,10 @@ public:
     bool waitForConnection(int timeoutMs) const;
 
     void scanAPs();
+    int nAPs();
+    const char *APSID(int i);
     void connect(const char *sid, const char *password);
     
-    int nAPs() const { return _nAccessPoints; }
-    const char *APSID(int i) const { return (i >=0 && i< _nAccessPoints) ? _appoints[i] : "<empty>"; }
 
 private:
     static void eventHandler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -52,6 +60,7 @@ private:
     }
     void eventHandler(esp_event_base_t event_base, int32_t event_id, void* event_data);
     void initializeWifi();
+    void mergeScannedAccesspoints(int count);
 };
 
 #endif

@@ -10,10 +10,10 @@ void TimeSyncer::updateTask()
     getTimestamp(&now);
     
     auto secondsSinceEpoch = mktime(&now);
-    if (secondsSinceEpoch == -1)
+    if (secondsSinceEpoch < 0)
     {
-        printf("timesyncer: rtc time invalid, resetting to 2024-01-01 midnight\n");
-        setTimestamp(2024,1,1,0,0,0,0,0);
+        printf("timesyncer: rtc time invalid, resetting to epoch\n");
+        setTimestamp(1970,1,1,0,0,0,0,0);
         getTimestamp(&now);
         secondsSinceEpoch = mktime(&now);
     }
@@ -58,6 +58,7 @@ struct tm * TimeSyncer::getTimestamp(struct tm *when)
     when->tm_hour  = nowRtc->hour;
     when->tm_min  = nowRtc->min;
     when->tm_sec  = nowRtc->sec;
+    when->tm_isdst = 0;
 
     return when;
 }

@@ -38,7 +38,7 @@ ConfigurationUI::ConfigurationUI(Graphics &graphics, Environment &env, System &s
     addConfig("exit", 
         nullptr, 
         nullptr, 
-        [this](configline&, bool){ _exitConfig = true; return false; });
+        [this](configline&, bool){ _exitConfig = true; return false; });   
 }
 
 void ConfigurationUI::startConfigurationSession()
@@ -49,10 +49,12 @@ void ConfigurationUI::startConfigurationSession()
     _updating = false;
     _exitConfig = false;
     _lastEditTime = _sys.now();
+    selectConfig(0);
 }
 
 void ConfigurationUI::endConfigurationSession()
 {    
+    _sys.connectWifi();
 }
 
 bool ConfigurationUI::render(Bitmap &screen)
@@ -72,6 +74,7 @@ bool ConfigurationUI::render(Bitmap &screen)
     if (_updating)
     {        
         _updating = config.updater(config, false);
+        _lastEditTime = _sys.now();
     }
     else
     {
@@ -210,7 +213,7 @@ bool ConfigurationUI::updateYear(configline &config, bool init)
     repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
     repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
 
-    config.setpoint = std::max(1901.0f, std::min(2099.0f, config.setpoint));
+    config.setpoint = std::max(1970.0f, std::min(2099.0f, config.setpoint));
     config.start.setDate((int)config.setpoint, config.start.mon(), config.start.mday());
     sprintf(config.value, "%04d", config.start.year());
 
@@ -239,7 +242,7 @@ bool ConfigurationUI::updateDate(configline &config, bool init)
 
     auto hasleap = (config.start.year() % 4 == 0) && (config.start.year() % 400 == 0 || config.start.year() % 100 != 0);
     auto maxdays = hasleap ? 366 : 365;
-    auto yday = (int)config.setpoint % maxdays + 1;
+    auto yday = (int)(config.setpoint + maxdays) % maxdays + 1;
     auto month = 0;
     auto mday = yday;
 
@@ -289,17 +292,36 @@ bool ConfigurationUI::updateTime(configline &config, bool init)
 
 bool ConfigurationUI::updateWifiSid(configline &config, bool init)
 {
-    if (init)
-    {
-    }
+    if (isEditTimeout())
+        return false;
+
+    auto naps = _sys.nAPs();
 
     auto key = getKey();
-
-    if (isEditTimeout() || key == UserInput::KEY_SET)
+    auto idx = (int)config.setpoint;
+    auto changed = false;
+    switch (key)
     {
-        return false;
+        case UserInput::KEY_SET:
+            return false;
+        case UserInput::KEY_UP:
+            idx++;
+            changed = true;
+            break;
+        case UserInput::KEY_DOWN:
+            idx--;
+            changed = true;
+            break;
     }
 
+    if (changed && naps > 0)
+    {            
+        idx = (idx + naps) % naps;
+        config.setpoint = idx;
+        strcpy(config.value, _sys.APSID(idx));
+        _sys.settings().WifiSid()->set(config.value);
+    }
+    
     return true;
 }
 
@@ -320,7 +342,6 @@ bool ConfigurationUI::updateWifiPassword(configline &config, bool init)
 
     return true;
 }
-
 
 int ConfigurationUI::getKey() 
 { 
@@ -353,7 +374,7 @@ bool ConfigurationUI::isTimeout()
     {
         _lastEditTime = _sys.now();
     }
-    return elapsed > 120000;
+    return elapsed > 300*1000;
 }
 
 void ConfigurationUI::generateWifiLine(configline &config)
@@ -364,22 +385,19 @@ void ConfigurationUI::generateWifiLine(configline &config)
         return;
     }
 
-    auto label = "";
+    auto step = (_sys.now().msticks() / 400) % 4;
+    char dots[5] = "    ";
+    dots[step] = '.';
     if (_sys.wifiScanning()) 
     {
-        label = "scanning";
+        sprintf(config.value, "scanning%s(%d)", dots, _sys.nAPs());
     }
     else if (_sys.wifiConnecting()) 
     {
-        label = "connecting";
+        sprintf(config.value, "connecting%s", dots);
     }
     else
     {
-        config.value[0] = 0;
-        return;
+        strcpy(config.value, "");
     }
-    auto step = (_sys.now().msticks() / 800) % 4;
-    char steps[5] = "    ";
-    steps[step] = '.';
-    sprintf(config.value, "%s%s(%d)", label, steps, _sys.nAPs());
 }
