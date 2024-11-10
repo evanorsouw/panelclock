@@ -11,34 +11,45 @@ ConfigurationUI::ConfigurationUI(Graphics &graphics, Environment &env, System &s
 {
     _font= font;
 
-    addConfig("wifi", 
+    addConfig("DST", 
+        nullptr,
+        [this](configline&c){ generateDSTLine(c); }, 
+        [this](configline &config, bool init){ return updateDST(config, init); });
+    addConfig(_sys.translate("year"), 
+        nullptr, 
+        [this](configline&c){ snprintf(c.value, sizeof(c.value), "%04d", _sys.now().year()); }, 
+        [this](configline &config, bool init){ return updateYear(config, init); });
+    addConfig(_sys.translate("date"), 
+        nullptr, 
+        [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d %s", _sys.now().mday(), _sys.now().monthName(false)); }, 
+        [this](configline &config, bool init){ return updateDate(config, init); });
+    addConfig(_sys.translate("time"), 
+        nullptr, 
+        [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _sys.now().hour(), _sys.now().min(), _sys.now().sec()); },  
+        [this](configline &config, bool init){ return updateTime(config, init); });
+    addConfig(_sys.translate("wifi"), 
         [this](configline&c, bool init){ if (init) _sys.scanAPs(); else _sys.connectWifi(); },
         [this](configline&c){ strcpy(c.value,_sys.settings().WifiSid()->asstring()); }, 
         [this](configline &config, bool init){ return updateWifiSid(config, init); });
-    addConfig("pass", 
+    addConfig(_sys.translate("pass"), 
         nullptr,
         [this](configline&c){ strcpy(c.value,_sys.settings().WifiPassword()->asstring()); }, 
         [this](configline &config, bool init){ return updateWifiPassword(config, init); });
-    addConfig("ip", 
+    addConfig(_sys.translate("ip"), 
         nullptr, 
         [this](configline&c){ generateWifiLine(c); },
         nullptr);
-    addConfig("year", 
-        nullptr, 
-        [this](configline&c){ sprintf(c.value, "%04d", _sys.now().year()); }, 
-        [this](configline &config, bool init){ return updateYear(config, init); });
-    addConfig("date", 
-        nullptr, 
-        [this](configline&c){ sprintf(c.value,"%02d %s", _sys.now().mday(), _sys.now().monthName(false)); }, 
-        [this](configline &config, bool init){ return updateDate(config, init); });
-    addConfig("time", 
-        nullptr, 
-        [this](configline&c){ sprintf(c.value,"%02d:%02d:%02d", _sys.now().hour(), _sys.now().min(), _sys.now().sec()); },  
-        [this](configline &config, bool init){ return updateTime(config, init); });
-    addConfig("exit", 
+    addConfig(_sys.translate("exit"), 
         nullptr, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   
+
+    _labelwidth = 0;
+    for(auto &config : _configs)
+    {
+        auto info = _font->textsize(config.label);
+        _labelwidth = std::max(_labelwidth, info.dx);
+    }
 }
 
 void ConfigurationUI::startConfigurationSession()
@@ -147,8 +158,9 @@ void ConfigurationUI::runInitter(bool init)
 
 void ConfigurationUI::drawConfigLines(Bitmap &screen)
 {
-    auto x = _updating ? 29 : 0;
-    auto dx = _updating ? 128 - 29 : 128;
+    auto margin = 2.0f;
+    auto x = _updating ? _labelwidth + margin * 2 : 0;
+    auto dx = _updating ? 128 - _labelwidth - margin * 2 : 128;
     _graphics.rect(screen, x, _selectionYBase - _configYBase, dx, _font->height(), Color(19,0,0));
 
     for (auto i=0; i<_configs.size(); ++i)
@@ -156,13 +168,14 @@ void ConfigurationUI::drawConfigLines(Bitmap &screen)
         auto &info = _configs[i];
         auto yt = i * _font->height() - _configYBase;
         auto yb = yt + _font->height();
+        auto color = info.updater ? Color::white : Color::lime;
 
         if (yb < 0 || yt >= 64)
             continue;
 
         auto y = yt + _font->height() + _font->descend() - 2;
-        _graphics.text(screen, _font, 2, y, info.label, Color::white);
-        _graphics.text(screen, _font, 30, y, info.value, Color::white);
+        _graphics.text(screen, _font, margin, y, info.label, Color::white);
+        _graphics.text(screen, _font, _labelwidth + margin * 2, y, info.value, color);
     }
     float dy = 0.0f;
     bool down = false;
@@ -193,6 +206,31 @@ void ConfigurationUI::drawConfigLines(Bitmap &screen)
     }
 }
 
+bool ConfigurationUI::updateDST(configline &config, bool init)
+{
+    if (isEditTimeout())
+        return false;
+        
+    auto key = getKey();
+    if (key == UserInput::KEY_SET)
+    {
+        _sys.now(config.start);
+        return false;
+    }
+    auto dst = _sys.settings().DST()->asbool();
+    switch (key)
+    {
+        case UserInput::KEY_DOWN:
+        case UserInput::KEY_UP:
+            dst = !dst;
+            break;
+    }
+    _sys.settings().DST()->set(dst);
+    config.start.dst(dst);
+    generateDSTLine(config);
+    return true;   
+}
+
 bool ConfigurationUI::updateYear(configline &config, bool init)
 {
     if (init)
@@ -215,7 +253,7 @@ bool ConfigurationUI::updateYear(configline &config, bool init)
 
     config.setpoint = std::max(1970.0f, std::min(2099.0f, config.setpoint));
     config.start.setDate((int)config.setpoint, config.start.mon(), config.start.mday());
-    sprintf(config.value, "%04d", config.start.year());
+    snprintf(config.value, sizeof(config.value), "%04d", config.start.year());
 
     return true;
 }
@@ -254,7 +292,7 @@ bool ConfigurationUI::updateDate(configline &config, bool init)
     printf("=> yday=%d, month=%d, mday=%d\n", yday, month, mday);
 
     config.start.setDate(config.start.year(), month, mday);
-    sprintf(config.value, "%02d %s", config.start.mday(), config.start.monthName(false));
+    snprintf(config.value, sizeof(config.value),  "%02d %s", config.start.mday(), config.start.monthName(false));
 
     return true;
 }
@@ -285,7 +323,7 @@ bool ConfigurationUI::updateTime(configline &config, bool init)
     config.start.min((int)config.setpoint % 60);
 
     auto &start = config.start;
-    sprintf(config.value, "%02d:%02d:%02d", start.hour(), start.min(), start.sec());
+    snprintf(config.value, sizeof(config.value), "%02d:%02d:%02d", start.hour(), start.min(), start.sec());
 
     return true;
 }
@@ -318,7 +356,7 @@ bool ConfigurationUI::updateWifiSid(configline &config, bool init)
     {            
         idx = (idx + naps) % naps;
         config.setpoint = idx;
-        strcpy(config.value, _sys.APSID(idx));
+        snprintf(config.value, sizeof(config.value), "%s", _sys.APSID(idx));
         _sys.settings().WifiSid()->set(config.value);
     }
     
@@ -377,11 +415,19 @@ bool ConfigurationUI::isTimeout()
     return elapsed > 300*1000;
 }
 
+void ConfigurationUI::generateDSTLine(configline &config)
+{
+    const char *txt = _sys.settings().DST()->asbool()
+        ?  _sys.translate("summer") 
+        : _sys.translate("winter");
+    snprintf(config.value, sizeof(config.value), txt);
+}
+
 void ConfigurationUI::generateWifiLine(configline &config)
 {
     if (_sys.wifiConnected()) 
     {
-        strcpy(config.value, _sys.IPAddress()); 
+        snprintf(config.value, sizeof(config.value), "%s", _sys.IPAddress()); 
         return;
     }
 
@@ -390,11 +436,11 @@ void ConfigurationUI::generateWifiLine(configline &config)
     dots[step] = '.';
     if (_sys.wifiScanning()) 
     {
-        sprintf(config.value, "scanning%s(%d)", dots, _sys.nAPs());
+        snprintf(config.value, sizeof(config.value), "%s%s(%d)", _sys.translate("scanning"), dots, _sys.nAPs());
     }
     else if (_sys.wifiConnecting()) 
     {
-        sprintf(config.value, "connecting%s", dots);
+        snprintf(config.value, sizeof(config.value), "%s%s", _sys.translate("connecting"), dots);
     }
     else
     {

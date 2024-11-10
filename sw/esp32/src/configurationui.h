@@ -37,12 +37,15 @@ private:
     UserInput &_userinput;
     Font *_font;
     int _selectedLine;
+    float _labelwidth;
     float _configYBase;
     float _selectionYBase;
     std::vector<configline> _configs;
     bool _updating;
     bool _exitConfig;
     timeinfo _lastEditTime;
+    int _iCharacterRoll;
+    int _iEditIndex;
 
 public:
     ConfigurationUI(Graphics &graphics, Environment &env, System &sys, UserInput &userinput, Font *font);
@@ -58,6 +61,7 @@ private:
         std::function<bool(configline &, bool)> updater);
     void selectConfig(int i);
     void drawConfigLines(Bitmap &screen);
+    bool updateDST(configline &config, bool init);
     bool updateWifiSid(configline &config, bool init);
     bool updateWifiPassword(configline &config, bool init);
     bool updateYear(configline &config, bool init);
@@ -67,6 +71,7 @@ private:
     int getKey();
     bool isEditTimeout();
     bool isTimeout();
+    void generateDSTLine(configline &config);
     void generateWifiLine(configline &config);
     void runInitter(bool init);
 };

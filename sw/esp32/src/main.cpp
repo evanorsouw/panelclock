@@ -8,8 +8,10 @@
 #include <driver/gpio.h>
 #include "esp_chip_info.h"
 #include "esp_flash.h"
-#include "spiwrapper.h"
 #include "i2cwrapper.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+#include "spiwrapper.h"
 
 #include "application.h"
 #include "appsettings.h"
@@ -66,6 +68,17 @@ void init_spiffs()
     esp_vfs_spiffs_register(&spiffs_config);
 }
 
+void initNVS()
+{
+    auto result = nvs_flash_init();
+    if (result == ESP_ERR_NVS_NO_FREE_PAGES || result == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        result = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(result);
+}
+
 void configureFPGA(SpiWrapper *spi)
 {
     FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
@@ -86,7 +99,7 @@ extern "C" {
 
 void app_main() 
 {
-    printf("application starting\n");
+    printf("application starting 2\n");
 
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
@@ -96,9 +109,12 @@ void app_main()
     gpio_set_direction(BUTTON_UP, GPIO_MODE_INPUT);
     gpio_set_direction(BUTTON_DOWN, GPIO_MODE_INPUT);
 
+    initNVS();
+
     auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
 
     init_spiffs();
+
     configureFPGA(spi);
     
     auto settings = new AppSettings();

@@ -31,13 +31,6 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
             ESP_ERROR_CHECK(esp_wifi_connect());
             printf("connecting to access point\n");
         } 
-        else if (event_id == WIFI_EVENT_AP_STACONNECTED) 
-        {
-            auto evt = (wifi_event_ap_staconnected_t*)event_data;
-            printf("connected to access point='%s' - MAC=%02X:%02X:%02X:%02X:%02X:%02X\n", 
-                _sid.c_str(),
-                evt->mac[0], evt->mac[1], evt->mac[2], evt->mac[3], evt->mac[4], evt->mac[5]);
-        } 
         else if (event_id == WIFI_EVENT_STA_DISCONNECTED) 
         {
             switch (_mode)
@@ -56,15 +49,13 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
         } 
         else if (event_id == WIFI_EVENT_SCAN_DONE) 
         {            
-            uint16_t ap_count = 0;
-            esp_wifi_scan_get_ap_num(&ap_count);
-            ap_count = std::min((uint16_t)MAXAP, ap_count);
-            esp_wifi_scan_get_ap_records(&ap_count, _scannedAppoints);
-
-            mergeScannedAccesspoints(ap_count);
-
             if (_mode == WifiMode::Scanning)
             {
+                uint16_t ap_count = 0;
+                esp_wifi_scan_get_ap_num(&ap_count);
+                ap_count = std::min((uint16_t)MAXAP, ap_count);
+                esp_wifi_scan_get_ap_records(&ap_count, _scannedAppoints);
+                mergeScannedAccesspoints(ap_count);
                 scanAPs();
             }
         } 
@@ -141,9 +132,9 @@ void WifiClient::connect(const char *sid, const char *password)
     {
         esp_wifi_scan_stop();
     }
-
+      
     _mode = WifiMode::Connecting;    
-    _sid = sid;
+    _sid = strcmp(sid, "") ? sid : "<<select>>";
     _password = password;
 
     esp_wifi_stop();
@@ -155,6 +146,8 @@ void WifiClient::connect(const char *sid, const char *password)
 
 void WifiClient::initializeWifi()
 {
+
+    esp_log_level_set("wifi", ESP_LOG_WARN);
     ESP_ERROR_CHECK(esp_netif_init());
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -228,7 +221,7 @@ void WifiClient::mergeScannedAccesspoints(int count)
         }
     }
 
-    printf("accesspoints: ");
+    printf("count=%d, istore=%d, accesspoints (%d): ", count, istore, _nAccessPoints);
     for (int i=0; i<_nAccessPoints; ++i)
     {
         printf("'%s' (%ld)' ", _appoints[i].sid, now - _appoints[i].foundAtTicks);

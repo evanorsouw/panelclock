@@ -67,6 +67,7 @@ void Application::renderTask()
         case UIMode::Configuration:
             if (_configurationui->render(*screen))
             {
+                _system.settings().saveSettings();
                 _uimode = UIMode::DateTime;
             }
             break;

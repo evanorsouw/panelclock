@@ -15,7 +15,13 @@ static std::map<const char *, std::map<const char *, const char *>> _translation
             { "thursday", "donderdag" },
             { "friday", "vrijdag" },
             { "saturday", "zaterdag" },
-            { "sunday", "zondag" }
+            { "sunday", "zondag" },
+            { "year", "jaar" },
+            { "date", "datum" },
+            { "time", "tijd" },
+            { "summer", "zomertijd" },
+            { "winter", "wintertijd" },
+            { "exit", "terug" },
         }
     }
 };

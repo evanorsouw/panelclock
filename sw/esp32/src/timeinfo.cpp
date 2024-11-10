@@ -18,9 +18,10 @@ timeinfo::timeinfo()
     _msticks = 0;
 }
 
-timeinfo::timeinfo(const timeval &tv)
+timeinfo::timeinfo(const timeval &tv, bool isdst)
 {
     _tm = *localtime(&tv.tv_sec);
+    _tm.tm_isdst = isdst;
     _millies = tv.tv_usec / 1000;
     _msticks = (tv.tv_sec * 1000000 + tv.tv_usec) / 1000;
 }
@@ -32,7 +33,6 @@ void timeinfo::setDate(int year, int month, int mday)
     _tm.tm_mday = mday;
     set();
 }
-
 
 int timeinfo::daysInMonth(int month, bool leapyear)
 {

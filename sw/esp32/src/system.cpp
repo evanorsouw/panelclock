@@ -25,12 +25,11 @@ void System::connectWifi()
     _wifi->connect(_settings->WifiSid()->asstring(), _settings->WifiPassword()->asstring());
 }
 
-
 timeinfo System::now() const
 {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
-    return timeinfo(tv);
+    return timeinfo(tv, _settings->DST());
 }
 
 void System::now(timeinfo &now)

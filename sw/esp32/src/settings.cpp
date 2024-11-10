@@ -1,24 +1,91 @@
 
+#include <algorithm>
+
+#include <nvs.h>
+#include <nvs_flash.h>
+
 #include "settings.h"
 
 Settings::Settings()
-{    
+{   
     loadSettings();
 }
 
 bool Settings::loadSettings()
 {    
-    addSetting("language", "nl");
-    addSetting("wifisid", "evopevo_guest");
-    addSetting("wifipwd", "hereyouare");
-    addSetting("weerlivekey", "31a26656d0");
-    addSetting("weerlivelocation", "51.732034245965046,5.32637472036842");
+    nvs_handle handle;
+
+    auto result = nvs_open("standalonepanel", NVS_READWRITE, &handle);
+    if (result != ESP_OK)
+    {
+        printf("error opening nvs: %s\n", esp_err_to_name(result));
+        return false;
+    }
+
+    nvs_iterator_t it;
+    result = nvs_entry_find("nvs", "standalonepanel", NVS_TYPE_ANY, &it);
+    while (result == ESP_OK)
+    {
+        nvs_entry_info_t info;
+        nvs_entry_info(it, &info);
+        char buf[1024];
+        auto bufsize = sizeof(buf);
+        nvs_get_str(handle, info.key, buf, &bufsize);
+        printf("found setting '%s':'%s'\n", info.key, buf);
+        addSetting(info.key, buf);
+        result = nvs_entry_next(&it);
+    }
+    nvs_release_iterator(it);
+    nvs_close(handle);
     return true;
 }
 
 bool Settings::saveSettings()
-{
+{    
+    nvs_handle handle;
+
+    auto result = nvs_open("standalonepanel", NVS_READWRITE, &handle);
+    if (result != ESP_OK)
+    {
+        printf("error opening nvs: %s\n", esp_err_to_name(result));
+        return false;
+    }
+
+    for(auto setting : _settings)
+    {
+        auto name = setting.first.c_str();
+        auto value = setting.second->asstring();
+        printf("write setting '%s':'%s'\n", name, value);
+        nvs_set_str(handle, name, value);
+    }
+    nvs_commit(handle);
+    nvs_close(handle);
+
     return true;
 }
 
+Setting *Settings::addSetting(const char *name, const char *value)
+{
+    Setting *setting;
+    auto it = std::find_if(_settings.begin(), _settings.end(), [&](std::pair<std::string, Setting*> kv) { return kv.first == name; });
+    if (it == _settings.end())
+    {
+        setting = new Setting(name, value);
+        _settings[name] = setting;            
+    }
+    else
+    {
+        setting = it->second;
+        setting->set(value);
+    }
+    return setting;
+}    
+
+Setting *Settings::getSetting(const char *name) const 
+{ 
+    auto it = _settings.find(name);
+    if (it == _settings.end())
+        return nullptr;
+    return it->second;
+}
 
