@@ -13,33 +13,33 @@ ConfigurationUI::ConfigurationUI(Graphics &graphics, Environment &env, System &s
 
     addConfig("DST", 
         nullptr,
-        [this](configline&c){ generateDSTLine(c); }, 
+        [this](configline&c){ generateDSTLine(c, _sys.settings().DST()); }, 
         [this](configline &config, bool init){ return updateDST(config, init); });
-    addConfig(_sys.translate("year"), 
+    addConfig(translate("year"), 
         nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%04d", _sys.now().year()); }, 
         [this](configline &config, bool init){ return updateYear(config, init); });
-    addConfig(_sys.translate("date"), 
+    addConfig(translate("date"), 
         nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d %s", _sys.now().mday(), _sys.now().monthName(false)); }, 
         [this](configline &config, bool init){ return updateDate(config, init); });
-    addConfig(_sys.translate("time"), 
+    addConfig(translate("time"), 
         nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _sys.now().hour(), _sys.now().min(), _sys.now().sec()); },  
         [this](configline &config, bool init){ return updateTime(config, init); });
-    addConfig(_sys.translate("wifi"), 
+    addConfig(translate("wifi"), 
         [this](configline&c, bool init){ if (init) _sys.scanAPs(); else _sys.connectWifi(); },
-        [this](configline&c){ strcpy(c.value,_sys.settings().WifiSid()->asstring()); }, 
+        [this](configline&c){ strcpy(c.value,_sys.settings().WifiSid()); }, 
         [this](configline &config, bool init){ return updateWifiSid(config, init); });
-    addConfig(_sys.translate("pass"), 
+    addConfig(translate("pass"), 
         nullptr,
-        [this](configline&c){ strcpy(c.value,_sys.settings().WifiPassword()->asstring()); }, 
+        [this](configline&c){ strcpy(c.value,_sys.settings().WifiPassword()); }, 
         [this](configline &config, bool init){ return updateWifiPassword(config, init); });
-    addConfig(_sys.translate("ip"), 
+    addConfig(translate("ip"), 
         nullptr, 
         [this](configline&c){ generateWifiLine(c); },
         nullptr);
-    addConfig(_sys.translate("exit"), 
+    addConfig(translate("exit"), 
         nullptr, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   
@@ -208,124 +208,148 @@ void ConfigurationUI::drawConfigLines(Bitmap &screen)
 
 bool ConfigurationUI::updateDST(configline &config, bool init)
 {
-    if (isEditTimeout())
-        return false;
-        
-    auto key = getKey();
-    if (key == UserInput::KEY_SET)
+    if (init)
     {
-        _sys.now(config.start);
-        return false;
+        config.setpoint = _sys.settings().DST() ? 1 : 0;
     }
-    auto dst = _sys.settings().DST()->asbool();
-    switch (key)
+
+    auto editing = !isEditTimeout();
+    if (editing)
     {
-        case UserInput::KEY_DOWN:
-        case UserInput::KEY_UP:
-            dst = !dst;
-            break;
+        auto key = getKey();
+        editing = key != UserInput::KEY_SET;
+        auto dst = (int)config.setpoint;
+        if (editing)
+        {
+            switch (key)
+            {
+                case UserInput::KEY_DOWN:
+                case UserInput::KEY_UP:
+                    dst = !dst;
+                    break;
+            }
+        }
+        config.setpoint = dst ? 1 : 0;
+        generateDSTLine(config, dst);
+
+        if (!editing)
+        {
+            printf("writing dst: %d\n", dst);
+            _sys.settings().DST(dst);
+        }
     }
-    _sys.settings().DST()->set(dst);
-    config.start.dst(dst);
-    generateDSTLine(config);
-    return true;   
+    return editing;
 }
 
 bool ConfigurationUI::updateYear(configline &config, bool init)
 {
     if (init)
     {
-        config.start =_sys.now();        
-        config.setpoint = config.start.year();
+        config.setpoint = _sys.now().year();
     }
 
-    if (isEditTimeout())
-        return false;
-        
-    auto key = getKey();
-    if (key == UserInput::KEY_SET)
+    auto editing = !isEditTimeout();
+    if (editing)
     {
-        _sys.now(config.start);
-        return false;
+        auto key = getKey();
+        editing = key != UserInput::KEY_SET;
+        if (editing)
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
+        }
+        config.setpoint = std::max(1970.0f, std::min(2099.0f, config.setpoint));
+        auto now = _sys.now();
+        now.setDate((int)config.setpoint, now.mon(), now.mday());
+        snprintf(config.value, sizeof(config.value), "%04d", now.year());
+
+        if (!editing)
+        {
+            _sys.now(now);
+        }
     }
-    repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
-    repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
-
-    config.setpoint = std::max(1970.0f, std::min(2099.0f, config.setpoint));
-    config.start.setDate((int)config.setpoint, config.start.mon(), config.start.mday());
-    snprintf(config.value, sizeof(config.value), "%04d", config.start.year());
-
-    return true;
+    return editing;
 }
 
 bool ConfigurationUI::updateDate(configline &config, bool init)
 {
     if (init)
     {
-        config.start =_sys.now();        
-        config.setpoint = config.start.yday();
+        config.setpoint = _sys.now().yday();
     }
 
-    if (isEditTimeout())
-        return false;
-                
-    auto key = getKey();
-    if (key == UserInput::KEY_SET)
+    auto editing = !isEditTimeout();
+    if (editing)
     {
-        _sys.now(config.start);
-        return false;
+        auto key = getKey();
+        editing = key != UserInput::KEY_SET;
+        if (editing)
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
+        }
+        auto now = _sys.now();
+        auto hasleap = (now.year() % 4 == 0) && (now.year() % 400 == 0 || now.year() % 100 != 0);
+        auto maxdays = hasleap ? 366 : 365;
+        if (config.setpoint < 0)
+            config.setpoint += maxdays;
+        else if (config.setpoint >= maxdays)
+            config.setpoint -= maxdays;
+
+        auto yday = (int)config.setpoint + 1;
+        auto month = 0;
+        auto mday = yday;
+        while (mday > timeinfo::daysInMonth(month, hasleap))
+        {
+            mday -= timeinfo::daysInMonth(month, hasleap);
+            month++;
+        }
+
+        now.setDate(now.year(), month, mday);
+        snprintf(config.value, sizeof(config.value),  "%02d %s", now.mday(), now.monthName(false));
+        
+        if (!editing)
+        {
+            _sys.now(now);
+        }
     }
-    repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
-    repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
-
-    auto hasleap = (config.start.year() % 4 == 0) && (config.start.year() % 400 == 0 || config.start.year() % 100 != 0);
-    auto maxdays = hasleap ? 366 : 365;
-    auto yday = (int)(config.setpoint + maxdays) % maxdays + 1;
-    auto month = 0;
-    auto mday = yday;
-
-    while (mday > timeinfo::daysInMonth(month, hasleap))
-    {
-        mday -= timeinfo::daysInMonth(month, hasleap);
-        month++;
-    }
-    printf("=> yday=%d, month=%d, mday=%d\n", yday, month, mday);
-
-    config.start.setDate(config.start.year(), month, mday);
-    snprintf(config.value, sizeof(config.value),  "%02d %s", config.start.mday(), config.start.monthName(false));
-
-    return true;
+    return editing;
 }
 
 bool ConfigurationUI::updateTime(configline &config, bool init)
 {
     if (init)
     {
-        config.start =_sys.now();        
-        config.start.sec(0);
-        config.start.addMinutes(1);
-        config.setpoint = config.start.hour() * 60 + config.start.min();
+        auto now =_sys.now();        
+        config.setpoint = now.hour() * 60 + now.min();
     }
 
-    if (isEditTimeout())
-        return false;
-        
-    auto key = getKey();
-    if (key == UserInput::KEY_SET)
+    auto editing = !isEditTimeout();
+    if (editing)
     {
-        _sys.now(config.start);
-        return false;
+        auto key = getKey();
+        editing = key != UserInput::KEY_SET;
+        if (editing)       
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
+        }
+        auto max = 24 * 60;
+        if (config.setpoint < 0)
+            config.setpoint += max;
+        else if (config.setpoint >= max)
+            config.setpoint -= max;
+        
+        auto now = _sys.now();
+        now.setTime((int)config.setpoint / 60, (int)config.setpoint % 60, 0);
+        snprintf(config.value, sizeof(config.value), "%02d:%02d:%02d", now.hour(), now.min(), now.sec());
+
+        if (!editing)
+        {
+            _sys.now(now);
+        }
     }
-    repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
-    repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
-
-    config.start.hour((int)config.setpoint / 60);
-    config.start.min((int)config.setpoint % 60);
-
-    auto &start = config.start;
-    snprintf(config.value, sizeof(config.value), "%02d:%02d:%02d", start.hour(), start.min(), start.sec());
-
-    return true;
+    return editing;
 }
 
 bool ConfigurationUI::updateWifiSid(configline &config, bool init)
@@ -357,7 +381,7 @@ bool ConfigurationUI::updateWifiSid(configline &config, bool init)
         idx = (idx + naps) % naps;
         config.setpoint = idx;
         snprintf(config.value, sizeof(config.value), "%s", _sys.APSID(idx));
-        _sys.settings().WifiSid()->set(config.value);
+        _sys.settings().WifiSid(config.value);
     }
     
     return true;
@@ -415,11 +439,11 @@ bool ConfigurationUI::isTimeout()
     return elapsed > 300*1000;
 }
 
-void ConfigurationUI::generateDSTLine(configline &config)
+void ConfigurationUI::generateDSTLine(configline &config, bool dst)
 {
-    const char *txt = _sys.settings().DST()->asbool()
-        ?  _sys.translate("summer") 
-        : _sys.translate("winter");
+    const char *txt = dst
+        ? translate("summer") 
+        : translate("winter");
     snprintf(config.value, sizeof(config.value), txt);
 }
 
@@ -436,11 +460,11 @@ void ConfigurationUI::generateWifiLine(configline &config)
     dots[step] = '.';
     if (_sys.wifiScanning()) 
     {
-        snprintf(config.value, sizeof(config.value), "%s%s(%d)", _sys.translate("scanning"), dots, _sys.nAPs());
+        snprintf(config.value, sizeof(config.value), "%s%s(%d)", translate("scanning"), dots, _sys.nAPs());
     }
     else if (_sys.wifiConnecting()) 
     {
-        snprintf(config.value, sizeof(config.value), "%s%s", _sys.translate("connecting"), dots);
+        snprintf(config.value, sizeof(config.value), "%s%s", translate("connecting"), dots);
     }
     else
     {

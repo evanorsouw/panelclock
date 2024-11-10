@@ -30,14 +30,15 @@ public:
     int sec() const { return _tm.tm_sec; }
     int millies() const { return _millies; }
     void millies(int value) { _millies = value % 1000; set(); }
-    bool dst() const { return _tm.tm_isdst; }
+    bool dst() const { return _tm.tm_isdst == 1; }
     int64_t msticks() const { return _msticks; }
 
     void setDate(int year, int month, int mday);
+    void setTime(int hour, int minutes, int seconds);
     void hour(int value) { _tm.tm_hour = value % 24; set(); }
     void min(int value) { _tm.tm_min = value % 60; set(); }
     void sec(int value) { _tm.tm_sec = value % 60; set(); }
-    void dst(bool dstActive) { _tm.tm_isdst = dstActive ? 1 : 0; set(); }
+    void dst(bool dstActive) { _tm.tm_isdst = dstActive ? 1 : 0; }
 
     void addMinutes(int n) { set(n*60); }
     static int daysInMonth(int month, bool leapyear);
@@ -45,7 +46,7 @@ public:
     const char *dayOfWeek(bool full=true) const { return full ? _weekdaysFull[wday()] : _weekdaysCompact[wday()]; }    
     const char *monthName(bool full=true) const { return full ? _monthsFull[mon()] : _monthsCompact[mon()] ; }    
 
-    struct tm *tm() { return &_tm; } 
+    const struct tm *tm() const { return &_tm; } 
 
 private:
     void set(time_t offsetSeconds = 0);

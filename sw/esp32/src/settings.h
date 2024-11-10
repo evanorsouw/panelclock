@@ -36,13 +36,10 @@ public:
     bool loadSettings();
     bool saveSettings();
 
-    Setting *addSetting(const char *name, bool value) { return addSetting(name, value ? "1" : "0"); }
-    Setting *addSetting(const char *name, const char *value); 
+    Setting *add(const char *name, bool value) { return add(name, value ? "1" : "0"); }
+    Setting *add(const char *name, const char *value); 
     
-    Setting *getSetting(const char *name) const;
-
-private:
-    void readSettingFromNVS(Setting *setting);
+    Setting *get(const char *name) const;
 };
 
 #endif

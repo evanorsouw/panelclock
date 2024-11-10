@@ -5,7 +5,7 @@ System::System(AppSettings *settings, DS3231 *rtc)
     _settings = settings;
     _rtc = rtc;
     _wifi = nullptr;
-    _translator = new Translator(settings->Language());
+    _translator = new Translator(settings->get(settings->KeyLanguage));
     startWifi();
 }
 
@@ -22,17 +22,23 @@ void System::scanAPs()
 
 void System::connectWifi()
 {
-    _wifi->connect(_settings->WifiSid()->asstring(), _settings->WifiPassword()->asstring());
+    _wifi->connect(_settings->WifiSid(), _settings->WifiPassword());
 }
 
 timeinfo System::now() const
 {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
-    return timeinfo(tv, _settings->DST());
+
+    auto dst = _settings->DST();
+    if (dst)
+    {
+        tv.tv_sec += 3600;
+    }
+    return timeinfo(tv, dst);
 }
 
-void System::now(timeinfo &now)
+void System::now(const timeinfo &now)
 {
     tod tod;
     tod.year = now.year();
@@ -45,7 +51,7 @@ void System::now(timeinfo &now)
     _rtc->setTime(&tod);
     
     struct timeval tv;
-    tv.tv_sec = mktime(now.tm());
+    tv.tv_sec = mktime((struct tm*)now.tm()) - (now.dst() ? 3600 : 0);
     tv.tv_usec = now.millies() * 1000;
     settimeofday(&tv, nullptr);
 }

@@ -24,7 +24,6 @@ struct configline
     std::function<void(configline &, bool)> initter;
     std::function<void(configline &)> reader;
     std::function<bool(configline &, bool)> updater;
-    timeinfo start;
     float setpoint;
 };
 
@@ -55,10 +54,17 @@ public:
     void endConfigurationSession();
 
 private:
+    /// @brief add a configurable item.
+    /// @param label the text that appears in front of the confguration item to indicate its purpose.
+    /// @param initter optional lambda that is called when the line is selected (init=true) or deselected (init=false)
+    /// @param reader optional the lambda that is called with each refresh of the screen to update 
+    /// the config's current value. This is not called when the configuration item is in edit-mode.
+    /// @param updater the optional lambda that is called when the config is in edit-mode. On the first call 
+    /// init=true allowing for initialization. When updater is nullptr, the item becomes readonly.
     void addConfig(const char *label,
-        std::function<void(configline &, bool)> initter,
-        std::function<void(configline &)> reader,
-        std::function<bool(configline &, bool)> updater);
+        std::function<void(configline &cfg, bool init)> initter,
+        std::function<void(configline &cfg)> reader,
+        std::function<bool(configline &cfg, bool init)> updater);
     void selectConfig(int i);
     void drawConfigLines(Bitmap &screen);
     bool updateDST(configline &config, bool init);
@@ -71,7 +77,8 @@ private:
     int getKey();
     bool isEditTimeout();
     bool isTimeout();
-    void generateDSTLine(configline &config);
+    const char *translate(const char *txt) const { return _sys.translate(txt); }
+    void generateDSTLine(configline &config, bool dst);
     void generateWifiLine(configline &config);
     void runInitter(bool init);
 };

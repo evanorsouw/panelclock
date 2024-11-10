@@ -116,10 +116,7 @@ void app_main()
     init_spiffs();
 
     configureFPGA(spi);
-    
     auto settings = new AppSettings();
-    settings->loadSettings();
-
     auto panel = new LedPanel(128, 64, *spi);
     auto graphics = new Graphics(panel->dx(), panel->dy());
     //auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK); // v2 pcb
@@ -128,7 +125,7 @@ void app_main()
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc);
     auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, *system);
-    auto environment = new EnvironmentWeerlive(system, settings->WeerliveKey(), settings->WeerliveLocation());
+    auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
     
     auto app = new Application(*graphics, *panel, *environment, *system, *userinput);
     auto timeupdater = new TimeSyncer(*rtc);

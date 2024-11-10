@@ -32,7 +32,7 @@ bool Settings::loadSettings()
         auto bufsize = sizeof(buf);
         nvs_get_str(handle, info.key, buf, &bufsize);
         printf("found setting '%s':'%s'\n", info.key, buf);
-        addSetting(info.key, buf);
+        add(info.key, buf);
         result = nvs_entry_next(&it);
     }
     nvs_release_iterator(it);
@@ -64,7 +64,7 @@ bool Settings::saveSettings()
     return true;
 }
 
-Setting *Settings::addSetting(const char *name, const char *value)
+Setting *Settings::add(const char *name, const char *value)
 {
     Setting *setting;
     auto it = std::find_if(_settings.begin(), _settings.end(), [&](std::pair<std::string, Setting*> kv) { return kv.first == name; });
@@ -81,11 +81,14 @@ Setting *Settings::addSetting(const char *name, const char *value)
     return setting;
 }    
 
-Setting *Settings::getSetting(const char *name) const 
+Setting *Settings::get(const char *name) const 
 { 
     auto it = _settings.find(name);
     if (it == _settings.end())
-        return nullptr;
+    {
+        printf("setting='%s' not found\n", name);
+        abort();
+    }
     return it->second;
 }
 

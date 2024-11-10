@@ -32,7 +32,7 @@ public:
     bool waitForInternet(int timeout = 0) const { return _wifi->waitForConnection(timeout); }
     const char *IPAddress() const { return _wifi->ip(); }
     timeinfo now() const;
-    void now(timeinfo &now);
+    void now(const timeinfo &now);
     const char *translate(const char *in) { return _translator->translate(in); }
     AppSettings &settings() const { return *_settings; }
 
