@@ -124,7 +124,7 @@ void app_main()
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc);
-    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, *system);
+    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_DOWN, BUTTON_UP, *system);
     auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
     
     auto app = new Application(*graphics, *panel, *environment, *system, *userinput);

@@ -42,8 +42,8 @@ public:
     void rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color, Mode mode = Mode::Set);
     void line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color);    
     float text(Bitmap &tgt, Font *font, float x, float y, const char *txt, Color color, Mode mode = Mode::Set);
+    float text(Bitmap &tgt, Font *font, float x, float y, char c, Color color, Mode mode = Mode::Set);
     void triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, float x3, float y3, Color color);
-    void ellipse(Bitmap &tgt, float x, float y, float dx, float dy, float thickness, Color color);
 
 private:
     bool clip(float &x, float &dx, float max);

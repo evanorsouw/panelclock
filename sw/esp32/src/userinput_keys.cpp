@@ -44,11 +44,11 @@ uint64_t UserInputKeys::howLongIsKeyDown(int key) const
     return elapsed;
 }
 
-int UserInputKeys::getKey() 
+KeyPress UserInputKeys::getKey() 
 {
     std::lock_guard lock(_mutex);
     if (pendingKeys() == 0)
-        return 0;
+        return KeyPress();
         
     auto key = _keyQueue.front();
     _keyQueue.pop();
@@ -84,9 +84,10 @@ void UserInputKeys::monitorIO(_keyinfo &info)
             }
             else
             {
+                auto elapsed = _system.now().msticks() - info.pressedSince;
                 std::lock_guard lock(_mutex);
-                _keyQueue.push(info.key);
-                printf("keypress: %d\n", info.key);
+                _keyQueue.push(KeyPress(info.key, elapsed));
+                printf("keypress: %d (%lldms)\n", info.key, elapsed);
             }
             info.pressedSince = 0;
         }

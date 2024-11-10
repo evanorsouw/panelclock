@@ -42,6 +42,9 @@ void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color col
 
 void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color)
 {
+    if (y1<0 || y2<0 || y1 >= 64 || y2 >= 64)
+        return;     // !!! TODO: use proper clipping
+        
     auto dx = x2 - x1;
     auto dy = y2 - y1;
 
@@ -160,9 +163,10 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
     return x;
 }
 
-void Graphics::ellipse(Bitmap &tgt, float x, float y, float dx, float dy, float thickness, Color color)
-{
-
+float Graphics::text(Bitmap &tgt, Font *font, float x, float y, char c, Color color, Mode mode)
+{    
+    char buf[2] = { c, 0 };
+    return text(tgt, font, x, y, buf, color, mode);
 }
 
 bool Graphics::clip(float &x, float &dx, float max)
@@ -195,6 +199,9 @@ void Graphics::clip(int &srcoffset, int &tgtoffset, int &size, int max)
 
 void Graphics::triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, float x3, float y3, Color color)
 {    
+    if (y1<0 || y2<0 || y3< 0 || y1>=64 || y2 >=64 || y3>=64)
+        return;     // !!! TODO: use proper clipping
+
     auto xl = (int)std::min(x1, std::min(x2, x3));
     auto xr = (int)std::ceil(std::max(x1, std::max(x2, x3)));
     auto yt = (int)std::min(y1, std::min(y2, y3));
@@ -208,6 +215,7 @@ void Graphics::triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, flo
 irect Graphics::rasterizeTriangle(float x1, float y1, float x2, float y2, float x3, float y3)
 {
     LOG("rasterizeTriangle(x1=%.2f,y1=%.2f,x2=%.2f,y2=%.2f,x3=%.2f,y3=%.2f)\n",x1,y1,x2,y2,x3,y3);
+
     if (y2 < y1)
     {
         SWAP(y1, y2);
@@ -279,13 +287,12 @@ void Graphics::triangleBaseTop(float xbase1, float xbase2, float ybase, float xt
         float dxr = ABS(xbr - xtr);
         float xl = MIN(xtl, xbl);
         float xr = MAX(xtr, xbr);
+
         dy = ynext - y;
-
         trianglescanline(y, xl, xr, dy, dxl, dxr);    
-
         y = ynext;
-
-    } while (y < ytop);
+    } 
+    while (y < ytop);
 }
 
 void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xbase2, float ybase)
@@ -318,7 +325,6 @@ void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xb
 
         dy = ynext - y;
         trianglescanline(y, xl, xr, dy, dxl, dxr);
-
         y = ynext;
     } 
     while (y < ybase);
@@ -326,7 +332,6 @@ void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xb
 
 void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl, float dxr)
 {
-    //printf("scanline: y=%f xl=%f, xr=%f, dy=%f, dxl=%f, dxr=%f\n", y, xl, xr, dy, dxl, dxr);
     float x = xl;
     do
     {

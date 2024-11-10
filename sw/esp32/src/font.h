@@ -42,7 +42,8 @@ public:
 
     virtual ~Font();
 
-    textinfo textsize(const char *txt);
+    textinfo textsize(const char *txt, int n = 0);
+    textinfo charsize(char c);
 
     float sizex() const { return _dx; }
     float sizey() const { return _dy; }

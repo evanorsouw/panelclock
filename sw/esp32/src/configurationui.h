@@ -12,6 +12,8 @@
 #include "timeinfo.h"
 #include "userinput.h"
 
+enum class CallReason { Running, Init, DeInit };
+
 struct configline 
 {
     configline () 
@@ -21,7 +23,6 @@ struct configline
     }
     const char *label;
     char value[40];    
-    std::function<void(configline &, bool)> initter;
     std::function<void(configline &)> reader;
     std::function<bool(configline &, bool)> updater;
     float setpoint;
@@ -43,8 +44,10 @@ private:
     bool _updating;
     bool _exitConfig;
     timeinfo _lastEditTime;
-    int _iCharacterRoll;
     int _iEditIndex;
+    static constexpr const char *_editChars = "\x01\x02""aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ_ !?$@#%^&*()-+={}[]<>:;\"`~',./|\\";
+    static const char AcceptChar = 0x01;
+    static const char DeleteChar = 0x02;
 
 public:
     ConfigurationUI(Graphics &graphics, Environment &env, System &sys, UserInput &userinput, Font *font);
@@ -56,15 +59,15 @@ public:
 private:
     /// @brief add a configurable item.
     /// @param label the text that appears in front of the confguration item to indicate its purpose.
-    /// @param initter optional lambda that is called when the line is selected (init=true) or deselected (init=false)
     /// @param reader optional the lambda that is called with each refresh of the screen to update 
     /// the config's current value. This is not called when the configuration item is in edit-mode.
-    /// @param updater the optional lambda that is called when the config is in edit-mode. On the first call 
-    /// init=true allowing for initialization. When updater is nullptr, the item becomes readonly.
+    /// @param updater the optional lambda that is called when the config is in edit-mode. The init
+    /// flags is true first call in a edit series abnd may be used for initialization.
+    /// When updater is nullptr, the item becomes readonly.
     void addConfig(const char *label,
-        std::function<void(configline &cfg, bool init)> initter,
         std::function<void(configline &cfg)> reader,
         std::function<bool(configline &cfg, bool init)> updater);
+        
     void selectConfig(int i);
     void drawConfigLines(Bitmap &screen);
     bool updateDST(configline &config, bool init);
@@ -75,12 +78,13 @@ private:
     bool updateTime(configline &config, bool init);
     void repeatUpdateOnKey(int activateKey, int pressedKey, std::function<void(float)> handler);
     int getKey();
+    KeyPress getKeyPress();
     bool isEditTimeout();
     bool isTimeout();
     const char *translate(const char *txt) const { return _sys.translate(txt); }
     void generateDSTLine(configline &config, bool dst);
     void generateWifiLine(configline &config);
-    void runInitter(bool init);
+    int rollIndex(char c);
 };
 
 #endif

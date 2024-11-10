@@ -12,35 +12,27 @@ ConfigurationUI::ConfigurationUI(Graphics &graphics, Environment &env, System &s
     _font= font;
 
     addConfig("DST", 
-        nullptr,
         [this](configline&c){ generateDSTLine(c, _sys.settings().DST()); }, 
         [this](configline &config, bool init){ return updateDST(config, init); });
     addConfig(translate("year"), 
-        nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%04d", _sys.now().year()); }, 
         [this](configline &config, bool init){ return updateYear(config, init); });
     addConfig(translate("date"), 
-        nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d %s", _sys.now().mday(), _sys.now().monthName(false)); }, 
         [this](configline &config, bool init){ return updateDate(config, init); });
     addConfig(translate("time"), 
-        nullptr, 
         [this](configline&c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _sys.now().hour(), _sys.now().min(), _sys.now().sec()); },  
         [this](configline &config, bool init){ return updateTime(config, init); });
+    addConfig(translate("ip"), 
+        [this](configline&c){ generateWifiLine(c); },
+        nullptr);
     addConfig(translate("wifi"), 
-        [this](configline&c, bool init){ if (init) _sys.scanAPs(); else _sys.connectWifi(); },
         [this](configline&c){ strcpy(c.value,_sys.settings().WifiSid()); }, 
         [this](configline &config, bool init){ return updateWifiSid(config, init); });
     addConfig(translate("pass"), 
-        nullptr,
         [this](configline&c){ strcpy(c.value,_sys.settings().WifiPassword()); }, 
         [this](configline &config, bool init){ return updateWifiPassword(config, init); });
-    addConfig(translate("ip"), 
-        nullptr, 
-        [this](configline&c){ generateWifiLine(c); },
-        nullptr);
     addConfig(translate("exit"), 
-        nullptr, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   
 
@@ -60,6 +52,7 @@ void ConfigurationUI::startConfigurationSession()
     _updating = false;
     _exitConfig = false;
     _lastEditTime = _sys.now();
+    _iEditIndex = -1;
     selectConfig(0);
 }
 
@@ -83,12 +76,13 @@ bool ConfigurationUI::render(Bitmap &screen)
 
     auto &config = _configs[_selectedLine];
     if (_updating)
-    {        
+    {
         _updating = config.updater(config, false);
         _lastEditTime = _sys.now();
     }
     else
     {
+        _iEditIndex = -1;
         switch (getKey())
         {
         case UserInput::KEY_SET:
@@ -108,7 +102,6 @@ bool ConfigurationUI::render(Bitmap &screen)
 }
 
 void ConfigurationUI::addConfig(const char *label,
-    std::function<void(configline &, bool)> initter,
     std::function<void(configline &)> reader,
     std::function<bool(configline &, bool)> updater)
 {
@@ -117,7 +110,6 @@ void ConfigurationUI::addConfig(const char *label,
 
     config.label = label;
     config.value[0] = 0;
-    config.initter = initter;
     config.reader = reader;
     config.updater = updater;
 }
@@ -140,20 +132,9 @@ void ConfigurationUI::selectConfig(int i)
     }
     if (i>=0 && i < _configs.size() && _configs[i].updater)
     {
-        runInitter(false);
         _selectedLine = i;
         printf("selectedline=%d\n", _selectedLine);
-        runInitter(true);
     }        
-}
-
-void ConfigurationUI::runInitter(bool init)
-{
-    auto &config = _configs[_selectedLine];
-    if (config.initter)
-    {
-        config.initter(config, init);
-    }
 }
 
 void ConfigurationUI::drawConfigLines(Bitmap &screen)
@@ -175,8 +156,77 @@ void ConfigurationUI::drawConfigLines(Bitmap &screen)
 
         auto y = yt + _font->height() + _font->descend() - 2;
         _graphics.text(screen, _font, margin, y, info.label, Color::white);
-        _graphics.text(screen, _font, _labelwidth + margin * 2, y, info.value, color);
+        if (i != _selectedLine || _iEditIndex < 0)     // when editing text is draw further on.
+        {            
+            _graphics.text(screen, _font, _labelwidth + margin * 2, y, info.value, color);
+        }
     }
+
+    if (_iEditIndex >= 0)
+    {
+        auto neditchars = strlen(_editChars);
+        auto &config =  _configs[_selectedLine];
+        float xroll = x;
+        auto yt = _selectedLine * _font->height() - _configYBase;
+        auto yb = yt + _font->height();
+        auto y = yt + _font->height() + _font->descend() - 2;
+        for (auto i=0; i < sizeof(config.value); ++i)
+        {
+            auto c = config.value[i];
+            if (i == _iEditIndex)
+            {
+                _graphics.rect(screen, x - 0.5, 0, _font->sizex() + 1, 64, Color(16,16,16));
+                _graphics.line(screen, x - 0.5, 0, x - 0.5, 64, 0.5, Color::white);
+                _graphics.line(screen, x + _font->sizex() + 1, 0, x + _font->sizex() + 1, 64, 0.5f, Color::white);
+                auto w = _font->charsize(c).dx;
+                xroll = x;
+                auto xc = x + (_font->sizex() - w) / 2;
+                _graphics.text(screen, _font, xc, y, c, Color::white);
+                x += _font->sizex();
+            }
+            else
+            {
+                x = _graphics.text(screen, _font, x, y,  c, Color::white);
+            }            
+            if (c == 0 || c == AcceptChar)
+                break;
+        }        
+        auto ccur = config.value[_iEditIndex];
+        auto iroll = rollIndex(ccur);
+        while (yb >= 0)
+        {
+            yb -= _font->height();
+            iroll = (iroll == 0) ? neditchars - 1 : iroll -1;
+        }
+        yt = yb - _font->height();
+        while (yt < 64)
+        {
+            auto x = xroll;
+            auto y = yt;
+            auto dx = _font->sizex();
+            auto dy = _font->sizey();
+            if (_editChars[iroll] == AcceptChar)
+            {
+                _graphics.triangle(screen, x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, Color::lime);
+                _graphics.triangle(screen, x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, Color::lime);
+            }
+            else if (_editChars[iroll] == DeleteChar)
+            {
+                _graphics.triangle(screen, x+1, y+dy/2, x+6, y+2, x+6, y+dy-2, Color::red);
+                _graphics.line(screen, x+6, y+dy/2, x+dx-1, y+dy/2, 2, Color::red);
+            }
+            else
+            {
+                auto w = _font->charsize(_editChars[iroll]).dx;
+                y = yt + _font->height() + _font->descend() - 2;
+                auto x = xroll + (_font->sizex() - w) / 2;
+                _graphics.text(screen, _font, x, y, _editChars[iroll], Color::white);
+            }
+            yt += _font->height();
+            iroll = (iroll == (neditchars - 1)) ? 0 : iroll + 1;
+        }
+    }
+
     float dy = 0.0f;
     bool down = false;
     auto targety = _selectedLine * _font->height() - _configYBase;
@@ -201,9 +251,9 @@ void ConfigurationUI::drawConfigLines(Bitmap &screen)
     down = (targety > 0);
     if (dy > 0.0f)
     {
-        auto delta = std::min(dy, std::log(dy + 1));
+        auto delta = std::min(dy, std::log(dy + 1) * 2);
         _selectionYBase += down ? delta : -delta;
-    }
+    }    
 }
 
 bool ConfigurationUI::updateDST(configline &config, bool init)
@@ -234,7 +284,6 @@ bool ConfigurationUI::updateDST(configline &config, bool init)
 
         if (!editing)
         {
-            printf("writing dst: %d\n", dst);
             _sys.settings().DST(dst);
         }
     }
@@ -320,7 +369,7 @@ bool ConfigurationUI::updateTime(configline &config, bool init)
 {
     if (init)
     {
-        auto now =_sys.now();        
+        auto now = _sys.now();
         config.setpoint = now.hour() * 60 + now.min();
     }
 
@@ -354,65 +403,129 @@ bool ConfigurationUI::updateTime(configline &config, bool init)
 
 bool ConfigurationUI::updateWifiSid(configline &config, bool init)
 {
-    if (isEditTimeout())
-        return false;
-
-    auto naps = _sys.nAPs();
-
-    auto key = getKey();
-    auto idx = (int)config.setpoint;
-    auto changed = false;
-    switch (key)
+    if (init)
     {
-        case UserInput::KEY_SET:
-            return false;
-        case UserInput::KEY_UP:
-            idx++;
-            changed = true;
-            break;
-        case UserInput::KEY_DOWN:
-            idx--;
-            changed = true;
-            break;
+        _sys.scanAPs();
     }
 
-    if (changed && naps > 0)
-    {            
-        idx = (idx + naps) % naps;
-        config.setpoint = idx;
-        snprintf(config.value, sizeof(config.value), "%s", _sys.APSID(idx));
-        _sys.settings().WifiSid(config.value);
+    auto editing = !isEditTimeout();
+    if (editing)
+    {
+        auto naps = _sys.nAPs();
+
+        auto key = getKey();
+        auto idx = (int)config.setpoint;
+        auto changed = false;
+        switch (key)
+        {
+            case UserInput::KEY_SET:
+                editing = false;
+                break;
+            case UserInput::KEY_UP:
+                idx++;
+                changed = true;
+                break;
+            case UserInput::KEY_DOWN:
+                idx--;
+                changed = true;
+                break;
+        }
+
+        if (changed && naps > 0)
+        {            
+            idx = (idx + naps) % naps;
+            config.setpoint = idx;
+            snprintf(config.value, sizeof(config.value), "%s", _sys.APSID(idx));
+        }
+        if (!editing)
+        {
+            _sys.settings().WifiSid(config.value);
+        }
+    }        
+    if (!editing)
+    {
+        _sys.connectWifi();
     }
-    
-    return true;
+    return editing;
 }
 
 bool ConfigurationUI::updateWifiPassword(configline &config, bool init)
 {
     if (init)
     {
+        _iEditIndex = 0;
+        memset(config.value + strlen(config.value), 0, sizeof(config.value) - strlen(config.value));
+        config.setpoint = rollIndex(config.value[_iEditIndex]);
     }
 
-    if (isEditTimeout())
-        return false;
-        
-    auto key = getKey();
-    if (key == UserInput::KEY_SET)
+    auto editing = !isEditTimeout();
+    if (editing)
     {
-        return false;
+        auto key = getKey();
+        if (key == UserInput::KEY_SET)
+        {
+            if (config.value[_iEditIndex] == AcceptChar)
+            {
+                config.value[_iEditIndex] = 0;
+                editing = false;
+            }
+            else if (config.value[_iEditIndex] == DeleteChar)
+            {
+                if (_iEditIndex > 0)
+                {
+                    config.value[_iEditIndex] = 0;
+                    _iEditIndex--;
+                    config.value[_iEditIndex] = DeleteChar;
+                }
+            }
+            else
+            {
+                _iEditIndex = std::min((int)sizeof(config.value) - 1, _iEditIndex + 1);
+                config.setpoint = rollIndex(config.value[_iEditIndex]);
+            }
+        }
+        if (editing)
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
+            auto neditchars = strlen(_editChars);
+            if (config.setpoint < 0)
+                config.setpoint += neditchars;
+            else if (config.setpoint >= neditchars)
+                config.setpoint -= neditchars;
+            auto rollIndex = (int)config.setpoint;
+            config.value[_iEditIndex] = _editChars[rollIndex];
+        }
+        else
+        {
+            _sys.settings().WifiPassword(config.value);
+        }
     }
-
-    return true;
+    if (!editing)
+    {
+        _sys.connectWifi();
+    }
+    return editing;
 }
 
 int ConfigurationUI::getKey() 
 { 
-    auto key = _userinput.getKey(); 
-    if (key != 0)
+    auto keypress = _userinput.getKey(); 
+    if (keypress.key != 0)
     {
         _lastEditTime = _sys.now();
     }
-    return key;
+    return keypress.key;
+}
+
+KeyPress ConfigurationUI::getKeyPress() 
+{ 
+    auto keypress = _userinput.getKey(); 
+    if (keypress.key != 0)
+    {
+        _lastEditTime = _sys.now();
+    }
+    return keypress;
 }
 
 void ConfigurationUI::repeatUpdateOnKey(int activateKey, int keyPressed, std::function<void(float)> handler)
@@ -470,4 +583,14 @@ void ConfigurationUI::generateWifiLine(configline &config)
     {
         strcpy(config.value, "");
     }
+}
+
+int ConfigurationUI::rollIndex(char c)
+{
+    if (c == 0)
+        return 0;
+    auto proll = strchr(_editChars, c);
+    if (!proll)
+        return 0;
+    return proll - _editChars;   
 }

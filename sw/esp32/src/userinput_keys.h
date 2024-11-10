@@ -30,7 +30,7 @@ private:
     System &_system;
     std::vector<_keyinfo> _keys;
     std::mutex _mutex;
-    std::queue<int> _keyQueue;
+    std::queue<KeyPress> _keyQueue;
     
 public:
     UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, System &system);
@@ -39,7 +39,7 @@ public:
 
     int pendingKeys() const;
     void flush();
-    int getKey();
+    KeyPress getKey();
     bool hasKeyDown(int key, int ms);
     uint64_t howLongIsKeyDown(int key) const;
 

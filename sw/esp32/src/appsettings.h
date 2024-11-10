@@ -17,8 +17,8 @@ public:
     AppSettings()
     {        
         add(KeyLanguage, "nl");
-        add(KeyWifiSid, "<<select>>");
-        add(KeyWifiPwd, "<<select>>");
+        add(KeyWifiSid, "__sid__");
+        add(KeyWifiPwd, "__password__");
         add(KeyWeerliveKey, "31a26656d0");
         add(KeyWeerliveLocation, "51.732034245965046,5.32637472036842");
         add(KeyDST, false);

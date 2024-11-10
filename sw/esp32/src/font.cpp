@@ -139,13 +139,17 @@ SFT_Font *Font::loadfont(const char *fontname)
     return font;
 }
 
-textinfo Font::textsize(const char *txt)
+textinfo Font::textsize(const char *txt, int n)
 {
     struct textinfo size = { 
         .dy = _lmetrics.ascender - _lmetrics.descender,
     };
 
-    auto len = strlen(txt);
+    auto len = (int)strlen(txt);
+    if (n > 0 && n > len)
+    {
+        len = n;
+    }
     for (int i=0; i<len; ++i)
     {
         SFT_Glyph glyph;
@@ -156,6 +160,24 @@ textinfo Font::textsize(const char *txt)
         SFT_GMetrics mtx;
         sft_gmetrics(&_sft, glyph, &mtx);
 
+        size.dx += mtx.advanceWidth;
+    }
+    return size;
+}
+
+textinfo Font::charsize(char c)
+{
+    struct textinfo size = { 
+        .dx = 0,
+        .dy = _lmetrics.ascender - _lmetrics.descender
+    };
+
+    SFT_Glyph glyph;
+    sft_lookup(&_sft, c, &glyph);
+    if (glyph != 0)
+    {
+        SFT_GMetrics mtx;
+        sft_gmetrics(&_sft, glyph, &mtx);
         size.dx += mtx.advanceWidth;
     }
     return size;

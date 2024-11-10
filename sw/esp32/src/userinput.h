@@ -2,6 +2,14 @@
 #ifndef _USERINPUT_H_
 #define _USERINPUT_H_
 
+struct KeyPress
+{
+    KeyPress() : key(0), presstime(0) {}
+    KeyPress(int key, uint64_t presstime) : key(key), presstime(presstime) {}
+    int key;
+    uint64_t presstime;
+};
+
 class UserInput
 {
 public:
@@ -30,7 +38,7 @@ public:
 
     /// @brief get a key from the queue.
     /// @return integer value of the key or 0 if no keypress was recorded.
-    virtual int getKey() = 0;
+    virtual KeyPress getKey() = 0;
 };
 
 #endif
