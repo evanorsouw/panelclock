@@ -13,15 +13,17 @@ public:
     inline static const char *KeyWeerliveKey = "weerlivekey";
     inline static const char *KeyWeerliveLocation = "weerlivelocation";
     inline static const char *KeyDST  = "dst";
+    inline static const char *KeyBootscreen  = "boot";
 
     AppSettings()
     {        
         add(KeyLanguage, "nl");
         add(KeyWifiSid, "__sid__");
         add(KeyWifiPwd, "__password__");
-        add(KeyWeerliveKey, "31a26656d0");
-        add(KeyWeerliveLocation, "51.732034245965046,5.32637472036842");
+        add(KeyWeerliveKey, "demo");
+        add(KeyWeerliveLocation, "Amsterdam");
         add(KeyDST, false);
+        add(KeyBootscreen, true);
 
         loadSettings();
     }
@@ -43,6 +45,9 @@ public:
 
     bool DST() const { return get(KeyDST)->asbool(); }
     void DST(bool dst) const { return get(KeyDST)->set(dst); }
+
+    bool Bootscreen() const { return get(KeyBootscreen)->asbool(); }
+    void Bootscreen(bool show) const { return get(KeyBootscreen)->set(show); }
 };
 
 #endif

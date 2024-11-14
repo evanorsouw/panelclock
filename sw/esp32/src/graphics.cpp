@@ -42,7 +42,7 @@ void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color col
 
 void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color)
 {
-    if (y1<0 || y2<0 || y1 >= 64 || y2 >= 64)
+    if (y1<0 || y2<0 || y1 > 64 || y2 > 64)
         return;     // !!! TODO: use proper clipping
         
     auto dx = x2 - x1;

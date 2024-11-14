@@ -13,15 +13,15 @@ timeinfo::timeinfo()
     _tm.tm_hour = 0;
     _tm.tm_min = 0;
     _tm.tm_sec = 0;
-    _tm.tm_isdst = 0;
+    _tm.tm_isdst = -1;
     _millies = 0;
     _msticks = 0;
 }
 
-timeinfo::timeinfo(const timeval &tv, bool dst)
+timeinfo::timeinfo(const timeval &tv)
 {
     _tm = *localtime(&tv.tv_sec);
-    _tm.tm_isdst = dst ? 1 : 0;
+    _tm.tm_isdst = -1;
     _millies = tv.tv_usec / 1000;
     _msticks = (tv.tv_sec * 1000000 + tv.tv_usec) / 1000;
 }

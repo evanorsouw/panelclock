@@ -18,7 +18,7 @@ private:
 
 public:
     timeinfo();
-    timeinfo(const timeval &tv, bool isdst=false);
+    timeinfo(const timeval &tv);
 
     int year() const { return 1900 + _tm.tm_year; }
     int mon() const { return _tm.tm_mon; }      // 0..11

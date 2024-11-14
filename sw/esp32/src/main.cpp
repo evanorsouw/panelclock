@@ -14,8 +14,10 @@
 #include "spiwrapper.h"
 
 #include "application.h"
+#include "applicationrunner.h"
 #include "appsettings.h"
 #include "bitmap.h"
+#include "bootanimations.h"
 #include "color.h"
 #include "ds3231.h"
 #include "environment_weerlive.h"
@@ -85,21 +87,11 @@ void configureFPGA(SpiWrapper *spi)
     FpgaConfig.configure();
 }
 
-void foregroundtasks(void * parameter)
-{
-    for(;;) ((Application*)parameter)->renderTask();
-}
-
-void backgroundtasks(void *parameter)
-{
-    for (;;) ((Application*)parameter)->displayTask();
-}
-
 extern "C" {
 
 void app_main() 
 {
-    printf("application starting 2\n");
+    printf("application starting\n");
 
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
@@ -127,11 +119,16 @@ void app_main()
     auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_DOWN, BUTTON_UP, *system);
     auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
     
-    auto app = new Application(*graphics, *panel, *environment, *system, *userinput);
+    auto appdata = new ApplicationContext();
+
+    auto appui = new Application(*appdata, *graphics, *environment, *system, *userinput);
+    auto bootui = new BootAnimations(*appdata, *graphics, *environment, *system, *userinput);
+    auto configui = new ConfigurationUI(*appdata, *graphics, *environment, *system, *userinput);
+    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system);
     auto timeupdater = new TimeSyncer(*rtc);
 
-    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->renderTask();  }, "render", 80000, app, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((Application*)arg)->displayTask(); }, "display", 2000, app, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 2000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((TimeSyncer*)arg)->updateTask(); }, "timemgt", 2000, timeupdater, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 8000, environment, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 2000, userinput, 1, nullptr);

@@ -2,9 +2,11 @@
 #define _BOOTANIMATIONS_H_
 
 #include <cstdlib>
+#include <vector>
+
 #include "animation.h"
-#include "color.h"
 #include "spline.h"
+#include "renderbase.h"
 
 class AnimationBackground : public Animation
 {
@@ -195,16 +197,10 @@ private:
 
 class AnimationWhiteMagicRemove : public AnimationWhiteMagic
 {
-private:
-    Bitmap _wm;
-
 public:
     AnimationWhiteMagicRemove(Graphics &graphics, Font *font, float start, float end)        
         : AnimationWhiteMagic(graphics, font, start, end) 
-        , _wm(128, 64, 3)
     { 
-        _wm.fill(Color::black);
-        drawWhiteMagic(_wm);
     }
 
 private:
@@ -214,7 +210,9 @@ private:
             return;
 
         auto dx = ((int)(when * 128) / 4) * 4;
-        _graphics.rect(_wm, 0, 0, dx, 64, Color::black);
+        drawWhiteMagic(screen);
+        _graphics.rect(screen, 0, 0, dx, 64, Color::black);
+
         for (int ix=0; ix<5; ++ix)
         {
             for (auto iy=0; iy<16; ++iy)
@@ -223,12 +221,62 @@ private:
                 auto y = iy * 4;
                 if (std::rand() % 6 > ix)
                 {
-                    _graphics.rect(_wm, x, y, 4, 4, Color::black);
+                    _graphics.rect(screen, x, y, 4, 4, Color::black);
                 }
             }
         }
-        _wm.copyTo(screen, 0, 0);
     }
+};
+
+class BootAnimations : public RenderBase
+{
+private:
+    std::vector<Animation*> _bootAnimations;
+    int64_t _bootStart;
+    bool _bootCompleted;
+
+public:
+    BootAnimations(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
+        : RenderBase(appdata, graphics, env, sys, userinput)
+    {
+    }
+
+    void init()
+    {
+        _bootAnimations.push_back(new AnimationBackground(_graphics, 0.0f, 0.4f));
+        _bootAnimations.push_back(new AnimationDissolveWhiteSquares(_graphics, 0.0f, 1.6f));
+        _bootAnimations.push_back(new AnimationColoredSquares(_graphics, 0.0f, 2.0f));
+        _bootAnimations.push_back(new AnimationWhiteMagicText(_graphics, _appctx.fontWhiteMagic(), 2.0f, 3.8f));
+        _bootAnimations.push_back(new AnimationWhiteMagicColorShift(_graphics, _appctx.fontWhiteMagic(), 3.8f, 4.5f));
+        _bootAnimations.push_back(new AnimationWhiteMagicRemove(_graphics, _appctx.fontWhiteMagic(), 4.5f, 5.5f));
+
+        _bootStart = esp_timer_get_time();
+        _bootCompleted = false;
+    }
+
+    void render(Bitmap &screen)
+    {   
+        auto busy = false;
+        float when = (esp_timer_get_time() - _bootStart) / 1000000.0f;
+        if (!_bootCompleted)
+        {
+            for (auto it : _bootAnimations) 
+            {
+                busy |= it->run(screen, when); 
+            }
+            if (!busy)
+            {
+                while (!_bootAnimations.empty())
+                {
+                    delete _bootAnimations.front();
+                    _bootAnimations.erase(_bootAnimations.begin());
+                }
+                _bootCompleted = true;
+            }
+        }
+    }
+
+    bool interact() { return _bootCompleted; } 
 };
 
 #endif

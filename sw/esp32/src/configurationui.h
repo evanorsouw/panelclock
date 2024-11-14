@@ -4,15 +4,17 @@
 
 #include <vector>
 #include <functional>
+#include <esp_timer.h>
 
 #include "environment.h"
 #include "font.h"
 #include "graphics.h"
+#include "renderbase.h"
 #include "system.h"
 #include "timeinfo.h"
 #include "userinput.h"
 
-enum class CallReason { Running, Init, DeInit };
+enum class ScrollState { Begin, Scrolling, End };
 
 struct configline 
 {
@@ -20,24 +22,36 @@ struct configline
     {
         label = nullptr;
         value[0] = 0;
+        _xScrollState = ScrollState::Begin;
+        _xScrollOffset = 0;
     }
     const char *label;
-    char value[40];    
+    char value[50];
     std::function<void(configline &)> reader;
     std::function<bool(configline &, bool)> updater;
     float setpoint;
+    float _xScrollOffset;
+    ScrollState _xScrollState;
+    uint64_t _scrolldelay;
 };
 
-class ConfigurationUI
+struct configchoice
+{
+    const char *store;
+    const char *english;
+};
+
+class ConfigurationUI : public RenderBase
 {
 private:
-    Graphics &_graphics;
-    Environment &_env;
-    System &_sys;
-    UserInput &_userinput;
+    static constexpr const char *_editChars = "\x01""0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ_ !?$@#%^&*()-+={}[]<>:;\"`~',./|\\";
+    static const char AcceptChar = 0x01;
+    static std::vector<configchoice> _languageChoices;
+    static std::vector<configchoice> _dstChoices;
+    static std::vector<configchoice> _bootscreenChoices;
+
     Font *_font;
     int _selectedLine;
-    float _labelwidth;
     float _configYBase;
     float _selectionYBase;
     std::vector<configline> _configs;
@@ -45,16 +59,15 @@ private:
     bool _exitConfig;
     timeinfo _lastEditTime;
     int _iEditIndex;
-    static constexpr const char *_editChars = "\x01\x02""aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ_ !?$@#%^&*()-+={}[]<>:;\"`~',./|\\";
-    static const char AcceptChar = 0x01;
-    static const char DeleteChar = 0x02;
+    float _rollYOffset;
+    float _rollXOffset;
 
 public:
-    ConfigurationUI(Graphics &graphics, Environment &env, System &sys, UserInput &userinput, Font *font);
+    ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput);
 
-    bool render(Bitmap &screen);
-    void startConfigurationSession();
-    void endConfigurationSession();
+    void render(Bitmap &screen);
+    bool interact();
+    void init();
 
 private:
     /// @brief add a configurable item.
@@ -69,10 +82,10 @@ private:
         std::function<bool(configline &cfg, bool init)> updater);
         
     void selectConfig(int i);
-    void drawConfigLines(Bitmap &screen);
-    bool updateDST(configline &config, bool init);
     bool updateWifiSid(configline &config, bool init);
-    bool updateWifiPassword(configline &config, bool init);
+    void generateSettingLine(configline &line, const char *settingKey, const std::vector<configchoice> choices) const;
+    bool updateSettingFreeText(configline &config, bool init, const char *settingKey);
+    bool updateSettingChoices(configline &config, bool init, const char *settingKey, const std::vector<configchoice> &choices);
     bool updateYear(configline &config, bool init);
     bool updateDate(configline &config, bool init);
     bool updateTime(configline &config, bool init);
@@ -81,9 +94,9 @@ private:
     KeyPress getKeyPress();
     bool isEditTimeout();
     bool isTimeout();
-    const char *translate(const char *txt) const { return _sys.translate(txt); }
-    void generateDSTLine(configline &config, bool dst);
+    const char *translate(const char *txt) const { return _system.translate(txt); }
     void generateWifiLine(configline &config);
+    void initEditRoll(configline  &config);
     int rollIndex(char c);
 };
 

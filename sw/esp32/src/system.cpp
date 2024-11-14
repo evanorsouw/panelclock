@@ -30,12 +30,11 @@ timeinfo System::now() const
     struct timeval tv;
     gettimeofday(&tv, nullptr);
 
-    auto dst = _settings->DST();
-    if (dst)
+    if (_settings->DST())
     {
         tv.tv_sec += 3600;
     }
-    return timeinfo(tv, dst);
+    return timeinfo(tv);
 }
 
 void System::now(const timeinfo &now)

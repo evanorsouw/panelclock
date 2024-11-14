@@ -2,6 +2,7 @@
 #ifndef _COLOR_H_
 #define _COLOR_H_
 
+#include <algorithm>
 #include <cstdlib>
 
 class Color
@@ -62,8 +63,28 @@ public:
     static Color orangered;
     static Color skyblue;
 
+    Color operator *(float v) 
+    { 
+        return Color(
+            scale(_color.cmp.r, v),
+            scale(_color.cmp.g, v),
+            scale(_color.cmp.b, v),
+            _color.cmp.a);
+    }
+        
     bool operator == (const Color& rhs) { return _color.argb == rhs._color.argb; }
     bool operator != (const Color& rhs) { return _color.argb != rhs._color.argb; }
+
+private:
+    uint8_t scale(uint8_t v, float scale)
+    {
+        auto m = v * scale + 0.5f;
+        if (m < 0)
+            return 0;
+        if (m > 255)
+            return 255;
+        return (uint8_t)m;
+    }
 };
 
 #endif

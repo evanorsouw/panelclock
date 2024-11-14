@@ -7,6 +7,7 @@
 
 static std::map<const char *, std::map<const char *, const char *>> _translations = 
 {
+        // todo: add month abbreviations
     { "nl", 
         { 
             { "monday", "maandag" },
@@ -19,9 +20,30 @@ static std::map<const char *, std::map<const char *, const char *>> _translation
             { "year", "jaar" },
             { "date", "datum" },
             { "time", "tijd" },
-            { "summer", "zomertijd" },
-            { "winter", "wintertijd" },
+            { "DST", "ZT" },
+            { "daylight saving", "zomertijd" },
+            { "standard", "wintertijd" },
             { "exit", "terug" },
+            { "lang", "taal" },
+        }
+    },
+    { "fr", 
+        { 
+            { "monday", "lundi" },
+            { "tuesday", "mardi" },
+            { "wednesday", "mercredi" },
+            { "thursday", "jeudi" },
+            { "friday", "vendredi" },
+            { "saturday", "samedi" },
+            { "sunday", "dimanche" },
+            { "year", "annee" },
+            { "date", "date" },
+            { "time", "heure" },
+            { "DST", "H.E."},
+            { "daylight saving", "Heure d'été" },
+            { "standard", "hiver" },
+            { "exit", "sortie" },
+            { "lang", "langue" },
         }
     }
 };
