@@ -9,24 +9,25 @@ architecture Behavioral of ledpanel_controller_tb is
   
    component ledpanel_controller is
    port (    
-      i_clk60M        : in std_logic;
       i_reset_n       : in std_logic;
-      i_uart_rx       : in std_logic;
-      --              
-      o_uart_tx       : out std_logic;
+      i_clk60M        : in std_logic;
+      i_spi_clk       : in std_logic;
+      i_spi_sdi       : in std_logic;
+      --
+      o_spi_sdo       : out std_logic;
       o_dsp_clk       : out std_logic;
       o_dsp_latch     : out std_logic;
       o_dsp_oe_n      : out std_logic;
       o_dsp_addr      : out std_logic_vector (4 downto 0);
       o_dsp_rgbs      : out std_logic_vector (11 downto 0);
       o_dsp_vbl       : out std_logic;
-      -- sram pins    
+      -- sram pins
       o_sram_oe       : out std_logic;
       o_sram_wr       : out std_logic;
+      o_sram_addr     : out std_logic_vector(17 downto 0);   -- 13 bits for 1 screen, use 17 for 16 screens
       o_sram_cs       : out std_logic;
-      o_sram_addr     : out std_logic_vector(17 downto 0);
       io_sram_data    : inout std_logic_vector(11 downto 0);
-      --              
+      --
       ot_test         : out std_logic
    );
    end component ledpanel_controller;
@@ -36,15 +37,16 @@ architecture Behavioral of ledpanel_controller_tb is
    constant BAUD        : time := 1 sec / 115200;
 
    -- module under test inputs
+   signal tb_reset_n    : std_logic;
    signal tb_clk        : std_logic;
-   signal tb_reset      : std_logic;
-   signal tb_uart_rx    : std_logic;
+   signal tb_spi_clk    : std_logic;
+   signal tb_spi_sdi    : std_logic;
    
    -- module under test outputs;
-   signal tb_uart_tx    : std_logic;
+   signal tb_spi_sdo    : std_logic;
    signal tb_dsp_clk    : std_logic;
    signal tb_dsp_latch  : std_logic;
-   signal tb_dsp_oe_n    : std_logic;
+   signal tb_dsp_oe_n   : std_logic;
    signal tb_dsp_addr   : std_logic_vector (4 downto 0);
    signal tb_dsp_rgbs   : std_logic_vector (11 downto 0);
    signal tb_dsp_vbl    : std_logic;
@@ -61,11 +63,12 @@ architecture Behavioral of ledpanel_controller_tb is
    begin
    MUT: ledpanel_controller
    port map (
+      i_reset_n             => tb_reset_n,
       i_clk60M              => tb_clk,
-      i_reset_n             => tb_reset,
-      i_uart_rx             => tb_uart_rx,
+      i_spi_clk             => tb_spi_clk,
+      i_spi_sdi             => tb_spi_sdi,
                              
-      o_uart_tx             => tb_uart_tx,
+      o_spi_sdo             => tb_spi_sdo,
       o_dsp_clk             => tb_dsp_clk,
       o_dsp_latch           => tb_dsp_latch,
       o_dsp_oe_n            => tb_dsp_oe_n,
@@ -100,107 +103,107 @@ architecture Behavioral of ledpanel_controller_tb is
       end if;
    end process;
 
-   uart_stimulate : process
-   variable v_byte : std_logic_vector(7 downto 0);
-   begin
-      tb_uart_rx <= '1';  -- stopbit
-      wait for 6 ms;
+   -- uart_stimulate : process
+   -- variable v_byte : std_logic_vector(7 downto 0);
+   -- begin
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for 6 ms;
 
-      v_byte := X"10";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"10";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"11";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"11";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"08";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"08";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"FF";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"FF";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"80";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"80";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"10";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"10";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"0C";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"0C";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
-      v_byte := X"FF";
-      tb_uart_rx <= '0';  -- start
-      wait for BAUD;
-      for k in 0 to 7 loop
-         tb_uart_rx <= v_byte(k);            
-         wait for BAUD;
-      end loop;           
-      tb_uart_rx <= '1';  -- stopbit
-      wait for BAUD;
+      -- v_byte := X"FF";
+      -- tb_uart_rx <= '0';  -- start
+      -- wait for BAUD;
+      -- for k in 0 to 7 loop
+         -- tb_uart_rx <= v_byte(k);            
+         -- wait for BAUD;
+      -- end loop;           
+      -- tb_uart_rx <= '1';  -- stopbit
+      -- wait for BAUD;
 
 
 
-   end process uart_stimulate;
+   -- end process uart_stimulate;
   
    reset_gen : process
    begin
       for i in 1 to 5 loop
          if (i < 4) then
-            tb_reset <= '0';
+            tb_reset_n <= '0';
          else
-            tb_reset <= '1';
+            tb_reset_n <= '1';
          end if;
          wait until falling_edge(tb_clk);
        end loop;
-       wait on tb_reset;
+       wait on tb_reset_n;
    end process reset_gen;
    
 end architecture Behavioral;

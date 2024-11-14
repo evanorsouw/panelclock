@@ -112,7 +112,7 @@ void ApplicationRunner::stepGUI(Bitmap& screen)
 
 void ApplicationRunner::updateIntensity()
 {
-    auto elapsed = _appctx.elapsed(_transitionStart) / 400.0f;
+    auto elapsed = _appctx.elapsed(_transitionStart) / 250.0f;
     auto intensity = 0.0f;
     switch (_phase)
     {

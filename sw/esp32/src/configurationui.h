@@ -57,6 +57,7 @@ private:
     std::vector<configline> _configs;
     bool _updating;
     bool _exitConfig;
+    float _keySetLine;
     timeinfo _lastEditTime;
     int _iEditIndex;
     float _rollYOffset;

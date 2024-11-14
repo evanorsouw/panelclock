@@ -41,6 +41,7 @@ architecture toplevel_arch of toplevel is
    
    component ledpanel_controller
    port (    
+      i_reset_n     : in std_logic;
       i_clk60M      : in std_logic;
       i_spi_clk     : in std_logic;
       i_spi_sdi     : in std_logic;
@@ -78,6 +79,7 @@ begin
       
    panel_controller : ledpanel_controller
    port map (
+      i_reset_n     => '1',
       i_clk60M      => s_clk60M,
       i_spi_clk     => i_spi_clk,
       i_spi_sdi     => i_spi_sdi,

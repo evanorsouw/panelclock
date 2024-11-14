@@ -76,7 +76,7 @@ void ConfigurationUI::render(Bitmap &screen)
 {
     auto white = Color::white * _appctx.intensity();
     auto darkgray = Color(16,16,16) * _appctx.intensity();
-    auto lime = Color::white * _appctx.intensity();
+    auto lime = Color::lime * _appctx.intensity();
     auto darkred = Color(19,0,0) * _appctx.intensity();
 
     auto labelwidth = 0.0f;
@@ -244,23 +244,30 @@ bool ConfigurationUI::interact()
     {
         _updating = config.updater(config, false);
         _lastEditTime = _system.now();
+        _keySetLine = _selectedLine;
     }
     else
     {
         _iEditIndex = -1;
-        switch (getKey())
+
+        auto key = getKey();
+        if (key == UserInput::KEY_SET)
         {
-        case UserInput::KEY_SET:
             initEditRoll(config);
             config.updater(config, true);
             _updating = true;
-            break;
-        case UserInput::KEY_UP:
-            selectConfig(_selectedLine-1);
-            break;
-        case UserInput::KEY_DOWN:
-            selectConfig(_selectedLine+1);
-            break;
+        }
+        else
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ _keySetLine += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ _keySetLine -= delta; });
+        }
+        _keySetLine = std::max(0.0f, std::min(_keySetLine, _configs.size() - 1.0f));
+        printf("setpoint=%f, selected=%d\n", _keySetLine, _selectedLine);
+        if ((int)_keySetLine != _selectedLine)
+        {
+            selectConfig((int)_keySetLine);
+            _keySetLine = _selectedLine;
         }
     }
 
@@ -577,7 +584,6 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
     return editing;
 }
 
-
 int ConfigurationUI::getKey() 
 { 
     auto keypress = _userinput.getKey(); 
@@ -609,7 +615,7 @@ void ConfigurationUI::repeatUpdateOnKey(int activateKey, int keyPressed, std::fu
 
 bool ConfigurationUI::isEditTimeout()
 {
-    return _userinput.hasKeyDown(UserInput::KEY_SET, 3000);
+    return _userinput.hasKeyDown(UserInput::KEY_SET, 2000);
 }
 
 bool ConfigurationUI::isTimeout()

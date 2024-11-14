@@ -96,6 +96,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity ledpanel_controller is
    port (
+      i_reset_n       : in std_logic;
       i_clk60M        : in std_logic;
       i_spi_clk       : in std_logic;
       i_spi_sdi       : in std_logic;
@@ -258,7 +259,6 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_init_data_size   : unsigned(7 downto 0);
    signal s_init_data_out    : std_logic_vector(7 downto 0);
 
-
    signal s_ram_wr_clk       : std_logic;
    signal s_ram_wr_mask      : std_logic_vector(11 downto 0);
    signal s_ram_wr_addr      : unsigned(13 downto 0);
@@ -327,7 +327,7 @@ begin
   reset : reset_controller
   port map (
       i_clk              => i_clk60M,
-      i_external_reset_n => '1',
+      i_external_reset_n => i_reset_n,
       --
       o_reset_n          => s_reset_n
    );
@@ -534,6 +534,8 @@ begin
       end if;
    end process;
 
+   ot_test <= s_reset_n;   
+
    -- receive API date (byte), initially from internal storage (init_data)
    -- after that from the external serial source.
    -- received data is stored in a FIFO to decouple reception from processing.
@@ -542,6 +544,7 @@ begin
    variable v_cmd_address      : unsigned(15 downto 0);
    variable v_cmd_rgbs         : std_logic_vector(23 downto 0);
    variable v_cmd_write        : std_logic;
+   variable v_init_idx         : unsigned(15 downto 0);
    begin
       if s_reset_n = '0' then
          s_rcv_dataclk      <= '0';
@@ -571,13 +574,14 @@ begin
             s_init_delay <= s_init_delay - 1;
             if s_init_delay = 0 then
                 s_init_delay <= to_unsigned(5, s_init_delay'length);
-                s_init_idx <= s_init_idx + 1;
+                v_init_idx := s_init_idx + 1;                
+                s_init_idx <= v_init_idx;
+                if v_init_idx = s_init_data_size then
+                    s_init_done <= '1';
+                end if;
                 s_rcv_dataclk <= '1';
             else
                 s_rcv_dataclk <= '0';
-                if s_init_idx = s_init_data_size then
-                    s_init_done <= '1';
-                end if;
             end if;
          end if;
 
@@ -610,13 +614,11 @@ begin
          s_cmd_lut_data_rdy <= '0';
          s_cmd_screen_data_rdy <= '0';
 
-         ot_test <= '0';
          if s_cmd_fill_busy = '1' or
             s_cmd_blit_busy = '1' or
             s_cmd_lut_busy = '1' or
             s_cmd_screen_busy = '1'
          then
-            ot_test <= '1';
             if s_cmd_fill_need_more_data = '1' or
                s_cmd_blit_need_more_data = '1' or
                s_cmd_lut_need_more_data = '1' or
