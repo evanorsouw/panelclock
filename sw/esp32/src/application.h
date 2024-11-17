@@ -15,10 +15,22 @@
 #include "userinput.h"
 
 class Application : public RenderBase
-{    
+{   
+private: 
+    struct sparkle 
+    {
+        bool active;
+        long start;
+        float x;
+        float y;
+        float angle;
+    };
+
 private:
     int const WeatherImageDx = 32;
     int const WeatherImageDy = 26;
+    long _lasttime;
+    sparkle _sparkles[10];
 
 public:
     Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput);
@@ -44,6 +56,8 @@ private:
     Color starIntensity(float phase, float when);
     void drawFog(Bitmap &screen, float x, float y, float dx, float dy);
     void drawSnow(Bitmap &screen, float x, float y, float dx, float dy);
+    void drawSparkles(Bitmap &screen, const timeinfo &now);
+    void drawSparkle(Bitmap &screen, sparkle &now);
 };
 
 #endif

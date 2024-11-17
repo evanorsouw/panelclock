@@ -21,6 +21,7 @@ public:
 
     std::string name() const { return _name; }
     bool asbool() const { return _value == "1"; }
+    int asint() const { return atoi(_value.c_str()); }
     const char *asstring() const { return _value.c_str(); }
 };
 
@@ -37,6 +38,12 @@ public:
     bool saveSettings();
 
     Setting *add(const char *name, bool value) { return add(name, value ? "1" : "0"); }
+    Setting *add(const char *name, int value) 
+    { 
+        char buf[40];
+        snprintf(buf, sizeof(buf), "%d", value); 
+        return add(name, buf); 
+    }
     Setting *add(const char *name, const char *value); 
     
     Setting *get(const char *name) const;

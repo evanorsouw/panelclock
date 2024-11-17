@@ -36,10 +36,10 @@ void ApplicationRunner::renderTask()
 
     Bitmap *screen = 0;
     xQueueReceive(_hRenderQueue, &screen, 1000);
-    monitorRefreshRate();
     screen->fill(Color::black);
     stepGUI(*screen);
     xQueueSend(_hDisplayQueue, &screen, 1000);
+    monitorRefreshRate();
 }
 
 void ApplicationRunner::displayTask()

@@ -6,9 +6,8 @@
 
 class HTTPClient
 {
-private:
 public:
-    virtual ~HTTPClient() {}
+    virtual ~HTTPClient();
 
     int get(const char *url, uint8_t *buf, int bufLen);
     int get(const char *url, std::function<void(uint8_t*,int)> handler);

@@ -44,8 +44,6 @@ void JsonParser::parse()
         if (token == JsonToken::NeedMore)
             continue;
 
-        //printf("next:%d:%d[%d]:%d ", (int)_parsestate, (int)token, _nestdepth.size(), (int)(_nestdepth.empty() ? -1 : _nestdepth.back()));
-
         switch (_parsestate)
         {
         case ParseState::Idle:
@@ -240,7 +238,6 @@ JsonToken JsonParser::nextToken()
                     return JsonToken::NeedMore;
                 default:
                     back();
-                    //printf("unexpected character=%c(%d)\n", head(), head());
                     return JsonToken::Error;
             }
             break;
@@ -251,7 +248,6 @@ JsonToken JsonParser::nextToken()
         case TokenState::ParseLiteral:
             return parseLiteralToken();
     }
-    //printf("unexpected tokenstate=%d\n", (int)_tokenstate);
     return JsonToken::Error;
 }
 
@@ -354,7 +350,6 @@ JsonToken JsonParser::parseNumberToken()
             }
             else if (_numberstate == NumberState::Fraction1)
             {
-                //printf("need at least 1 digit after '.'\n");
                 // need at least 1 digit after the .
                 return JsonToken::Error;
             }
@@ -408,14 +403,13 @@ JsonToken JsonParser::parseLiteralToken()
         _tokenstate = TokenState::Idle;
         return JsonToken::Null;
     }
-    //printf("unknown literal '%s'\n", _currentToken.string);
     return JsonToken::Error;
 }
 
 void JsonParser::finishWithUnexpectedToken(JsonToken token)
 {
     char buf[80];
-    sprintf(buf, "unexpected token=%d", (int)token);
+    snprintf(buf, sizeof(buf), "unexpected token=%d", (int)token);
     finishWithError(buf);
 }
 

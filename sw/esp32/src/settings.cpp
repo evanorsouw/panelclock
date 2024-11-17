@@ -8,7 +8,6 @@
 
 Settings::Settings()
 {   
-    loadSettings();
 }
 
 bool Settings::loadSettings()

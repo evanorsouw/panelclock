@@ -43,6 +43,15 @@ public:
     }
 
     bool timeout(uint64_t timer, int timeoutMs) { return elapsed(timer) > timeoutMs; }
+    bool timeoutAndRestart(uint64_t &timer, int timeoutMs) 
+    { 
+        if (timeout(timer, timeoutMs))
+        {
+            starttimer(timer);
+            return true;
+        }
+        return false;
+    }
     void starttimer(uint64_t &timer) { timer = esp_timer_get_time(); }
     int elapsed(uint64_t timer) { return (int)((esp_timer_get_time() - timer) / 1000); }
     float phase(int cycleMs, bool wave, int offsetMs = 0)

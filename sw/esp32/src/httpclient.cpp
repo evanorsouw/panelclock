@@ -11,6 +11,11 @@ struct bufferinfo
     int filled;
 };
 
+HTTPClient::~HTTPClient()
+{
+
+}
+
 esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 {
     std::function<void(void*,int)> handler = *((std::function<void(void*,int)> *)evt->user_data);
@@ -46,6 +51,9 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 
 int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
 {
+    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
+
     esp_http_client_config_t config = { 0 } ;
     config.url = url;
     config.method = HTTP_METHOD_GET;

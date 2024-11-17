@@ -14,7 +14,9 @@ public:
         : _rtc(rtc)
     {}
 
-    void updateTask();
+    /// @brief update local time from RTC
+    /// @return number of ms before next update is needed.
+    int update();
 
 private:
     void setTimestamp(int year, int month, int mday, int wday, int hour, int minutes, int seconds, int millies);

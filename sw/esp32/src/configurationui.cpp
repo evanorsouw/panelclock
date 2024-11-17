@@ -16,6 +16,10 @@ std::vector<configchoice> ConfigurationUI::_bootscreenChoices = {
     configchoice("0", "no bootscreen"), 
     configchoice("1", "show bootscreen") 
 };
+std::vector<configchoice> ConfigurationUI::_secondhandChoices = { 
+    configchoice("0", "snap"), 
+    configchoice("1", "smooth") 
+};
 
 ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, graphics, env, sys, userinput)
@@ -25,37 +29,47 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Graphics &graphics
     addConfig("DST", 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyDST, _dstChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyDST, _dstChoices); });
-    addConfig(translate("year"), 
+    addConfig("year", 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
         [this](configline& c, bool init){ return updateYear(c, init); });
-    addConfig(translate("date"), 
-        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), _system.now().monthName(false)); }, 
+    addConfig("date", 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false))); }, 
         [this](configline& c, bool init){ return updateDate(c, init); });
-    addConfig(translate("time"), 
+    addConfig("time", 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
         [this](configline& c, bool init){ return updateTime(c, init); });
-    addConfig(translate("ip"), 
+    addConfig("ip", 
         [this](configline& c){ generateWifiLine(c); },
         nullptr);
-    addConfig(translate("wifi"), 
+    addConfig("wifi", 
         [this](configline& c){ strcpy(c.value,_system.settings().WifiSid()); }, 
-        [this](configline& c, bool init){ return updateWifiSid(c, init); });
-    addConfig(translate("pass"), 
+        [this](configline& c, bool init){ return updateWifiSid(c, init); },
+        [this](configline& c){ _system.connectWifi(); });
+    addConfig("pass", 
         [this](configline& c){ strcpy(c.value,_system.settings().WifiPassword()); }, 
-        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWifiPwd); });
-    addConfig(translate("key"), 
-        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveKey()); }, 
-        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveKey); });
-    addConfig(translate("lang"), 
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWifiPwd); },
+        [this](configline& c){ _system.connectWifi(); });
+    addConfig("lang", 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyLanguage, _languageChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyLanguage, _languageChoices); });
-    addConfig(translate("loc"), 
+    addConfig("key", 
+        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveKey()); }, 
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveKey); },
+        [this](configline& c){ _environment.update(); });
+    addConfig("loc", 
         [this](configline& c){ strcpy(c.value,_system.settings().WeerliveLocation()); }, 
-        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveLocation); });
-    addConfig(translate("boot"), 
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveLocation); },
+        [this](configline& c){ _environment.update(); });
+    addConfig("weer", 
+        [this](configline& c){ generateWeatherLine(c); },
+        nullptr);
+    addConfig("*boot", 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyBootscreen, _bootscreenChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyBootscreen, _bootscreenChoices); });
-    addConfig(translate("exit"), 
+    addConfig("*sec", 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });
+    addConfig("exit", 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   
 }
@@ -65,6 +79,7 @@ void ConfigurationUI::init()
     _configYBase = 0.0f;
     _selectionYBase = 0.0f;
     _selectedLine = 0;
+    _keySetLine= 0;
     _updating = false;
     _exitConfig = false;
     _lastEditTime = _system.now();
@@ -115,13 +130,8 @@ void ConfigurationUI::render(Bitmap &screen)
         // draw value
         if (i != _selectedLine || _iEditIndex < 0)
         {            
-            auto len = strlen(config.value);
-
             auto x = xvalues + config._xScrollOffset;           
-            for (auto j=0; j<len; ++j)
-            {
-                x = _graphics.text(screen, _font, x, y, config.value[j], color);
-            }
+            x = _graphics.text(screen, _font, x, y, config.value, color);
             switch (config._xScrollState)
             {
             case ScrollState::Begin:
@@ -243,6 +253,10 @@ bool ConfigurationUI::interact()
     if (_updating)
     {
         _updating = config.updater(config, false);
+        if (!_updating && config.onexitaction)
+        {
+            config.onexitaction(config);
+        }
         _lastEditTime = _system.now();
         _keySetLine = _selectedLine;
     }
@@ -263,7 +277,6 @@ bool ConfigurationUI::interact()
             repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ _keySetLine -= delta; });
         }
         _keySetLine = std::max(0.0f, std::min(_keySetLine, _configs.size() - 1.0f));
-        printf("setpoint=%f, selected=%d\n", _keySetLine, _selectedLine);
         if ((int)_keySetLine != _selectedLine)
         {
             selectConfig((int)_keySetLine);
@@ -282,7 +295,8 @@ bool ConfigurationUI::interact()
 
 void ConfigurationUI::addConfig(const char *label,
     std::function<void(configline &)> reader,
-    std::function<bool(configline &, bool)> updater)
+    std::function<bool(configline &, bool)> updater,
+    std::function<void(configline &)> onexit)
 {
     _configs.push_back(configline());
     auto &config = _configs.back();
@@ -291,6 +305,7 @@ void ConfigurationUI::addConfig(const char *label,
     config.value[0] = 0;
     config.reader = reader;
     config.updater = updater;
+    config.onexitaction = onexit;
 }
 
 void ConfigurationUI::selectConfig(int i)
@@ -381,7 +396,7 @@ bool ConfigurationUI::updateDate(configline& config, bool init)
         }
 
         now.setDate(now.year(), month, mday);
-        snprintf(config.value, sizeof(config.value),  "%02d %s", now.mday(), now.monthName(false));
+        snprintf(config.value, sizeof(config.value),  "%02d %s", now.mday(), translate(now.monthName(false)));
         
         if (!editing)
         {
@@ -468,10 +483,6 @@ bool ConfigurationUI::updateWifiSid(configline& config, bool init)
             _system.settings().WifiSid(config.value);
         }
     }        
-    if (!editing)
-    {
-        _system.connectWifi();
-    }
     return editing;
 }
 
@@ -650,6 +661,35 @@ void ConfigurationUI::generateWifiLine(configline& config)
     else
     {
         strcpy(config.value, "");
+    }
+}
+
+void ConfigurationUI::generateWeatherLine(configline& config)
+{
+    if (!_system.wifiConnected())
+    {
+        snprintf(config.value, sizeof(config.value), "%s", translate("no internet"));
+    }
+    else if (_environment.isupdating())
+    {
+        auto step = (_system.now().msticks() / 400) % 4;
+        char dots[5] = "    ";
+        dots[step] = '.';
+        snprintf(config.value, sizeof(config.value), "%s%s", translate("updating"), dots);
+    }
+    else if (_environment.valid())
+    {
+        auto location = translate("somewhere");
+        if (_environment.location().isValid() && _environment.location().value() != "")
+        {
+            location = _environment.location().value().c_str();
+        }
+        snprintf(config.value, sizeof(config.value), "%s, %.1f°", 
+            location, _environment.temperature().value());
+    }
+    else
+    {
+        snprintf(config.value, sizeof(config.value), "%s", _environment.invalidReason().c_str()); 
     }
 }
 

@@ -4,7 +4,7 @@
 
 #include "timesyncer.h"
 
-void TimeSyncer::updateTask()
+int TimeSyncer::update()
 {
     struct tm now;   
     getTimestamp(&now);
@@ -30,8 +30,8 @@ void TimeSyncer::updateTask()
         now.tm_hour, 
         now.tm_min, 
         now.tm_sec);
-
-    vTaskDelay(3600000 / portTICK_PERIOD_MS);
+    
+    return 1 * 24 * 60 * 60 * 1000;
 }
 
 void TimeSyncer::setTimestamp(int year, int month, int mday, int wday, int hour, int minutes, int seconds, int millies)

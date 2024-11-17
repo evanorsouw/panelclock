@@ -66,7 +66,7 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
         {
             ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
             _ipinfo = event->ip_info;
-            sprintf(_ip, "%d.%d.%d.%d",                 
+            snprintf(_ip, sizeof(_ip), "%d.%d.%d.%d",                 
                 (int)((_ipinfo.ip.addr>>0) & 0xFF),
                 (int)((_ipinfo.ip.addr>>8) & 0xFF),
                 (int)((_ipinfo.ip.addr>>16) & 0xFF),

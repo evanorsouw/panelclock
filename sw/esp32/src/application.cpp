@@ -7,6 +7,8 @@
 
 #include "application.h"
 
+#define PI 3.141592653f
+
 Application::Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, graphics, env, sys, userinput)
 {
@@ -24,6 +26,7 @@ void Application::render(Bitmap &screen)
     drawClock(screen, 0);
     drawDateTime(screen, now);
     drawWeather(screen);
+    //drawSparkles(screen, now);
 }
 
 bool Application::interact()
@@ -57,9 +60,24 @@ void Application::drawClock(Bitmap &screen, float x)
     drawLineFromCenter(screen, cx, cy, diameter, hours, 0.2f, 0.6f, diameter / 20, color);
     auto minutes = (drawtime() % 3600000) / 3600000.0f;
     drawLineFromCenter(screen, cx, cy, diameter, minutes, 0.2f, 0.8f, diameter / 20, color);
-
-    auto seconds = (drawtime() % 60000) / 60000.0f;
-    drawLineFromCenter(screen, cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
+    
+    if(_system.settings().SmoothSecondHand())
+    {
+        auto seconds = (drawtime() % 60000) / 60000.0f;
+        drawLineFromCenter(screen, cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
+    }
+    else
+    {
+        auto now = drawtime();
+        auto second = (now % 60000) / 1000;
+        auto angle = second / 60.f;
+        if (_lasttime != second)
+        {
+            _lasttime = second;
+            angle += 0.003;
+        }
+        drawLineFromCenter(screen, cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
+    }
 }
 
 void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
@@ -67,7 +85,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
     auto color = Color::white * _appctx.intensity();
     char buf[40];
 
-    sprintf(buf, "%02d", now.sec());
+    snprintf(buf, sizeof(buf), "%02d", now.sec());
     auto sizesec = _appctx.fonttimeSmall()->textsize(buf);
     auto xtim = 127 - sizesec.dx - 1;
     _graphics.text(screen, _appctx.fonttimeSmall(),
@@ -76,7 +94,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
         buf, color);
     sizesec = _appctx.fonttimeSmall()->textsize("88");
 
-    sprintf(buf, "%02d:%02d", now.hour(), now.min());
+    snprintf(buf, sizeof(buf), "%02d:%02d", now.hour(), now.min());
     auto sizehm = _appctx.fonttimeLarge()->textsize(buf);
     auto ybase = _appctx.fonttimeLarge()->ascend() - 2;
     xtim -= sizehm.dx + 2;
@@ -95,7 +113,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
         txt.c_str(), color);
 
     auto month = _system.translate(now.monthName(false));
-    sprintf(buf, "%d %c%s", now.mday(), std::toupper(month[0]), month+1);
+    snprintf(buf, sizeof(buf), "%d %c%s", now.mday(), std::toupper(month[0]), month+1);
     size = _appctx.fontdate()->textsize(buf);
     ybase += size.dy;
     _graphics.text(screen, _appctx.fontdate(),
@@ -115,7 +133,7 @@ void Application::drawWeather(Bitmap &screen)
     auto lightblue = Color(0x33, 0xcc, 0xff) * _appctx.intensity();
 
     auto windspeed = _environment.windspeed();
-    sprintf(buf1, "%dms", (int)(windspeed.value() + 0.5f));
+    snprintf(buf1, sizeof(buf1), "%dms", (int)(windspeed.value() + 0.5f));
     auto size = _appctx.fontweatherL()->textsize(buf1);
     auto xms = 128 - WeatherImageDx - 1 - size.dx;
     auto ybase = 50.2f;
@@ -128,12 +146,12 @@ void Application::drawWeather(Bitmap &screen)
     }
 
     auto temperature = _environment.temperature();
-    sprintf(buf1, "%.1f°", temperature.value());
+    snprintf(buf1, sizeof(buf1), "%.1f°", temperature.value());
     auto size1 =_appctx.fontweatherL()->textsize(buf1);
     ybase += _appctx.fontweatherL()->ascend() + 1;
 
     auto windchill = _environment.windchill();
-    sprintf(buf2, "(%.1f)", windchill.value());
+    snprintf(buf2, sizeof(buf2), "(%.1f)", windchill.value());
     auto size2 = _appctx.fontweatherS()->textsize(buf2);
 
     if (windchill.isValid())
@@ -255,7 +273,7 @@ void Application::drawWeatherImage(Bitmap &screen)
 
 void Application::drawLineFromCenter(Bitmap &screen, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)
 {
-    auto angle = M_PI * 2.0f * index - M_PI / 2.0;
+    auto angle = PI * 2.0f * index - PI / 2.0f;
     auto radius = diameter / 2.0f;
     auto o1 = radius * l1;
     auto o2 = radius * l2;
@@ -285,8 +303,6 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
         auto set = _environment.sunset().value();
         auto tset = set.tm_hour * 60 + set.tm_min;
 
-        //printf("color: tnow=%d, trise=%d, tset=%d\n", tnow, trise, tset);
-
         if (tnow < trise || tnow > tset)
         {
             color = horizoncolor;
@@ -304,7 +320,7 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
     auto cy = y + height / 2;
     for (auto i = 0; i < 8; ++i)
     {
-        auto angle = (float)std::numbers::pi / 4 * i + p1 * (float)std::numbers::pi;
+        auto angle = PI / 4 * i + p1 * PI;
         auto dx = max * std::cos(angle);
         auto dy = max * std::sin(angle);
         _graphics.line(screen, cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
@@ -317,12 +333,12 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
 void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, float height, Color pen, Color fill)
 {
     auto cx = x + phase(21000, true) * (width - 18);
-    auto cy = y + (height - 18) / 2 + 18 - 4;
+    auto cy = y + (height - 18) / 2 + 18 - 4 + phase(17000, true);
     _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "B", fill);
     _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "A", pen);
 
     cx = x + phase(22000, true, 3000) * (width - 22);
-    cy = y + (height - 22) / 2 + 22 + 2;
+    cy = y + (height - 22) / 2 + 22 + 2 + phase(19000, true);
     _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "B", fill);
     _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "A", pen);
 }
@@ -330,7 +346,7 @@ void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, flo
 float Application::drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color pen, Color fill)
 {
     auto tx = x + phase(21000, true, 3000) * (dx - 22);
-    auto ty = y + (dy - 22) / 2 + 22 - 2;
+    auto ty = y + (dy - 22) / 2 + 22 - 2 + phase(19000, true) * 2;
     _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "B", fill);
     _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "A", pen);
     return tx;
@@ -468,7 +484,7 @@ void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy)
         if (p < 0)
             p += n1;
         p /= n2;
-        auto tx = dx * (0.1f + 0.8f * ix / n1 + 0.1f * std::cos(p * (float)std::numbers::pi * (2+(i&1))));
+        auto tx = dx * (0.1f + 0.8f * ix / n1 + 0.1f * std::cos(p * PI * (2+(i&1))));
         auto ty = (dy-d) * p;
 
         if (p > 0.0f && p < 1.0f)
@@ -476,4 +492,42 @@ void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy)
             _graphics.rect(screen, x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), white);
         }
     }
+}
+
+void Application::drawSparkles(Bitmap &screen, const timeinfo &now)
+{
+    auto radius = (64 - 2) / 2.0f;
+    if (now.sec() % 5 == 0)
+    {
+        auto angle = PI * 2.0f * now.sec() / 60.0f - PI / 2.0f;
+
+        auto &sparkle = _sparkles[0];
+        if (!sparkle.active)
+        {
+            sparkle.active = true;
+            sparkle.x = 32 + std::cos(angle) * radius * 0.9f; 
+            sparkle.y = 32 + std::sin(angle) * radius * 0.9f; 
+            sparkle.angle = std::rand() % 180 * PI / 180;
+            sparkle.start = drawtime();
+        }
+    }
+    drawSparkle(screen, _sparkles[0]);
+}
+
+void Application::drawSparkle(Bitmap &screen, sparkle &sparkle)
+{
+    printf("sparkle: active=%d, x=%f,y=%f,angle=%f,start=%ld\n", sparkle.active, sparkle.x, sparkle.y, sparkle.angle, sparkle.start);
+    if (!sparkle.active)
+        return;
+
+    auto elapsed = (drawtime() - sparkle.start) / 1000.0f;
+    sparkle.active = elapsed < 1;
+
+    auto ox = 0.0f;//std::cos(sparkle.angle) * elapsed * 5;
+    auto oy = 0.0f;//std::sin(sparkle.angle) * elapsed + 5;
+    auto dx = phase(500, false) * 8;
+    auto dy = phase(400, false) * 8;
+    auto intensity = (64 + phase(300, true) * 191) * (1.0f - elapsed);
+    auto color = Color(intensity, intensity/2, intensity/2);
+    _graphics.rect(screen, sparkle.x+ox,sparkle.y+oy,dx,dy, color);
 }

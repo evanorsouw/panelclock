@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <esp_heap_caps.h>
 
 # include <unistd.h>
 # include <fcntl.h>
@@ -465,15 +466,15 @@ init_outline(Outline *outl)
 	/* TODO Smaller initial allocations */
 	outl->numPoints = 0;
 	outl->capPoints = 64;
-	if (!(outl->points = malloc(outl->capPoints * sizeof *outl->points)))
+	if (!(outl->points = heap_caps_malloc(outl->capPoints * sizeof *outl->points, MALLOC_CAP_SPIRAM)))
 		return -1;
 	outl->numCurves = 0;
 	outl->capCurves = 64;
-	if (!(outl->curves = malloc(outl->capCurves * sizeof *outl->curves)))
+	if (!(outl->curves = heap_caps_malloc(outl->capCurves * sizeof *outl->curves, MALLOC_CAP_SPIRAM)))
 		return -1;
 	outl->numLines = 0;
 	outl->capLines = 64;
-	if (!(outl->lines = malloc(outl->capLines * sizeof *outl->lines)))
+	if (!(outl->lines = heap_caps_malloc(outl->capLines * sizeof *outl->lines, MALLOC_CAP_SPIRAM)))
 		return -1;
 	return 0;
 }

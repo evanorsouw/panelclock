@@ -17,6 +17,8 @@ private:
     optional<uint64_t> _timestamp;
     EnvironmentValues _parsedValues;
     EnvironmentValues _values;
+    bool _updating;
+    EventGroupHandle_t _eventGroup;
 
 public:
     /// @param accesskey the accesskey to their API, request one at their site.
@@ -28,11 +30,15 @@ public:
         _accesskey = key;
         _location = location;
         _parsedValues.clear();
+        _updating = false;
+        _eventGroup = xEventGroupCreate();
     }
 
-    void updateTask();
+    int update();
 
-    bool valid() const { return _values.valid; };
+    bool isupdating() const { return _updating; }
+    std::string invalidReason() const { return _values.invalidReason; };
+    optional<std::string> location() const { return _values.location; }
     optional<tm> sunset() const { return _values.sunset; }
     optional<tm> sunrise() const { return _values.sunrise; }
     optional<float> temperature() const { return _values.temperature; }

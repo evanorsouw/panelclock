@@ -81,12 +81,6 @@ void initNVS()
     ESP_ERROR_CHECK(result);
 }
 
-void configureFPGA(SpiWrapper *spi)
-{
-    FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
-    FpgaConfig.configure();
-}
-
 extern "C" {
 
 void app_main() 
@@ -102,12 +96,12 @@ void app_main()
     gpio_set_direction(BUTTON_DOWN, GPIO_MODE_INPUT);
 
     initNVS();
-
-    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
-
     init_spiffs();
 
-    configureFPGA(spi);
+    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
+    FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
+    FpgaConfig.configure();
+
     auto settings = new AppSettings();
     auto panel = new LedPanel(128, 64, *spi);
     auto graphics = new Graphics(panel->dx(), panel->dy());
@@ -129,11 +123,32 @@ void app_main()
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 2000, apprunner, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((TimeSyncer*)arg)->updateTask(); }, "timemgt", 2000, timeupdater, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((EnvironmentWeerlive*)arg)->updateTask(); }, "environment", 8000, environment, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 2000, userinput, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
 
     printf("application started\n");
+    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
+    printf("total free DMA: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+
+    // use main thread for running periodic tasks.
+    uint64_t timesync = 0;
+    uint64_t weersync = 0;
+    int timetimeout = 0;
+    int weathertimeout = 0;
+ 
+    for (;;)
+    {
+        // timer update from RTC: once a day
+        if (appdata->timeoutAndRestart(timesync, timetimeout))
+        {
+            timetimeout = timeupdater->update();
+        }
+        // update weather data; every 10 minutes on success of 
+        if (appdata->timeoutAndRestart(weersync, weathertimeout))
+        {
+            weathertimeout = environment->update();
+        }
+    }
 }
 
 }

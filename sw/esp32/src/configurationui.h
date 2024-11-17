@@ -24,11 +24,13 @@ struct configline
         value[0] = 0;
         _xScrollState = ScrollState::Begin;
         _xScrollOffset = 0;
+        _scrolldelay = 0;
     }
     const char *label;
     char value[50];
     std::function<void(configline &)> reader;
     std::function<bool(configline &, bool)> updater;
+    std::function<void(configline &)> onexitaction;
     float setpoint;
     float _xScrollOffset;
     ScrollState _xScrollState;
@@ -49,15 +51,16 @@ private:
     static std::vector<configchoice> _languageChoices;
     static std::vector<configchoice> _dstChoices;
     static std::vector<configchoice> _bootscreenChoices;
+    static std::vector<configchoice> _secondhandChoices;
 
     Font *_font;
+    float _keySetLine;
     int _selectedLine;
     float _configYBase;
     float _selectionYBase;
     std::vector<configline> _configs;
     bool _updating;
     bool _exitConfig;
-    float _keySetLine;
     timeinfo _lastEditTime;
     int _iEditIndex;
     float _rollYOffset;
@@ -78,9 +81,12 @@ private:
     /// @param updater the optional lambda that is called when the config is in edit-mode. The init
     /// flags is true first call in a edit series abnd may be used for initialization.
     /// When updater is nullptr, the item becomes readonly.
+    /// @param onexitaction the optional lambda called when updating the config ends. can be used
+    /// to trigger bhaviour to take the new settings into account.
     void addConfig(const char *label,
-        std::function<void(configline &cfg)> reader,
-        std::function<bool(configline &cfg, bool init)> updater);
+        std::function<void(configline& cfg)> reader,
+        std::function<bool(configline& cfg, bool init)> updater,
+        std::function<void(configline& cfg)> onexitaction = nullptr);
         
     void selectConfig(int i);
     bool updateWifiSid(configline &config, bool init);
@@ -97,6 +103,7 @@ private:
     bool isTimeout();
     const char *translate(const char *txt) const { return _system.translate(txt); }
     void generateWifiLine(configline &config);
+    void generateWeatherLine(configline &config);
     void initEditRoll(configline  &config);
     int rollIndex(char c);
 };

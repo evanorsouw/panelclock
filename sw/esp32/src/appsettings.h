@@ -11,9 +11,10 @@ public:
     inline static const char *KeyWifiSid = "wifisid";
     inline static const char *KeyWifiPwd = "wifipwd";
     inline static const char *KeyWeerliveKey = "weerlivekey";
-    inline static const char *KeyWeerliveLocation = "weerlivelocation";
+    inline static const char *KeyWeerliveLocation = "weerliveloc";
     inline static const char *KeyDST  = "dst";
     inline static const char *KeyBootscreen  = "boot";
+    inline static const char *KeySmoothSecondHand  = "secondhand";
 
     AppSettings()
     {        
@@ -24,6 +25,7 @@ public:
         add(KeyWeerliveLocation, "Amsterdam");
         add(KeyDST, false);
         add(KeyBootscreen, true);
+        add(KeySmoothSecondHand, true);
 
         loadSettings();
     }
@@ -48,6 +50,9 @@ public:
 
     bool Bootscreen() const { return get(KeyBootscreen)->asbool(); }
     void Bootscreen(bool show) const { return get(KeyBootscreen)->set(show); }
+
+    int SmoothSecondHand() const { return get(KeySmoothSecondHand)->asbool(); }
+    void SmoothSecondHand(bool smooth) const { return get(KeySmoothSecondHand)->set(smooth); }
 };
 
 #endif

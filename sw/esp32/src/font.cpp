@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_heap_caps.h>
 
 #include "font.h"
 
@@ -102,7 +103,7 @@ SFT_Font *Font::loadfont(const char *fontname)
             LOG(" - not found\n");
             break;
         }
-        auto memory = malloc(info.st_size);
+        auto memory = heap_caps_malloc_prefer(info.st_size, 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
         if (memory == nullptr)
         {
             LOG(" - not enough memory\n");

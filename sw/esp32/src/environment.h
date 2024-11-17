@@ -32,8 +32,6 @@ private:
     T _value;
     
 public:
-    optional(){}
-    optional(const optional &rhs) : _valid(rhs._valid), _value(rhs._value) {}
     void set(const T &value) { _value = value; _valid = true; }
     void clear() { _valid = false; }
     bool isValid() const { return _valid; }
@@ -42,7 +40,8 @@ public:
 
 struct EnvironmentValues
 {
-    bool valid;
+    std::string invalidReason;
+    optional<std::string> location;
     optional<tm> sunset;
     optional<tm> sunrise;
     optional<float> temperature;
@@ -54,7 +53,8 @@ struct EnvironmentValues
 
     void clear()
     {
-        valid = false;
+        invalidReason = "";
+        location.clear();
         sunset.clear();
         sunrise.clear();
         temperature.clear();
@@ -70,7 +70,15 @@ struct Environment
 {
     virtual ~Environment() {}
 
-    virtual bool valid() const = 0;
+    virtual bool valid() { return invalidReason().size() == 0; }
+
+    /// @brief updates the internal representation 
+    /// @return the preferred number of ms before making a new attempt to update the info.
+    virtual int update() = 0;
+
+    virtual bool isupdating() const = 0;
+    virtual std::string invalidReason() const = 0;
+    virtual optional<std::string> location() const = 0;
     virtual optional<tm> sunset() const = 0;
     virtual optional<tm> sunrise() const = 0;
     virtual optional<float> temperature() const = 0;      // degrees

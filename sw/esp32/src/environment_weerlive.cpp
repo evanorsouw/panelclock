@@ -1,5 +1,7 @@
 
 #include <numbers>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "environment_weerlive.h"
 #include "httpclient.h"
@@ -47,44 +49,77 @@ static struct {
     { "OZO", 202.5 }
 };
 
-void EnvironmentWeerlive::updateTask()
+int EnvironmentWeerlive::update()
 {
-    _system->waitForInternet();
-    HTTPClient client;
-    auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
-
-    _state = ParseState::WaitArray;
-    _parsedValues.clear();
-    JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
-
-    client.get(url.c_str(), [&](uint8_t *data, int len) { parser.parse((char *)data, len); });
-    _values = _parsedValues;
-    
-    auto delayMs = 30 * 1000;
-    if (valid())
+    int nextAttempt = 10 * 60 * 1000;
+    if (_updating)
     {
-        delayMs = 10 * 60 * 1000;
-        if (temperature().isValid())
-            printf("temp=%.1f ", temperature().value());
-        if (windchill().isValid())
-            printf("gtemp=%.1f ", windchill().value());
-        if (windspeed().isValid())
-            printf("windspeed=%.1f ", windspeed().value());
-        if (windangle().isValid())
-            printf("windangle=%.2f ", windangle().value());
-        if (weather().isValid())
-            printf("weather=%d ", (int)weather().value());
-        if (airpressure().isValid())
-            printf("airpressure=%.1f ", airpressure().value());
-        if (sunrise().isValid())
-            printf("%04d-%02d-%02d %02d:%02d:%02d ", 
-                sunrise().value().tm_year, sunrise().value().tm_mon, sunrise().value().tm_mday, sunrise().value().tm_hour, sunrise().value().tm_min, sunrise().value().tm_sec);
-        if (sunset().isValid())
-            printf("%04d-%02d-%02d %02d:%02d:%02d ", 
-                sunset().value().tm_year, sunset().value().tm_mon, sunset().value().tm_mday, sunset().value().tm_hour, sunset().value().tm_min, sunset().value().tm_sec);
-        printf("\n");
+        printf("update weerlive ignore, already in progress\n");
     }
-    vTaskDelay(delayMs / portTICK_PERIOD_MS);
+    else
+    {
+        _updating = true;
+        printf("update weerlive\n");
+
+        _parsedValues.clear();
+        if (!_system->wifiConnected())
+        {
+            printf("weather: no internet\n");
+            _parsedValues.invalidReason = "no internet";
+            nextAttempt = 1 * 60 * 1000;
+        }
+        else
+        {
+            HTTPClient client;
+            auto url = std::string("https://weerlive.nl/api/weerlive_api_v2.php?key=") + _accesskey->asstring() + "&locatie=" + _location->asstring();
+            _state = ParseState::WaitArray;
+            JsonParser parser([this](const JsonEntry &json) { return handleJson(json); });
+
+            auto result = client.get(url.c_str(), [&](uint8_t *data, int len) { parser.parse((char *)data, len); });
+            if (result != 200)
+            {
+                char buf[40];
+                snprintf(buf, sizeof(buf), "server response %d", result);
+                printf("weather: %s\n", buf);
+                _parsedValues.invalidReason = buf;
+                nextAttempt = 2 * 60 * 1000;
+            }
+            else
+            {
+                _values = _parsedValues;        
+                printf("weather: ");
+                if (valid())
+                {
+                    if (location().isValid())
+                        printf("location=%s ", location().value().c_str());
+                    if (temperature().isValid())
+                        printf("temp=%.1f ", temperature().value());
+                    if (windchill().isValid())
+                        printf("gtemp=%.1f ", windchill().value());
+                    if (windspeed().isValid())
+                        printf("windspeed=%.1f ", windspeed().value());
+                    if (windangle().isValid())
+                        printf("windangle=%.2f ", windangle().value());
+                    if (weather().isValid())
+                        printf("weather=%d ", (int)weather().value());
+                    if (airpressure().isValid())
+                        printf("airpressure=%.1f ", airpressure().value());
+                    if (sunrise().isValid())
+                        printf("up:%02d:%02d ", sunrise().value().tm_hour, sunrise().value().tm_min);
+                    if (sunset().isValid())
+                        printf("set:%02d:%02d ", sunset().value().tm_hour, sunset().value().tm_min);
+                    printf("\n");
+                }
+                else
+                {
+                    printf("error=%s\n", invalidReason().c_str());
+                }
+            }
+        }
+        _values = _parsedValues;        
+        _updating = false;
+    }
+    return nextAttempt;
 }
 
 bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
@@ -119,8 +154,6 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
         {
         case JsonItem::Close:
             _state = ParseState::Completed;
-            //printf("object closed, parsing completed\n");
-            _parsedValues.valid = true;
             break;
         case JsonItem::End:
         case JsonItem::Array:
@@ -139,7 +172,11 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
                 _parsedValues.airpressure.set((float)json.number);
             break;
         case JsonItem::String:
-            if (!strcmp(json.name, "image"))
+            if (!strcmp(json.name, "fout"))
+                _parsedValues.invalidReason = json.string;
+            else if (!strcmp(json.name, "plaats"))
+                _parsedValues.location.set(json.string);
+            else if (!strcmp(json.name, "image"))
                 _parsedValues.weather.set(parseWeather(json.string));
             else if (!strcmp(json.name, "sup"))
                 _parsedValues.sunrise.set(parseTime(json.string));
