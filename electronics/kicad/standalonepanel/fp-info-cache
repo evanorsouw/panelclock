@@ -1,103 +1,159 @@
-23833191561775719
-0_project
+23847100030490067
+0_whitemagic
+1x5-2.54
+
+
+0
+5
+5
+0_whitemagic
+2x3-2.54
+
+
+0
+6
+6
+0_whitemagic
+BxxxxS-2W
+
+
+0
+4
+4
+0_whitemagic
 ESP32-WROVER-E
 ESP32-WROVER-E: https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32e_esp32-wroom-32ue_datasheet_en.pdf
 esp32 module
 0
 47
 39
-0_project
+0_whitemagic
 FUSEHOLDER 1808
 
 
 0
 2
 2
-0_project
+0_whitemagic
 IDC-Header_2x08_P2.54mm_Horizontal
 Through hole IDC box header, 2x08, 2.54mm pitch, DIN 41651 / IEC 60603-13, double rows, https://docs.google.com/spreadsheets/d/16SsEcesNF15N3Lb4niX7dcUr-NY5_MFPQhobNuNppn4/edit#gid=0
 Through hole horizontal IDC box header THT 2x08 2.54mm double row
 0
 16
 16
-0_project
+0_whitemagic
 Inductor-040420
 Inductor, Taiyo Yuden, NR series, Taiyo-Yuden_NR-40xx, 4.0mmx4.0mm
 inductor taiyo-yuden nr smd
 0
 2
 2
-0_project
+0_whitemagic
 InvenSense_QFN-24_4x4mm_P0.5mm
 24-Lead Plastic QFN (4mm x 4mm); Pitch 0.5mm; EP 2.7x2.6mm; for InvenSense motion sensors; keepout area marked (Package see: https://store.invensense.com/datasheets/invensense/MPU-6050_DataSheet_V3%204.pdf; See also https://www.invensense.com/wp-content/uploads/2015/02/InvenSense-MEMS-Handling.pdf)
 QFN 0.5
 0
 24
 24
-0_project
+0_whitemagic
 JST_VH_1x04_P3.96mm_Horizontal
 JST VH series connector, B4PS-VH (http://www.jst-mfg.com/product/pdf/eng/eVH.pdf), generated with kicad-footprint-generator
 connector JST VH top entry
 0
 4
 4
-0_project
+0_whitemagic
 Oscillator_SMD_EuroQuartz_XO91-4Pin_7.0x5.0mm_HandSoldering
 Miniature Crystal Clock Oscillator EuroQuartz XO91 series, http://cdn-reichelt.de/documents/datenblatt/B400/XO91.pdf, hand-soldering, 7.0x5.0mm^2 package
 SMD SMT crystal oscillator hand-soldering
 0
 4
 4
-0_project
+0_whitemagic
 PQFP-32_5x5mm_P0.5mm
 PQFP, 32 Pin (https://www.ti.com/lit/ds/symlink/ads127l01.pdf#page=87), generated with kicad-footprint-generator ipc_gullwing_generator.py
 PQFP QFP
 0
 32
 32
-0_project
+0_whitemagic
+PSC08-11
+
+single digit 7 segment green LED
+0
+18
+18
+0_whitemagic
 QFN-24-1EP_4x4mm_P0.5mm_EP2.7x2.7mm
 QFN, 24 Pin (http://www.alfarzpp.lv/eng/sc/AS3330.pdf), generated with kicad-footprint-generator ipc_noLead_generator.py
 QFN NoLead
 0
 29
 25
-0_project
+0_whitemagic
+SC23-11SURKWA
+http://www.kingbright.com/attachments/file/psearch/000/00/00/SBC18-11SURKCGKWA(Ver.6A).pdf
+single digit 7 segemnt red/green LED
+0
+10
+10
+0_whitemagic
+SOP-18_7.495x11.515mm_P1.27mm
+SOP, 18 Pin (https://toshiba.semicon-storage.com/info/docget.jsp?did=30523), generated with kicad-footprint-generator ipc_gullwing_generator.py
+SOP SO
+0
+18
+18
+0_whitemagic
+SOP-28_7.62x18.11mm_P1.27mm
+SOP, 28 Pin (https://www.issi.com/WW/pdf/62-65C256AL.pdf#page=12), generated with kicad-footprint-generator ipc_gullwing_generator.py
+SOP SO
+0
+28
+28
+0_whitemagic
 SOT23-5-SC189_SEM
 
 SC189ZSKTRT 
 0
 5
 5
-0_project
+0_whitemagic
 SW_Tactile_SKHH_Angled
 tactile switch 6mm ALPS SKHH right angle http://www.alps.com/prod/info/E/HTML/Tact/SnapIn/SKHH/SKHHLUA010.html
 tactile switch 6mm ALPS SKHH right angle
 0
 4
 2
-0_project
+0_whitemagic
 USB-A TH Female
 http://www.connfly.com/userfiles/image/UpLoadFile/File/2013/5/6/DS1095.pdf
 USB-A receptacle horizontal through-hole
 0
 6
 5
-0_project
+0_whitemagic
 USB_C_Receptacle_G-Switch_GT-USB-7010ASV
 USB Type C, right-angle, SMT, https://datasheet.lcsc.com/lcsc/2204071530_G-Switch-GT-USB-7010ASV_C2988369.pdf
 USB C Type-C Receptacle SMD
 0
 20
 17
-0_project
+0_whitemagic
+VEML7700-TR
+
+VEML7700-TR 
+0
+4
+4
+0_whitemagic
 cr2032_smd_clip
 
 
 0
 2
 2
-0_project
+0_whitemagic
 white_magic
 
 

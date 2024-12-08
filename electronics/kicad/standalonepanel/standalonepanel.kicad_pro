@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.762,
-          "height": 1.524,
-          "width": 1.524
+          "drill": 1.0,
+          "height": 1.7,
+          "width": 1.7
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -58,20 +58,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        "courtyards_overlap|127049999|110260428|3e9368f4-b7ce-4800-ac7e-2a5566bffc53|d759d141-acd6-4744-90eb-9b2cdd1084c6",
-        "courtyards_overlap|79906250|109907501|a26385c9-2d2e-4613-bb33-c82c6a203ec9|d9b0299c-2f15-4cda-885d-5c02127d6ffd",
-        "lib_footprint_mismatch|127650000|133837500|7263076a-c300-4b10-b3f1-e9284e90fe4d|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|137944999|112900000|51cc18c9-d0af-432f-9809-3ccc784e32d2|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|68772500|121750000|f2c3d1ab-5241-4d78-b5b1-912e82ad8d70|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|77000000|142000000|6ec7bb2c-66a0-446e-8885-ac30aa8719b6|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|81650000|129275000|dd467320-f967-4d05-9850-cd04dd76d2c7|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|81650000|134275000|4aec5b0e-fd96-4486-9ca2-f363a28dea4f|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|87000000|142000000|5b048892-9382-40b6-943d-6ca5b7f37bf9|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|88800000|129300000|64885e8f-4c7c-48d2-b2ca-a6dc5488c8ac|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|88800000|134300000|a117124b-2348-4ae9-bda0-ed95d5878c1b|00000000-0000-0000-0000-000000000000",
-        "lib_footprint_mismatch|97000000|142000000|6623ec00-7c8d-4800-9b15-360ad9414553|00000000-0000-0000-0000-000000000000"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -503,14 +490,27 @@
     },
     "net_colors": null,
     "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "Default",
+        "pattern": "DSP1-R2"
+      },
+      {
+        "netclass": "Default",
+        "pattern": "DSP1-R1"
+      },
+      {
+        "netclass": "Default",
+        "pattern": "DSP2-B2"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "facbrication",
+      "plot": "fabrication",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "standalonepanel.step",
