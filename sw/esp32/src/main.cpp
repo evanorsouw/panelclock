@@ -24,7 +24,6 @@
 #include "fpgaconfigurator.h"
 #include "graphics.h"
 #include "ledpanel.h"
-#include "mpu6050.h"
 #include "timesyncer.h"
 #include "userinput_keys.h"
 #include "wificlient.h"
@@ -40,24 +39,6 @@
 #define FPGA_RESET           GPIO_NUM_19
 #define I2C_SDA              GPIO_NUM_18
 #define I2C_CLK              GPIO_NUM_5
-
-void read_orientation()
-{
-    I2CWrapper i2c(0, I2C_CLK, I2C_SDA);
-    i2c.start();
-
-    MPU6050 accel(&i2c);
-    accel.start();
-
-    for (;;)
-    {
-        accel.readAngles();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
-    i2c.end();
-}
-
 
 void init_spiffs()
 {
@@ -112,7 +93,7 @@ void app_main()
     auto system = new System(settings, rtc);
     auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_DOWN, BUTTON_UP, *system);
     auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
-    
+
     auto appdata = new ApplicationContext();
 
     auto appui = new Application(*appdata, *graphics, *environment, *system, *userinput);
@@ -125,16 +106,16 @@ void app_main()
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 2000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
 
-    printf("application started\n");
+    printf("application initialized\n");
     printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
     printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
     printf("total free DMA: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
 
     // use main thread for running periodic tasks.
-    uint64_t timesync = 0;
-    uint64_t weersync = 0;
-    int timetimeout = 0;
-    int weathertimeout = 0;
+    uint64_t timesync = appdata->starttimer();
+    uint64_t weersync = appdata->starttimer();
+    int timetimeout = 1 * 1000;
+    int weathertimeout = 5 * 1000;
  
     for (;;)
     {

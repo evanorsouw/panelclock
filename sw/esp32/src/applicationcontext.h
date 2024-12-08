@@ -53,6 +53,7 @@ public:
         return false;
     }
     void starttimer(uint64_t &timer) { timer = esp_timer_get_time(); }
+    uint64_t starttimer() { return esp_timer_get_time(); }
     int elapsed(uint64_t timer) { return (int)((esp_timer_get_time() - timer) / 1000); }
     float phase(int cycleMs, bool wave, int offsetMs = 0)
     {

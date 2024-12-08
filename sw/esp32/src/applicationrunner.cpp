@@ -11,8 +11,11 @@ ApplicationRunner::ApplicationRunner(ApplicationContext& appdata, LedPanel& pane
     , _configui(configui)
     , _system(system)
 {
-    _refreshCountStart = std::numeric_limits<long>::max();
-    _refreshCount = 0;
+    _appctx.starttimer(_totaltime);
+    _appctx.starttimer(_totalrendertime);
+    _appctx.starttimer(_totaldisplaytime);
+    _rendercount = 0;
+
     _iShowScreen = 0;
 
     if (system.settings().Bootscreen())
@@ -32,20 +35,25 @@ ApplicationRunner::ApplicationRunner(ApplicationContext& appdata, LedPanel& pane
 
 void ApplicationRunner::renderTask()
 {
-    _appctx.settime(_system.now());
+    uint64_t timer;
 
     Bitmap *screen = 0;
     xQueueReceive(_hRenderQueue, &screen, 1000);
+    _appctx.starttimer(timer);
+    _appctx.settime(_system.now());
     screen->fill(Color::black);
     stepGUI(*screen);
     xQueueSend(_hDisplayQueue, &screen, 1000);
-    monitorRefreshRate();
+    _totalrendertime += _appctx.elapsed(timer);
 }
 
 void ApplicationRunner::displayTask()
 {
+    uint64_t timer;
+
     Bitmap *screen;
     xQueueReceive(_hDisplayQueue, &screen, 1000);
+    _appctx.starttimer(timer);
     screen->copyTo(_panel, 0, 0);
     _panel.showScreen(_iShowScreen);
     if (++_iShowScreen == 3)
@@ -53,6 +61,8 @@ void ApplicationRunner::displayTask()
     _panel.selectScreen(_iShowScreen);
     xQueueSend(_hRenderQueue, &screen, 1000);
 
+    _totaldisplaytime += _appctx.elapsed(timer);
+    monitorRefreshRate();
 }
 
 void ApplicationRunner::startMode(UIMode mode, TransitionPhase phase)
@@ -137,19 +147,18 @@ void ApplicationRunner::updateIntensity()
 
 void ApplicationRunner::monitorRefreshRate()
 {
-    _refreshCount++;
-    auto now = _appctx.msSinceMidnight();
-    auto elapsed = now - _refreshCountStart;
-    if (elapsed < 0 || elapsed > 30000)
+    _rendercount++;
+    auto elapsed = _appctx.elapsed(_totaltime);
+    if (elapsed > 10000)
     {
-        _refreshCount = 0;
-        _refreshCountStart = now;
-    }
-    else if (elapsed > 10000)
-    {
-        printf("%d fps\n", _refreshCount /10);
-        _refreshCount = 0;
-        _refreshCountStart += 10000;
+        _appctx.starttimer(_totaltime);
+        auto fps = _rendercount / 10.0f;
+        auto prender = _totalrendertime * 100.0f / elapsed;
+        auto pdisplay = _totaldisplaytime * 100.0f / elapsed;
+
+        _rendercount = 0;
+        _totaldisplaytime = 0;
+        _totalrendertime = 0;
+        printf("%.1f fps, render=%.1f%%, display=%.1f%%\n", fps, prender, pdisplay);
     }
 }
-

@@ -2,8 +2,17 @@
 #ifndef I2CWRAPPER_H_
 #define I2CWRAPPER_H_
 
+#include <string.h>
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+
+#define LOGGING
+
+#if defined(LOGGING)
+  #define LOG(...)
+#else
+  #define LOG(...) printf(__VA_ARGS__)
+#endif
 
 class I2CWrapper
 {
@@ -48,15 +57,38 @@ public:
 
     void read(uint8_t slaveaddr, uint8_t reg, uint8_t *data, int len)
     {
-        //printf("i2c.read(%d,%d,%p,%d) => ", slaveaddr, reg, data, len);
+        LOG("i2c.read(0x%02X,0x%02X,%p,%d) => [", slaveaddr, reg, data, len);
         i2c_master_write_read_device(_port, slaveaddr, &reg, 1, data, len, _timeout);
+#ifdef LOGGING
+        for (auto i=0; i<len; ++i)
+        {
+            LOG("0x%02x,", data[i]);
+        }
+        LOG("])\n");
+#endif
     }
 
     void write(uint8_t slaveaddr, uint8_t reg, uint8_t data)
     {
         uint8_t buf[2] = { reg, data };
-        //printf("i2c.write(%d,%d,%d) => ", slaveaddr, reg, data);
+        LOG("i2c.write(0x%02X,0x%02X,0x%02X)\n", slaveaddr, reg, data);
         i2c_master_write_to_device(_port, slaveaddr, buf, 2, _timeout);
+    }
+
+    void write(uint8_t slaveaddr, uint8_t reg, uint8_t *data, uint8_t len)
+    {       
+        uint8_t buf[128];
+        buf[0] = reg;
+        memcpy(buf + 1, data, len);
+        LOG("i2c.write(0x%02X,0x%02X,[", slaveaddr, reg);
+#ifdef LOGGING
+        for (auto i=0; i<len; ++i)
+        {
+            LOG("0x%02x,", data[i]);
+        }
+        LOG("])\n");
+#endif
+        i2c_master_write_to_device(_port, slaveaddr, buf, len + 1, _timeout);
     }
 };
 

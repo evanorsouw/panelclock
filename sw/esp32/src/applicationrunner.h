@@ -4,6 +4,7 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_timer.h>
 
 #include "application.h"
 #include "bitmap.h"
@@ -28,8 +29,10 @@ private:
     QueueHandle_t _hRenderQueue;
     QueueHandle_t _hDisplayQueue;
     int _iShowScreen;
-    int _refreshCount;
-    long _refreshCountStart;
+    uint64_t _totaltime;
+    uint64_t _totalrendertime;
+    uint64_t _totaldisplaytime;
+    int _rendercount;
     UIMode _mode;
     UIMode _nextMode;
     TransitionPhase _phase;
