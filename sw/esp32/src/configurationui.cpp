@@ -550,10 +550,6 @@ bool ConfigurationUI::updateSettingFreeText(configline& config, bool init, const
             _system.settings().get(settingkey)->set(config.value);
         }
     }
-    if (!editing)
-    {
-        _system.connectWifi();
-    }
     return editing;
 }
 
