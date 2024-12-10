@@ -79,7 +79,7 @@ void app_main()
     initNVS();
     init_spiffs();
 
-    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 6000000, false);
+    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 4800000, false);
     FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
     FpgaConfig.configure();
 
@@ -87,7 +87,7 @@ void app_main()
     auto panel = new LedPanel(128, 64, *spi);
     auto graphics = new Graphics(panel->dx(), panel->dy());
     //auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK); // v2 pcb
-    auto i2c = new I2CWrapper(0, I2C_CLK, I2C_SDA); // v3 pcb
+    auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA); // v3 pcb
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc);
