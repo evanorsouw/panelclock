@@ -74,7 +74,7 @@ void Application::drawClock(Bitmap &screen, float x)
         if (_lasttime != second)
         {
             _lasttime = second;
-            angle += 0.003;
+            angle += 0.0015;
         }
         drawLineFromCenter(screen, cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
     }

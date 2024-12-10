@@ -37,8 +37,6 @@ Font::~Font()
 
 Font *Font::getFont(const char *fontname, float dx, float dy)
 {
-    fontinfo info;
-
     auto  it = _loadedFonts.find(fontname);
     if (it == _loadedFonts.end())
     {
@@ -53,7 +51,7 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
         if (sftfont != nullptr)
         {
             printf("loaded font='%s' (size=%d, @%p)\n", fontname, sftfont->size, sftfont->memory);
-            info = _loadedFonts[fontname] = fontinfo { 
+            _loadedFonts[fontname] = fontinfo { 
                 .font = sftfont,
                 .usecount = 0
             };
@@ -68,7 +66,7 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
 
     it->second.usecount++;
     SFT sft = {
-	    .font = info.font,
+	    .font = it->second.font,
         .xScale = dx,
         .yScale = dy,
         .flags = SFT_DOWNWARD_Y

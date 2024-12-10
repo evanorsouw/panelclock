@@ -430,9 +430,9 @@ void JsonParser::returnItem(JsonItem type)
     _currentToken.item = type;
     _currentToken.name = (const char *)_name.data();
     _currentToken.string = (const char *)_string.data();
-    auto skip = _handler(_currentToken);
+    _handler(_currentToken);
 
-    // todo: use skip to skip remainder of current object.
+    // todo: use skip returnvalue from previous call to skip remainder of current object.
 
     _name.set("");
 }
