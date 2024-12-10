@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.all;
 
 -- Internals:
 -- This code uses a theoretical maximum of 4x4 panels. The restriction is in the
--- pixel-drawing coordinates that are only a byte so restricted to reach4 panels.
+-- pixel-drawing coordinates that are only a byte so restricted to reach 4 panels.
 -- The current code supports only 2 64x64 panels, this is in the fact that all RGB
 -- bits are handled as a 12 bit array (explained later). Todo: make #panels configurable.
 --
@@ -22,10 +22,22 @@ use IEEE.NUMERIC_STD.all;
 --    | 12 | 13 | 14 | 14 |
 --    +----+----+----+----+
 --
+-- Via the HUB75E interface that these panels provide you continuously have to shift in
+-- pixels 1 row at a time. A pixel is either on or off, there is no native intensity
+-- available. Intensity is achieved by repeatedly shifting in bits into the panel
+-- to achieve a PWM signal per pixel where the on/off ratio determines the intensity.
+-- Obviously more intensities mean more lower refreshrate.
+-- 
 -- Panels are in essence section of 64x32 pixels that need to be refreshed continuously
 -- if a panel is 64x64 or if you have more panels, then the looping through of 64x32
 -- pixels is done once but, RGB values are output for each 64x32 section indivudually.
---
+-- Now 1 additional note here, panels can be chained. For this each panel has a HUB75E 
+-- input connector and an output connector. Data shifted in is also shifted out on
+-- the output connector (after 64 bits). Chaining means simpler hardware but since 
+-- chaining means that each row becomes longer, the effective refresh rate will again drop. 
+-- In the following description it is assumed that the underlying hardware provides
+-- a HUB75E connector for each panel.
+-- 
 -- In a nutshell to integrate this code with external memory;
 -- The address width is 64*32*8 = 14 bits, regardless the number of panels.
 -- The data width = 3bits per 64x32 panel. So 2 64x64 panels have a datawidth of 2x2x3 = 12 bits.
@@ -346,7 +358,7 @@ begin
       o_dsp_vbl   => s_dsp_vbl
    );
 
-   PC : SPI
+   CPU : SPI
    port map (
       i_reset_n     => s_reset_n,
       i_clk         => i_clk60M,
@@ -528,6 +540,12 @@ begin
                   s_rmw_bitmask <= "10000000";
                   s_rmw_address <= s_ram_wr_addr;
                   s_rmw_step <= 0;
+               -- else
+                  -- s_rmw_in_progress <= '1';
+                  -- s_rmw_bitmask <= "10000000";
+                  -- s_rmw_address <= "11110000000000";
+                  -- s_ram_wr_color <= "111111110000000011110000";
+                  -- s_rmw_step <= 0;
                end if;
             end if;
          end if;

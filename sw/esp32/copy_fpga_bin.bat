@@ -1,0 +1,1 @@
+copy ..\..\fpga\ICE40HX4KTQ144\ICE40HX4KTQ144_Implmnt\sbt\outputs\bitmap\toplevel_bitmap.bin data

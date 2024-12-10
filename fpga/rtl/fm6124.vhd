@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity FM6124 is
    port (
-      i_clkx2     : in std_logic;   -- max 60MHz (2x30MHz)
+      i_clkx2     : in std_logic;   -- max 2x the panel frequency
       i_reset_n   : in std_logic;
       --
       o_addr      : out std_logic_vector (13 downto 0);
@@ -57,7 +57,7 @@ begin
          v_pixel_addr := s_pixel_addr;
          v_row_count  := s_row_count;
                   
-         if s_depth_count = 0 then
+         if s_depth_count < 3 then
             v_read := '1';
          else
             v_waiting := '1';          
