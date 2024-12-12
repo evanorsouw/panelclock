@@ -52,15 +52,15 @@ set_io o_dsp_addr[2] 135
 set_io o_dsp_addr[3] 134
 set_io o_dsp_addr[4] 125
 
-set_io o_dsp_rgbs[0] 114 
-set_io o_dsp_rgbs[1] 113 
-set_io o_dsp_rgbs[2] 112 
-set_io o_dsp_rgbs[3] 117
-set_io o_dsp_rgbs[4] 116
-set_io o_dsp_rgbs[5] 115 
-set_io o_dsp_rgbs[6] 120 
-set_io o_dsp_rgbs[7] 118 
-set_io o_dsp_rgbs[8] 119 
-set_io o_dsp_rgbs[9] 124 
-set_io o_dsp_rgbs[10] 121 
-set_io o_dsp_rgbs[11] 122 
+set_io o_dsp_rgbs[0] 120 
+set_io o_dsp_rgbs[1] 118 
+set_io o_dsp_rgbs[2] 119 
+set_io o_dsp_rgbs[3] 124 
+set_io o_dsp_rgbs[4] 121 
+set_io o_dsp_rgbs[5] 122 
+set_io o_dsp_rgbs[6] 114 
+set_io o_dsp_rgbs[7] 113 
+set_io o_dsp_rgbs[8] 112 
+set_io o_dsp_rgbs[9] 117
+set_io o_dsp_rgbs[10] 116
+set_io o_dsp_rgbs[11] 115 
