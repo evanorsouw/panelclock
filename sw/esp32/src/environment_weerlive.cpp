@@ -51,7 +51,7 @@ static struct {
 
 int EnvironmentWeerlive::update()
 {
-    int nextAttempt = 10 * 60 * 1000;
+    int nextAttempt = 10 * 60 * 1000;   // update every 10 minutes, that is the rate at which weerlive effectively updates.
     if (_updating)
     {
         printf("update weerlive ignore, already in progress\n");
@@ -90,6 +90,7 @@ int EnvironmentWeerlive::update()
                 printf("weather: ");
                 if (valid())
                 {
+                    _lastupdate = _system->now();
                     if (location().isValid())
                         printf("location=%s ", location().value().c_str());
                     if (temperature().isValid())

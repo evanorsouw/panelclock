@@ -45,6 +45,7 @@ public:
 
 private:
     void monitorIO(_keyinfo &info);
+    int flipKey(int key) const;
 };
 
 #endif

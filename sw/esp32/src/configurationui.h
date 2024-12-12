@@ -52,6 +52,7 @@ private:
     static std::vector<configchoice> _dstChoices;
     static std::vector<configchoice> _bootscreenChoices;
     static std::vector<configchoice> _secondhandChoices;
+    static std::vector<configchoice> _flipDisplayChoices;
 
     Font *_font;
     float _keySetLine;

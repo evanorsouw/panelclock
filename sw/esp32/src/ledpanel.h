@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "bitmap.h"
 #include "pixelsquare.h"
+#include "settings.h"
 #include "spiwrapper.h"
 
 class LedPanel : public PixelSquare
@@ -13,11 +14,13 @@ private:
     int _screenVisible;
     int _screenWrite;
     SpiWrapper _spi;
+    Setting *_flipped;
 
 public:
-    LedPanel(int dx, int dy, SpiWrapper &spi) 
+    LedPanel(int dx, int dy, SpiWrapper &spi, Setting *flipped) 
         : PixelSquare(dx, dy) 
         , _spi(spi)
+        , _flipped(flipped)
     {
         _screenVisible = 0;
         _screenWrite = 0;
@@ -67,18 +70,47 @@ public:
         int bufsize = 5 + job.dx * 3;
         uint8_t buf[bufsize];
 
-        auto psrc = src.getptr(job.srcx, job.srcy);
-        while (job.dy-- > 0)
-        {                              
-            buf[0] = 1;
-            buf[1] = job.tgtx;
-            buf[2] = job.tgty++;
-            buf[3] = job.dx;
-            buf[4] = 1;
-            std::copy(psrc, psrc + job.dx * 3, buf + 5);           
-            psrc += src.stride();
-            
-            _spi.write(buf, bufsize);
+        if (_flipped->asbool())
+        {
+            auto psrc = src.getptr(job.srcx, job.srcy);
+            while (job.dy-- > 0)
+            {                              
+                buf[0] = 1;
+                buf[1] = job.tgtx;
+                buf[2] = job.tgty++;
+                buf[3] = job.dx;
+                buf[4] = 1;
+                std::copy(psrc, psrc + job.dx * 3, buf + 5);           
+                psrc += src.stride();
+                
+                _spi.write(buf, bufsize);
+            }
+        }
+        else
+        {
+            auto psrc = src.getptr(job.srcx + job.dx - 1, job.srcy);
+            while (job.dy-- > 0)
+            {                              
+                buf[0] = 1;
+                buf[1] = job.tgtx;
+                buf[2] = job.tgty + job.dy;
+                buf[3] = job.dx;
+                buf[4] = 1;
+
+                auto ps = psrc;
+                auto pt = buf + 5;
+                for (auto i=job.dx; i-->0;)
+                {
+                    pt[0] = ps[0];
+                    pt[1] = ps[1];
+                    pt[2] = ps[2];
+                    ps -= 3;
+                    pt += 3;
+                }
+                psrc += src.stride();
+                
+                _spi.write(buf, bufsize);
+            }
         }
     }
 

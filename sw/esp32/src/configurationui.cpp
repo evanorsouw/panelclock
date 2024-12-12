@@ -20,6 +20,10 @@ std::vector<configchoice> ConfigurationUI::_secondhandChoices = {
     configchoice("0", "snap"), 
     configchoice("1", "smooth") 
 };
+std::vector<configchoice> ConfigurationUI::_flipDisplayChoices = { 
+    configchoice("0", "usbdown"), 
+    configchoice("1", "usbup") 
+};
 
 ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, graphics, env, sys, userinput)
@@ -63,12 +67,15 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Graphics &graphics
     addConfig("weer", 
         [this](configline& c){ generateWeatherLine(c); },
         nullptr);
-    addConfig("*boot", 
+    addConfig("boot", 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyBootscreen, _bootscreenChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyBootscreen, _bootscreenChoices); });
-    addConfig("*sec", 
+    addConfig("sec", 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });
+    addConfig("Flip", 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
     addConfig("exit", 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   

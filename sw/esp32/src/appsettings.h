@@ -15,6 +15,7 @@ public:
     inline static const char *KeyDST  = "dst";
     inline static const char *KeyBootscreen  = "boot";
     inline static const char *KeySmoothSecondHand  = "secondhand";
+    inline static const char *KeyFlipDisplay  = "flipdisplay";
 
     AppSettings()
     {        
@@ -26,6 +27,7 @@ public:
         add(KeyDST, false);
         add(KeyBootscreen, true);
         add(KeySmoothSecondHand, true);
+        add(KeyFlipDisplay, true);
 
         loadSettings();
     }
@@ -53,6 +55,9 @@ public:
 
     int SmoothSecondHand() const { return get(KeySmoothSecondHand)->asbool(); }
     void SmoothSecondHand(bool smooth) const { return get(KeySmoothSecondHand)->set(smooth); }
+
+    bool FlipDisplay() const { return get(KeyFlipDisplay)->asbool(); }
+    void FlipDisplay(bool flip) const { return get(KeyFlipDisplay)->set(flip); }
 };
 
 #endif

@@ -31,6 +31,7 @@ private:
     int const WeatherImageDy = 26;
     long _lasttime;
     sparkle _sparkles[10];
+    float _weatherIntensity;
 
 public:
     Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput);
@@ -49,13 +50,13 @@ private:
     void drawSun(Bitmap &screen, float x, float y, float dx, float dy);
     float drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color line, Color fill);
     void draw2Clouds(Bitmap &screen, float x, float y, float dx, float dy, Color line, Color fill);
-    void drawLightning(Bitmap &screen, float x, float y, float dx, float dy);
-    void drawRain(Bitmap &screen, float x, float y, float dx, float dy, bool heavy);
+    void drawLightning(Bitmap &screen, float x, float y, float dx, float dy, Color color);
+    void drawRain(Bitmap &screen, float x, float y, float dx, float dy, bool heavy, Color color);
     void drawMoon(Bitmap &screen, float x, float y, float dx, float dy, Color color);
     void drawStars(Bitmap &screen, float x, float y, float dx, float dy);
     Color starIntensity(float phase, float when);
-    void drawFog(Bitmap &screen, float x, float y, float dx, float dy);
-    void drawSnow(Bitmap &screen, float x, float y, float dx, float dy);
+    void drawFog(Bitmap &screen, float x, float y, float dx, float dy, Color color);
+    void drawSnow(Bitmap &screen, float x, float y, float dx, float dy, Color color);
     void drawSparkles(Bitmap &screen, const timeinfo &now);
     void drawSparkle(Bitmap &screen, sparkle &now);
 };

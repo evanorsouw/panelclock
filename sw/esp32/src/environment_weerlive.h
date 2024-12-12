@@ -18,6 +18,7 @@ private:
     EnvironmentValues _parsedValues;
     EnvironmentValues _values;
     bool _updating;
+    timeinfo _lastupdate;
     EventGroupHandle_t _eventGroup;
 
 public:
@@ -32,9 +33,11 @@ public:
         _parsedValues.clear();
         _updating = false;
         _eventGroup = xEventGroupCreate();
+        _lastupdate = system->now();
     }
 
     int update();
+    timeinfo lastupdate() const { return _lastupdate; }
 
     bool isupdating() const { return _updating; }
     std::string invalidReason() const { return _values.invalidReason; };

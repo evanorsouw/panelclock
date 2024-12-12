@@ -29,8 +29,8 @@
 #include "wificlient.h"
 
 #define LED_TEST      GPIO_NUM_33 // 1=on
-#define BUTTON_SET    GPIO_NUM_32
-#define BUTTON_UP     GPIO_NUM_35
+#define BUTTON_SET    GPIO_NUM_35
+#define BUTTON_UP     GPIO_NUM_32
 #define BUTTON_DOWN   GPIO_NUM_34
 
 #define FPGA_SPI_CLK         GPIO_NUM_21
@@ -79,19 +79,18 @@ void app_main()
     initNVS();
     init_spiffs();
 
-    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 4800000, false);
+    auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 5400000, false);
     FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
     FpgaConfig.configure();
 
     auto settings = new AppSettings();
-    auto panel = new LedPanel(128, 64, *spi);
+    auto panel = new LedPanel(128, 64, *spi, settings->get(settings->KeyFlipDisplay));
     auto graphics = new Graphics(panel->dx(), panel->dy());
-    //auto i2c = new I2CWrapper(0, I2C_SDA, I2C_CLK); // v2 pcb
     auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA); // v3 pcb
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc);
-    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_DOWN, BUTTON_UP, *system);
+    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, *system);
     auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
 
     auto appdata = new ApplicationContext();
@@ -119,12 +118,12 @@ void app_main()
  
     for (;;)
     {
-        // timer update from RTC: once a day
+        // timer update from RTC
         if (appdata->timeoutAndRestart(timesync, timetimeout))
         {
             timetimeout = timeupdater->update();
         }
-        // update weather data; every 10 minutes on success of 
+        // update weather data
         if (appdata->timeoutAndRestart(weersync, weathertimeout))
         {
             weathertimeout = environment->update();

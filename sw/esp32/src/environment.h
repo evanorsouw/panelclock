@@ -4,6 +4,7 @@
 
 #include <string>
 #include <time.h>
+#include "timeinfo.h"
 
 enum class weathertype {
     unknown,
@@ -71,6 +72,7 @@ struct Environment
     virtual ~Environment() {}
 
     virtual bool valid() { return invalidReason().size() == 0; }
+    virtual timeinfo lastupdate() const = 0;
 
     /// @brief updates the internal representation 
     /// @return the preferred number of ms before making a new attempt to update the info.

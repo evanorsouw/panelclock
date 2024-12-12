@@ -37,6 +37,7 @@ void UserInputKeys::flush()
 
 uint64_t UserInputKeys::howLongIsKeyDown(int key) const
 {
+    key = flipKey(key);
     auto it = std::find_if(_keys.begin(), _keys.end(), [=](const _keyinfo &info) { return info.key == key; });
     if (it == _keys.end() || it->pressedSince == 0)
         return 0;
@@ -57,6 +58,7 @@ KeyPress UserInputKeys::getKey()
 
 bool UserInputKeys::hasKeyDown(int key, int ms)
 {
+    key = flipKey(key);
     auto it = std::find_if(_keys.begin(), _keys.end(), [=](const _keyinfo &info) { return info.key == key; });
     if (it == _keys.end() || it->pressedSince == 0)
         return false;
@@ -86,7 +88,7 @@ void UserInputKeys::monitorIO(_keyinfo &info)
             {
                 auto elapsed = _system.now().msticks() - info.pressedSince;
                 std::lock_guard lock(_mutex);
-                _keyQueue.push(KeyPress(info.key, elapsed));
+                _keyQueue.push(KeyPress(flipKey(info.key), elapsed));
                 printf("keypress: %d (%lldms)\n", info.key, elapsed);
             }
             info.pressedSince = 0;
@@ -94,3 +96,19 @@ void UserInputKeys::monitorIO(_keyinfo &info)
     }
 }
 
+int UserInputKeys::flipKey(int key) const
+{
+    if (_system.settings().FlipDisplay())
+    {
+        switch (key)
+        {
+            case KEY_UP:
+                key = KEY_DOWN;
+                break;
+            case KEY_DOWN:
+                key = KEY_UP;
+                break;        
+        }
+    }
+    return key;
+}

@@ -31,7 +31,7 @@ public:
     int millies() const { return _millies; }
     void millies(int value) { _millies = value % 1000; set(); }
     bool dst() const { return _tm.tm_isdst == 1; }
-    int64_t msticks() const { return _msticks; }
+    int64_t msticks() const { return _msticks; }    
 
     void setDate(int year, int month, int mday);
     void setTime(int hour, int minutes, int seconds);

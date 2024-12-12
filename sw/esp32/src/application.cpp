@@ -12,6 +12,7 @@
 Application::Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, graphics, env, sys, userinput)
 {
+    _weatherIntensity = 0.0f;
 }
 
 void Application::init()
@@ -126,11 +127,25 @@ void Application::drawWeather(Bitmap &screen)
 {
     char buf1[20], buf2[20];
 
-    if (!_environment.valid())
-        return;
+    auto agesec = (_system.now().msticks() - _environment.lastupdate().msticks()) / 1000;        
+    if (_environment.valid())
+    {
+        graduallyUpdateVariable(_weatherIntensity, 1.0f, 0.05f);
+    }
+    else 
+    {
+        if (agesec < 15 * 60)
+        {
+            graduallyUpdateVariable(_weatherIntensity, 0.4f, 0.05f);
+        }
+        else
+        {
+            graduallyUpdateVariable(_weatherIntensity, 0.0f, 0.05f);
+        }
+    }
 
-    auto white = Color::white * _appctx.intensity();
-    auto lightblue = Color(0x33, 0xcc, 0xff) * _appctx.intensity();
+    auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
+    auto lightblue = Color(0x33, 0xcc, 0xff) * (_appctx.intensity() * _weatherIntensity);
 
     auto windspeed = _environment.windspeed();
     snprintf(buf1, sizeof(buf1), "%dms", (int)(windspeed.value() + 0.5f));
@@ -206,9 +221,9 @@ void Application::drawWeatherImage(Bitmap &screen)
     float pdx = WeatherImageDx;
     float pdy = WeatherImageDy;
 
-    auto white = Color::white * _appctx.intensity();
-    auto darkgray = Color::darkgray * _appctx.intensity();
-    auto lightgray = Color::lightgray * _appctx.intensity();
+    auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
+    auto darkgray = Color::darkgray * (_appctx.intensity() * _weatherIntensity);
+    auto lightgray = Color::lightgray * (_appctx.intensity() * _weatherIntensity);
     auto black = Color::black;
     switch (weather.value())
     {
@@ -219,11 +234,11 @@ void Application::drawWeatherImage(Bitmap &screen)
         break;
     case weathertype::lightning:    // bliksem    
         px = drawCloud(screen, px, py-2, pdx, pdy, white, darkgray);
-        drawLightning(screen, px, py, pdx, pdy);
+        drawLightning(screen, px, py, pdx, pdy, white);
         break;
     case weathertype::showers:      // buien    
         px = drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(screen, px, py, pdx, pdy, true);
+        drawRain(screen, px, py, pdx, pdy, true, white);
         break;
     case weathertype::hail:         // hagel    
         drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
@@ -237,7 +252,7 @@ void Application::drawWeatherImage(Bitmap &screen)
     case weathertype::cloudyrain:   // halfbewolkt_regen    
         drawSun(screen, px-4, py-2, pdx, pdy);
         px = drawCloud(screen, px, py, pdx, pdy, white, black);
-        drawRain(screen, px, py, pdx, pdy, false);
+        drawRain(screen, px, py, pdx, pdy, false, white);
         break;
     case weathertype::clearnight:   // helderenacht    
         drawStars(screen, px, py, pdx, pdy);
@@ -245,7 +260,7 @@ void Application::drawWeatherImage(Bitmap &screen)
         break;
     case weathertype::fog:          // mist    
         drawCloud(screen, px, py - 3, pdx, pdy, lightgray, darkgray);
-        drawFog(screen, px, py, pdx, pdy);
+        drawFog(screen, px, py, pdx, pdy, white);
         break;
     case weathertype::cloudednight: // nachtbewolkt    
         drawMoon(screen, px, py, pdx, pdy, white);
@@ -253,14 +268,14 @@ void Application::drawWeatherImage(Bitmap &screen)
         break;
     case weathertype::nightfog:     // nachtmist
         drawMoon(screen, px, py, pdx, pdy, lightgray);
-        drawFog(screen, px, py, pdx, pdy);
+        drawFog(screen, px, py, pdx, pdy, white);
         break;
     case weathertype::rain:         // regen    
         px = drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(screen, px, py, pdx, pdy, false);
+        drawRain(screen, px, py, pdx, pdy, false, white);
         break;
     case weathertype::snow:         // sneeuw
-        drawSnow(screen, px, py, pdx, pdy);
+        drawSnow(screen, px, py, pdx, pdy, white);
         break;
     case weathertype::sunny:        // zonnig    
         drawSun(screen, px, py, pdx, pdy);
@@ -291,8 +306,8 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
     auto p2 = phase(3000,true) * 0.1f + 1.0f;
     auto pw = std::max(1.0f, size / 22.0f);
 
-    auto horizoncolor = Color(226,90,56) * _appctx.intensity();
-    auto nooncolor = Color(255,242,127) * _appctx.intensity();
+    auto horizoncolor = Color(226,90,56) * (_appctx.intensity() * _weatherIntensity);
+    auto nooncolor = Color(255,242,127) * (_appctx.intensity() * _weatherIntensity);
     auto color = nooncolor;
 
     if (_environment.sunrise().isValid() && _environment.sunset().isValid())
@@ -312,7 +327,7 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
             auto drise = std::min(120, std::abs(tnow - trise));
             auto dset = std::min(120, std::abs(tset - tnow));
             auto d = std::min(dset, drise) / 120.0;
-            color = Color::gradient(horizoncolor, nooncolor, d) * _appctx.intensity();
+            color = Color::gradient(horizoncolor, nooncolor, d);
         }
     }
     auto max = size * 0.35f * p2;
@@ -333,12 +348,12 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
 void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, float height, Color pen, Color fill)
 {
     auto cx = x + phase(21000, true) * (width - 18);
-    auto cy = y + (height - 18) / 2 + 18 - 4 + phase(17000, true);
+    auto cy = y + (height - 18) / 2 + 18 - 4 + phase(17000, true) * 3;
     _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "B", fill);
     _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "A", pen);
 
     cx = x + phase(22000, true, 3000) * (width - 22);
-    cy = y + (height - 22) / 2 + 22 + 2 + phase(19000, true);
+    cy = y + (height - 22) / 2 + 22 + 2 + phase(19000, true) * 2;
     _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "B", fill);
     _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "A", pen);
 }
@@ -346,27 +361,25 @@ void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, flo
 float Application::drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color pen, Color fill)
 {
     auto tx = x + phase(21000, true, 3000) * (dx - 22);
-    auto ty = y + (dy - 22) / 2 + 22 - 2 + phase(19000, true) * 2;
+    auto ty = y + (dy - 22) / 2 + 22 - 2 + phase(19000, true) * 4;
     _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "B", fill);
     _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "A", pen);
     return tx;
 }
 
-void Application::drawLightning(Bitmap &screen, float x, float y, float dx, float dy)
+void Application::drawLightning(Bitmap &screen, float x, float y, float dx, float dy, Color color)
 {
     auto tx = x - 5 + std::rand() % 10;
     auto ty = y + (dy - 18) /2 + 18 + std::rand() % 6;
 
     if (std::rand() % 1000 < 10)
     {
-        _graphics.text(screen, _appctx.fontIcons18(), tx, ty, "F", Color::white * _appctx.intensity());
+        _graphics.text(screen, _appctx.fontIcons18(), tx, ty, "F", color);
     }
 }
 
-void Application::drawRain(Bitmap &screen, float x, float y, float w, float h, bool heavy)
+void Application::drawRain(Bitmap &screen, float x, float y, float w, float h, bool heavy, Color color)
 {
-    auto white = Color::white * _appctx.intensity();
-
     auto pw = heavy ? 1.8f : 1.0f;
     auto ph = phase(heavy ? 800 : 2000, false);
     for (auto i = 0; i < (heavy ? 4 : 3); ++i)
@@ -408,8 +421,8 @@ void Application::drawRain(Bitmap &screen, float x, float y, float w, float h, b
             x4 = xo + dx * (ph - 0.5f - length);
             y4 = yo + dy * (ph - 0.5f - length);
         }
-        _graphics.line(screen, x+x1, y+y1, x+x2, y+y2, pw, white);
-        _graphics.line(screen, x+x3, y+y3, x+x4, y+y4, pw, white);
+        _graphics.line(screen, x+x1, y+y1, x+x2, y+y2, pw, color);
+        _graphics.line(screen, x+x3, y+y3, x+x4, y+y4, pw, color);
     }
 }
 
@@ -425,10 +438,10 @@ Color Application::starIntensity(float phase, float when)
     float dist = 0.02f;
     auto d = std::abs(phase - when);
     if (d > dist)
-        return Color(32,32,32);
+        return Color(32,32,32) * _weatherIntensity;
     d = dist - d;
     d = 32 + (d * 223.f / dist);
-    return Color(d,d,d);
+    return Color(d,d,d) * _weatherIntensity;
 }
 
 void Application::drawStars(Bitmap &screen, float x, float y, float dx, float dy)
@@ -446,9 +459,8 @@ void Application::drawStars(Bitmap &screen, float x, float y, float dx, float dy
     screen.set(x + 0.50 * dx, y + 21, starIntensity(p, 0.79));
 }
 
-void Application::drawFog(Bitmap &screen, float x, float y, float dx, float dy)
+void Application::drawFog(Bitmap &screen, float x, float y, float dx, float dy, Color color)
 {
-    auto white = Color::white * _appctx.intensity();
     auto pw = 0.8f;
     auto phase1 = phase(37000, true);
     auto phase2 = phase(19000, true);
@@ -456,17 +468,16 @@ void Application::drawFog(Bitmap &screen, float x, float y, float dx, float dy)
     auto y2 = y1 + 2;
     auto y3 = y2 + 2;
     auto y4 = y3 + 2;
-    _graphics.line(screen, x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, white);
-    _graphics.line(screen, x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, white);
-    _graphics.line(screen, x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, white);
-    _graphics.line(screen, x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, white);
-    _graphics.line(screen, x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, white);
-    _graphics.line(screen, x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, white);
+    _graphics.line(screen, x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, color);
+    _graphics.line(screen, x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, color);
+    _graphics.line(screen, x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, color);
+    _graphics.line(screen, x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, color);
+    _graphics.line(screen, x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, color);
+    _graphics.line(screen, x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
 }
 
-void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy)
+void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy, Color color)
 {
-    auto white = Color::white * _appctx.intensity();
     auto n1 = 19;
     auto n2 = 10;
     auto ph = phase(10000,false) * n1;
@@ -489,7 +500,7 @@ void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy)
 
         if (p > 0.0f && p < 1.0f)
         {
-            _graphics.rect(screen, x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), white);
+            _graphics.rect(screen, x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
         }
     }
 }
