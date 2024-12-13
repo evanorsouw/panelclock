@@ -72,7 +72,7 @@ int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
     {
         esp_http_client_cleanup(client);
         printf("GET '%s' failed: %s\n", url, esp_err_to_name(err));
-        return -1;
+        return err;
     }
 
     auto status = esp_http_client_get_status_code(client);

@@ -56,7 +56,6 @@ private:
     weathertype parseWeather(const char *image);
     float parseWindr(const char *r);
     tm parseTime(const char *s);
-    void clearValues();
 };
 
 #endif

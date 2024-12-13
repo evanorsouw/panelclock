@@ -232,12 +232,15 @@ JsonToken JsonParser::nextToken()
                 case '7':
                 case '8':
                 case '9':
+                case '+':
+                case '-':
                     back();
                     return parseNumberToken();
                 case 0:
                     return JsonToken::NeedMore;
                 default:
                     back();
+                    printf("unexpected initial character='%c'/'%d' for next token\n", head(), head());
                     return JsonToken::Error;
             }
             break;
@@ -248,6 +251,7 @@ JsonToken JsonParser::nextToken()
         case TokenState::ParseLiteral:
             return parseLiteralToken();
     }
+    printf("unexpected tokenstate='%d' while finding next token\n", (int)_tokenstate);
     return JsonToken::Error;
 }
 
@@ -351,6 +355,7 @@ JsonToken JsonParser::parseNumberToken()
             else if (_numberstate == NumberState::Fraction1)
             {
                 // need at least 1 digit after the .
+                printf("missing digit after '.' while parsing number\n");
                 return JsonToken::Error;
             }
             else
@@ -365,6 +370,10 @@ JsonToken JsonParser::parseNumberToken()
      
     if (_numberstate == NumberState::Done)
     {
+        if (_negative)
+        {
+            _currentToken.number = -_currentToken.number;
+        }
         _tokenstate = TokenState::Idle;
         return JsonToken::Number;
     }
@@ -403,6 +412,7 @@ JsonToken JsonParser::parseLiteralToken()
         _tokenstate = TokenState::Idle;
         return JsonToken::Null;
     }
+    printf("unrecognised literal token='%s'\n", _currentToken.string);
     return JsonToken::Error;
 }
 
@@ -416,6 +426,7 @@ void JsonParser::finishWithUnexpectedToken(JsonToken token)
 void JsonParser::finishWithError(const char *msg)
 {
     _string.set(msg);
+    printf("finish parsing with error: %s\n", msg);
     finishWithItem(JsonItem::Error);
 }
 
