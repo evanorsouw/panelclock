@@ -6,12 +6,14 @@
 #include <numbers>
 #include <esp_timer.h>
 
+#include "appsettings.h"
 #include "font.h"
 #include "timeinfo.h"
 
 class ApplicationContext
 {
 private:
+    AppSettings &_settings;
     timeinfo _now;
     long _msSinceMidnight;
     float _intensity;
@@ -27,10 +29,18 @@ private:
     Font *_fontIcons22;
 
 public:
-    ApplicationContext()
+    ApplicationContext(AppSettings &settings)
+        : _settings(settings)
     {
-        _fonttimeSmall = Font::getFont("arial-bold-digits", 9, 11);
-        _fonttimeLarge = Font::getFont("arial-bold-digits", 14, 14);
+        if (_settings.OnePanel())
+        {
+            _fonttimeSmall = Font::getFont("arial-bold-digits", 9, 10);
+            _fonttimeLarge = Font::getFont("arial-bold-digits", 12, 12);
+        }
+        else{
+            _fonttimeSmall = Font::getFont("arial-bold-digits", 9, 11);
+            _fonttimeLarge = Font::getFont("arial-bold-digits", 14, 14);
+        }
         _fontdate = Font::getFont("arial-rounded-stripped", 11, 11);
         _fontWhiteMagic = Font::getFont("arial-rounded-stripped", 20, 28);
         _fontweatherL = Font::getFont("arial-rounded-stripped", 9, 10);

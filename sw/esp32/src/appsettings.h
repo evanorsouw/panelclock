@@ -7,6 +7,7 @@
 class AppSettings : public Settings
 {
 public:
+    inline static const char *KeyOnePanel = "onepanel";
     inline static const char *KeyLanguage = "language";
     inline static const char *KeyWifiSid = "wifisid";
     inline static const char *KeyWifiPwd = "wifipwd";
@@ -19,6 +20,13 @@ public:
 
     AppSettings()
     {        
+        defaultSettings();
+        loadSettings();
+    }
+
+    void defaultSettings()
+    {        
+        add(KeyOnePanel, get(KeyOnePanel, false));   // panel size is maintained
         add(KeyLanguage, "nl");
         add(KeyWifiSid, "__sid__");
         add(KeyWifiPwd, "__password__");
@@ -28,9 +36,10 @@ public:
         add(KeyBootscreen, true);
         add(KeySmoothSecondHand, true);
         add(KeyFlipDisplay, true);
-
-        loadSettings();
     }
+
+    bool OnePanel() const { return get(KeyOnePanel)->asbool(); }
+    void OnePanel(bool value) { return get(KeyOnePanel)->set(value); }
 
     const char *Language() const { return get(KeyLanguage)->asstring(); }
     void Language(const char *value) { return get(KeyLanguage)->set(value); }

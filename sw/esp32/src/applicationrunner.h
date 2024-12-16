@@ -26,6 +26,7 @@ private:
     Application& _appui;
     ConfigurationUI& _configui;
     System& _system;
+    Graphics &_graphics;
     QueueHandle_t _hRenderQueue;
     QueueHandle_t _hDisplayQueue;
     int _iShowScreen;
@@ -39,7 +40,14 @@ private:
     uint64_t _transitionStart;
     
 public:
-    ApplicationRunner(ApplicationContext& appdata, LedPanel& panel, BootAnimations& bootui, Application& appui, ConfigurationUI& configui, System& system);
+    ApplicationRunner(
+        ApplicationContext& appdata, 
+        LedPanel& panel, 
+        BootAnimations& bootui, 
+        Application& appui, 
+        ConfigurationUI& configui, 
+        System& system,
+        Graphics& graphics);
 
     void renderTask();
     void displayTask();
@@ -47,7 +55,7 @@ public:
 private:
     void startMode(UIMode mode, TransitionPhase phase);
     void startTransition(TransitionPhase phase);
-    void stepGUI(Bitmap& screen);
+    void stepGUI();
     void updateIntensity();
     void monitorRefreshRate();
 };

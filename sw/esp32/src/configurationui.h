@@ -70,7 +70,7 @@ private:
 public:
     ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput);
 
-    void render(Bitmap &screen);
+    void render();
     bool interact();
     void init();
 

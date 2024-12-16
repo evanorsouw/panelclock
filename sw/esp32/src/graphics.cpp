@@ -15,9 +15,97 @@
   #define LOG(...)
 #endif
 
-void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color color, Mode mode)
+Graphics::Graphics(int dx, int dy, bool origin)
 {
-    if (!clip(x, dx, tgt.dx()) || !clip(y, dy, tgt.dy()))
+    _rasterizeMask = new Bitmap(dx, dy, 1);
+}
+
+void Graphics::linkBitmap(Bitmap *bitmap)
+{
+    assert( bitmap->dx() == _rasterizeMask->dx() && bitmap->dy() == _rasterizeMask->dy());
+    _drawingBitmap = bitmap;
+    init(0, 0, bitmap->dx(), bitmap->dy(), true);
+}
+
+void Graphics::init(int x, int y, int dx, int dy, bool origin)
+{
+    dx = std::max(0, dx);
+    dy = std::max(0, dy);
+    _stride = _drawingBitmap->stride();
+
+    if (origin)
+    {   // provided (x,y) in bitmap are (0,0) for this Graphics instance
+        // drawing is clipped to (dx,dy) or until bitmap edge
+        _sx = std::max(0, -x);
+        _sy = std::max(0, -y);
+        _ptr = _drawingBitmap->getptr(x, y);
+        _ex = std::min(dx, _drawingBitmap->dx() - x);
+        _ey = std::min(dy, _drawingBitmap->dy() - y);
+    }
+    else
+    {   // provided (x,y) in bitmap are (x,y) for this graphics instance
+        // drawing is clipped to (dx, dy)
+        _sx = std::max(0, x);
+        _sy = std::max(0, y);
+        _ptr = _drawingBitmap->getptr(0, 0);
+        _ex = std::min(std::max(_sx, x + dx), _drawingBitmap->dx());
+        _ey = std::min(std::max(_sy, y + dy), _drawingBitmap->dy());
+    }
+}
+
+Graphics Graphics::view(int x, int y, int dx, int dy, bool origin)
+{
+    Graphics view;
+    view._drawingBitmap = _drawingBitmap;
+    view._rasterizeMask = _rasterizeMask;
+    view.init(x,y, dx, dy, origin);
+    return view;
+}
+
+void Graphics::add(int x, int y, const Color color, uint8_t alpha)
+{
+    auto pt = getptr(x, y);
+    if (alpha == 255)
+    {
+        pt[0] = clip(pt[0] + color.r());
+        pt[1] = clip(pt[1] + color.g());
+        pt[2] = clip(pt[2] + color.b());
+    }
+    else
+    {
+        pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
+        pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
+        pt[2] = clip(pt[2] + ((color.b() * alpha) >> 8));
+    }
+}
+
+void Graphics::set(int x, int y, const Color color)
+{
+    auto pt = getptr(x, y);
+    pt[0] = color.r();
+    pt[1] = color.g();
+    pt[2] = color.b();
+}
+
+void Graphics::set(int x, int y, const Color color, uint8_t alpha)
+{
+    if (alpha == 255)
+    {
+        set(x, y, color);
+    }
+    else if (alpha > 0)
+    {
+        auto pt = getptr(x, y);
+        auto ialpha = (uint8_t)255 - alpha;
+        pt[0] = clip((pt[0] * ialpha + color.r() * alpha) >> 8);
+        pt[1] = clip((pt[1] * ialpha + color.g() * alpha) >> 8);
+        pt[2] = clip((pt[2] * ialpha + color.b() * alpha) >> 8);
+    }
+}
+
+void Graphics::rect(float x, float y, float dx, float dy, Color color, Mode mode)
+{    
+    if (!cliprange(x, dx, _sx, _ex) || !cliprange(y, dy, _sy, _ey))
         return;
 
     auto x2 = x + dx;
@@ -26,21 +114,57 @@ void Graphics::rect(Bitmap &tgt, float x, float y, float dx, float dy, Color col
     auto ay = y - TRUNC(y);
     if (ay > 0)
     {
-        rectscanline(tgt, x, x2, y1++, 1 - ay, color, mode);
+        rectscanline(x, x2, y1++, 1 - ay, color, mode);
     }
     auto y2 = (int)(y + dy);
     while (y1 < y2)
     {
-        rectscanline(tgt, x, x2, y1++, 1, color, mode);
+        rectscanline(x, x2, y1++, 1, color, mode);
     }
     ay = y + dy - y1;
     if (ay > 0)
     {
-        rectscanline(tgt, x, x2, y1, ay, color, mode);
+        rectscanline(x, x2, y1, ay, color, mode);
     }
 }
 
-void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float thickness, Color color)
+void Graphics::rectscanline(float x1, float x2, int y, float ay, Color color, Mode mode)
+{
+    auto ix1 = (int)x1;
+    auto ix2 = (int)x2;
+
+    if (ix1 == ix2)
+    {
+        float ax = ix2 - ix2;
+        mode == Mode::Set
+            ? set(ix1, y, color, ALPHA(ax * ay))
+            : add(ix1, y, color, ALPHA(ax * ay));
+    }
+    else
+    {
+        if (ix1 < x1)
+        {
+            mode == Mode::Set
+                ? set(ix1, y, color, ALPHA((1 - x1 + ix1) * ay))
+                : add(ix1, y, color, ALPHA((1 - x1 + ix1) * ay));
+            ix1++;
+        }
+        while (ix1 < ix2)
+        {
+            mode == Mode::Set
+                ? set(ix1++, y, color, ALPHA(ay))
+                : add(ix1++, y, color, ALPHA(ay));
+        }
+        if (ix2 < x2)
+        {
+            mode == Mode::Set
+                ? set(ix1, y, color, ALPHA((x2-ix2) * ay))
+                : set(ix1, y, color, ALPHA((x2-ix2) * ay));
+        }
+    }
+}
+
+void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Color color)
 {
     if (y1<0 || y2<0 || y1 > 64 || y2 > 64)
         return;     // !!! TODO: use proper clipping
@@ -78,12 +202,12 @@ void Graphics::line(Bitmap &tgt, float x1, float y1, float x2, float y2, float t
     auto r1 = rasterizeTriangle(px1, py1, px2, py2, px3, py3);
     auto r2 = rasterizeTriangle(px2, py2, px3, py3, px4, py4);
 
-    mergeRasterizedMask(tgt, color, r1.join(r2));
+    mergeRasterizedMask(color, r1.join(r2));
 }
 
-float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt, Color color, Mode mode)
+float Graphics::text(Font *font, float x, float y, const char *txt, Color color, Mode mode)
 {    
-    SFT_Image txtMask { .pixels = _rasterizeMask.getptr(0,0) };
+    SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
 
     auto sft = font->getSFT();
 
@@ -109,37 +233,7 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
         auto sy = 0;
         auto dx = mtx.minWidth;
         auto dy = mtx.minHeight;
-        clip(sx, tx, dx, tgt.dx());
-        clip(sy, ty, dy, tgt.dy());
-        if (_clipping)
-        { 
-            if (tx < _cliparea.x1)           
-            {
-                auto d = _cliparea.x1 - tx;
-                tx += d;
-                sx += d;
-                dx -= d;
-            }
-            if (tx + dx > _cliparea.x2)
-            {
-                auto d = tx + dx - _cliparea.x2;
-                dx -= d;                
-            }
-            if (ty < _cliparea.y1)           
-            {
-                auto d = _cliparea.y1 - ty;
-                ty += d;
-                sy += d;
-                dy -= d;
-            }
-            if (ty + dy > _cliparea.y2)
-            {
-                auto d = ty + dy - _cliparea.y2;
-                dy -= d;                
-            }
-        }
-
-        if (dx > 0 && dy > 0)
+        if (cliprange(sx, tx, dx, _sx, _ex) && cliprange(sy, ty, dy, _sx, _ex))
         {
             txtMask.width = mtx.minWidth;
             txtMask.height = mtx.minHeight;
@@ -152,8 +246,8 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
                 {
                     auto alpha = pm[ix];
                     mode == Mode::Set
-                        ? tgt.set(tx + ix, ty + iy, color, alpha)
-                        : tgt.add(tx + ix, ty + iy, color, alpha);
+                        ? set(tx + ix, ty + iy, color, alpha)
+                        : add(tx + ix, ty + iy, color, alpha);
                 }
                 pm += txtMask.width;
             }
@@ -163,45 +257,30 @@ float Graphics::text(Bitmap &tgt, Font *font, float x, float y, const char *txt,
     return x;
 }
 
-float Graphics::text(Bitmap &tgt, Font *font, float x, float y, char c, Color color, Mode mode)
+float Graphics::text(Font *font, float x, float y, char c, Color color, Mode mode)
 {    
     char buf[2] = { c, 0 };
-    return text(tgt, font, x, y, buf, color, mode);
+    return text(font, x, y, buf, color, mode);
 }
 
-bool Graphics::clip(float &x, float &dx, float max)
+bool Graphics::cliprange(int &srcx, int &tgtx, int &tgtdx, int min, int max)
 {
-    if (x < 0)
+    if (tgtx < min)
     {
-        dx += x;
-        x = 0;
+        auto d = min - tgtx;
+        srcx += d;
+        tgtdx -= d;
+        tgtx = min;
     }
-    if (x + dx > max)
+    if (tgtx + tgtdx > max)
     {
-        dx = max - x;
+        tgtdx -= max - tgtx - tgtdx;
     }
-    return dx > 0.0f;
+    return tgtdx > 0.0f;
 }
 
-void Graphics::clip(int &srcoffset, int &tgtoffset, int &size, int max)
-{
-    if (tgtoffset < 0)
-    {
-        size += tgtoffset;
-        srcoffset -= tgtoffset;
-        tgtoffset = 0;
-    }
-    if (tgtoffset + size > max)
-    {
-        size = max - tgtoffset;
-    }
-}
-
-void Graphics::triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, float x3, float y3, Color color)
+void Graphics::triangle(float x1, float y1, float x2, float y2, float x3, float y3, Color color)
 {    
-    if (y1<0 || y2<0 || y3< 0 || y1>=64 || y2 >=64 || y3>=64)
-        return;     // !!! TODO: use proper clipping
-
     auto xl = (int)std::min(x1, std::min(x2, x3));
     auto xr = (int)std::ceil(std::max(x1, std::max(x2, x3)));
     auto yt = (int)std::min(y1, std::min(y2, y3));
@@ -209,7 +288,7 @@ void Graphics::triangle(Bitmap &tgt, float x1, float y1, float x2, float y2, flo
     clearRasterizedMask(irect(xl, yt, xr, yb));
 
     auto area = rasterizeTriangle(x1, y1, x2, y2, x3, y3);
-    mergeRasterizedMask(tgt, color, area);
+    mergeRasterizedMask(color, area);
 }
 
 irect Graphics::rasterizeTriangle(float x1, float y1, float x2, float y2, float x3, float y3)
@@ -289,7 +368,10 @@ void Graphics::triangleBaseTop(float xbase1, float xbase2, float ybase, float xt
         float xr = MAX(xtr, xbr);
 
         dy = ynext - y;
-        trianglescanline(y, xl, xr, dy, dxl, dxr);    
+        if (!(y < _sy) && y < _ey)
+        {
+            trianglescanline(y, xl, xr, dy, dxl, dxr);    
+        }
         y = ynext;
     } 
     while (y < ytop);
@@ -324,7 +406,10 @@ void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xb
         float xr = MAX(xtr, xbr);
 
         dy = ynext - y;
-        trianglescanline(y, xl, xr, dy, dxl, dxr);
+        if (!(y < _sy) && y < _ey)
+        {
+            trianglescanline(y, xl, xr, dy, dxl, dxr);
+        }
         y = ynext;
     } 
     while (y < ybase);
@@ -333,6 +418,7 @@ void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xb
 void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl, float dxr)
 {
     float x = xl;
+    auto ptr = _rasterizeMask->getptr(x, y);
     do
     {
         float xnext = MIN(xr, TRUNC(x + 1));
@@ -351,74 +437,31 @@ void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl
         float axr = MIN(1, xr - x);
 
         float area = MIN(axl, axr) * MIN(ayl, ayr);
-        uint8_t alpha = (uint8_t)(area * 255);
-        _rasterizeMask.add(x, y, alpha);
-
+        ptr[0] = clip(ptr[0] + (uint8_t)(area * 255));
+        ptr++;
         x = xnext;
     }
     while (x < xr);
-}
-
-void Graphics::rectscanline(Bitmap &tgt, float x1, float x2, int y, float ay, Color color, Mode mode)
-{
-    if (x1 > x2) SWAP(x1, x2);
-
-    auto ix1 = (int)x1;
-    auto ix2 = (int)x2;
-
-    if (ix1 == ix2)
-    {
-        float ax = ix2 - ix2;
-        mode == Mode::Set
-            ? tgt.set(ix1, y, color, ALPHA(ax * ay))
-            : tgt.add(ix1, y, color, ALPHA(ax * ay));
-    }
-    else
-    {
-        if (ix1 < x1)
-        {
-            mode == Mode::Set
-                ? tgt.set(ix1, y, color, ALPHA((1 - x1 + ix1) * ay))
-                : tgt.add(ix1, y, color, ALPHA((1 - x1 + ix1) * ay));
-            ix1++;
-        }
-        while (ix1 < ix2)
-        {
-            mode == Mode::Set
-                ? tgt.set(ix1++, y, color, ALPHA(ay))
-                : tgt.add(ix1++, y, color, ALPHA(ay));
-        }
-        if (ix2 < x2)
-        {
-            mode == Mode::Set
-                ? tgt.set(ix1, y, color, ALPHA((x2-ix2) * ay))
-                : tgt.set(ix1, y, color, ALPHA((x2-ix2) * ay));
-        }
-    }
 }
 
 void Graphics::clearRasterizedMask(irect area)
 {
     for (auto y=area.y1; y<=area.y2; ++y)
     {
-        auto ptr = _rasterizeMask.getptr(0, y);
-        for (auto x=area.x1; x<=area.x2; ++x)        
-        {
-            ptr[x] = 0;
-        }
+        auto ptr = _rasterizeMask->getptr(area.x1, y);
+        std::memset(ptr, 0, area.x2 - area.x1 + 1);
     }
 }
 
-void Graphics::mergeRasterizedMask(Bitmap &tgt, const Color color, irect area)
+void Graphics::mergeRasterizedMask(const Color color, irect area)
 {
     for (int y=area.y1; y <= area.y2; ++y)
     {
-        auto palpha = _rasterizeMask.getptr(0, y);
+        auto palpha = _rasterizeMask->getptr(0, y);
         for (int x=area.x1; x <= area.x2; ++x)
         {
             auto alpha = palpha[x];
-            tgt.set(x, y, color, alpha);
+            set(x, y, color, alpha);
         }
     }
 }
-

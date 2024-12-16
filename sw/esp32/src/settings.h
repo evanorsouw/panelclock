@@ -31,7 +31,7 @@ private:
     std::map<std::string, Setting *> _settings;
 
 public:
-    Settings();
+    Settings() {}
     virtual ~Settings() {}
 
     bool loadSettings();
@@ -47,6 +47,14 @@ public:
     Setting *add(const char *name, const char *value); 
     
     Setting *get(const char *name) const;
+    Setting *get(const char *name, bool defaultValue) { return get(name, defaultValue ? "1": "0"); }
+    Setting *get(const char *name, int defaultValue) 
+    { 
+        char buf[40];
+        snprintf(buf, sizeof(buf), "%d", defaultValue); 
+        return get(name, buf);
+    }
+    Setting *get(const char *name, const char *defaultValue);
 };
 
 #endif

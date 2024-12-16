@@ -3,13 +3,21 @@
 #include "applicationrunner.h"
 #include "bitmap.h"
 
-ApplicationRunner::ApplicationRunner(ApplicationContext& appdata, LedPanel& panel, BootAnimations& bootui, Application& appui, ConfigurationUI& configui, System& system)
+ApplicationRunner::ApplicationRunner(
+    ApplicationContext& appdata, 
+    LedPanel& panel, 
+    BootAnimations& bootui, 
+    Application& appui, 
+    ConfigurationUI& configui, 
+    System& system,
+    Graphics& graphics)
     : _appctx(appdata)
     , _panel(panel)
     , _bootui(bootui)
     , _appui(appui)
     , _configui(configui)
     , _system(system)
+    , _graphics(graphics)
 {
     _appctx.starttimer(_totaltime);
     _appctx.starttimer(_totalrendertime);
@@ -39,10 +47,13 @@ void ApplicationRunner::renderTask()
 
     Bitmap *screen = 0;
     xQueueReceive(_hRenderQueue, &screen, 1000);
+    
+    screen->fill(Color::black);
+    _graphics.linkBitmap(screen);
     _appctx.starttimer(timer);
     _appctx.settime(_system.now());
-    screen->fill(Color::black);
-    stepGUI(*screen);
+    stepGUI();
+
     xQueueSend(_hDisplayQueue, &screen, 1000);
     _totalrendertime += _appctx.elapsed(timer);
 }
@@ -86,7 +97,7 @@ void ApplicationRunner::startTransition(TransitionPhase phase)
     _phase = phase;
 }
 
-void ApplicationRunner::stepGUI(Bitmap& screen)
+void ApplicationRunner::stepGUI()
 {
     auto interact = true;
     if (_phase != TransitionPhase::Stable)
@@ -97,21 +108,21 @@ void ApplicationRunner::stepGUI(Bitmap& screen)
     switch (_mode)
     {
     case UIMode::Boot:
-        _bootui.render(screen);
+        _bootui.render();
         if (interact && _bootui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Entering);
         }
         break;
     case UIMode::DateTime:
-        _appui.render(screen);
+        _appui.render();
         if (interact && _appui.interact())
         {
             startMode(UIMode::Config, TransitionPhase::Leaving);
         }
         break;
     case UIMode::Config:
-        _configui.render(screen);
+        _configui.render();
         if (interact && _configui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);

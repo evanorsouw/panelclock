@@ -28,10 +28,10 @@
 #include "userinput_keys.h"
 #include "wificlient.h"
 
-#define LED_TEST      GPIO_NUM_33 // 1=on
 #define BUTTON_SET    GPIO_NUM_35
 #define BUTTON_UP     GPIO_NUM_32
 #define BUTTON_DOWN   GPIO_NUM_34
+#define BUTTON_BOOT   GPIO_NUM_0
 
 #define FPGA_SPI_CLK         GPIO_NUM_21
 #define FPGA_SPI_MOSI        GPIO_NUM_25
@@ -71,7 +71,6 @@ void app_main()
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_INPUT);
-    gpio_set_direction(LED_TEST, GPIO_MODE_OUTPUT);
     gpio_set_direction(BUTTON_SET, GPIO_MODE_INPUT);
     gpio_set_direction(BUTTON_UP, GPIO_MODE_INPUT);
     gpio_set_direction(BUTTON_DOWN, GPIO_MODE_INPUT);
@@ -86,19 +85,19 @@ void app_main()
     auto settings = new AppSettings();
     auto panel = new LedPanel(128, 64, *spi, settings->get(settings->KeyFlipDisplay));
     auto graphics = new Graphics(panel->dx(), panel->dy());
-    auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA); // v3 pcb
+    auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA);
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc);
-    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, *system);
+    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, BUTTON_BOOT, *system);
     auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
 
-    auto appdata = new ApplicationContext();
+    auto appdata = new ApplicationContext(*settings);
 
     auto appui = new Application(*appdata, *graphics, *environment, *system, *userinput);
     auto bootui = new BootAnimations(*appdata, *graphics, *environment, *system, *userinput);
     auto configui = new ConfigurationUI(*appdata, *graphics, *environment, *system, *userinput);
-    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system);
+    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc);
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);

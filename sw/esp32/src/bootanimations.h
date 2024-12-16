@@ -15,7 +15,7 @@ public:
         : Animation(graphics, start, end) { }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {
         uint8_t iback;
         if (when < 0)
@@ -32,14 +32,14 @@ private:
         }
         Color backcol(iback, iback, iback);
 
-        screen.fill(backcol);
-        _graphics.rect(screen, 0x06, 0x27, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-        _graphics.rect(screen, 0x05, 0x28, 0x15, 0x13, Color(0x00, 0x00, 0x00));
-        _graphics.rect(screen, 0x06, 0x3B, 0x13, 0x01, Color(0x00, 0x00, 0x00));
-        _graphics.rect(screen, 0x01, 0x2D, 0x04, 0x04, Color(0x00, 0x00, 0x00));
-        _graphics.rect(screen, 0x01, 0x34, 0x04, 0x04, Color(0x00, 0x00, 0x00));        
-        _graphics.rect(screen, 0x02, 0x2E, 0x06, 0x02, backcol);
-        _graphics.rect(screen, 0x02, 0x35, 0x06, 0x02, backcol);
+        _graphics.rect(0,0,128,0,backcol);
+        _graphics.rect(0x06, 0x27, 0x13, 0x01, Color(0x00, 0x00, 0x00));
+        _graphics.rect(0x05, 0x28, 0x15, 0x13, Color(0x00, 0x00, 0x00));
+        _graphics.rect(0x06, 0x3B, 0x13, 0x01, Color(0x00, 0x00, 0x00));
+        _graphics.rect(0x01, 0x2D, 0x04, 0x04, Color(0x00, 0x00, 0x00));
+        _graphics.rect(0x01, 0x34, 0x04, 0x04, Color(0x00, 0x00, 0x00));        
+        _graphics.rect(0x02, 0x2E, 0x06, 0x02, backcol);
+        _graphics.rect(0x02, 0x35, 0x06, 0x02, backcol);
     }
 };
 
@@ -70,7 +70,7 @@ public:
     }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {
         if (when < 0.0f || when > 1.0f)
             return;
@@ -80,7 +80,7 @@ private:
         for (auto &spline : _splines)
         {
             auto p = spline.get(when);
-            _graphics.rect(screen, p.x, p.y, size, size, Color(intensity, intensity, intensity));
+            _graphics.rect(p.x, p.y, size, size, Color(intensity, intensity, intensity));
         }
     }
 };
@@ -105,7 +105,7 @@ public:
     }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {
         if (when < 0.0f || when > 1.0f)
             return;
@@ -114,7 +114,7 @@ private:
         {
             auto p = _splines[i].get(when);
             auto color = i == 0 ? Color::red : (i == 1 ? Color::green : Color::blue);
-            _graphics.rect(screen, p.x, p.y, 4, 4, color, Mode::Add);
+            _graphics.rect(p.x, p.y, 4, 4, color, Mode::Add);
         }
     }
 };
@@ -132,14 +132,14 @@ public:
     }
 
 protected:
-    void drawWhiteMagic(Bitmap &screen) { drawWhiteMagic(screen, Color::white, irect(0,0,128,64), 0.0f, Mode::Set); }
-    void drawWhiteMagic(Bitmap &screen, Color color, irect cliparea, float xoffset, Mode mode)
+    void drawWhiteMagic() { drawWhiteMagic(Color::white, irect(0,0,128,64), 0.0f, Mode::Set); }
+    void drawWhiteMagic(Color color, irect cliparea, float xoffset, Mode mode)
     {
         auto txt = "White|Magic";
         auto size = _font->textsize(txt);
-        _graphics.setcliparea(cliparea);
-        _graphics.text(screen, _font, (128 - size.dx)/2 + xoffset, (64 - size.dy) / 2 + _font->ascend(), txt, color, mode);
-        _graphics.clearcliparea();
+        //_graphics.setcliparea(cliparea);
+        _graphics.text(_font, (128 - size.dx)/2 + xoffset, (64 - size.dy) / 2 + _font->ascend(), txt, color, mode);
+        //_graphics.clearcliparea();
     }
 };
 
@@ -157,7 +157,7 @@ public:
     }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {
         if (when < 0.0f)
             return;
@@ -166,9 +166,9 @@ private:
         if (when < 1.0f)
         {
             auto dy = std::min(when * 150, 40.0f);
-            _graphics.rect(screen, x, 31.5 -dy / 2, 3, dy, Color::white);
+            _graphics.rect(x, 31.5 -dy / 2, 3, dy, Color::white);
         }
-        drawWhiteMagic(screen, Color::white, irect(0,0,x,64),0.0f,Mode::Set);
+        drawWhiteMagic(Color::white, irect(0,0,x,64),0.0f,Mode::Set);
     }
 };
 
@@ -179,7 +179,7 @@ public:
         : AnimationWhiteMagic(graphics, font, start, end) { }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {
         if (when < 0.0f)
             return;
@@ -189,9 +189,9 @@ private:
             d = 0;
 
         auto cliparea = irect(0,0,128,64);
-        drawWhiteMagic(screen, Color::red, cliparea, -d * 1.5, Mode::Add);
-        drawWhiteMagic(screen, Color::green, cliparea, d, Mode::Add);
-        drawWhiteMagic(screen, Color::blue, cliparea, -d, Mode::Add);
+        drawWhiteMagic(Color::red, cliparea, -d * 1.5, Mode::Add);
+        drawWhiteMagic(Color::green, cliparea, d, Mode::Add);
+        drawWhiteMagic(Color::blue, cliparea, -d, Mode::Add);
     }
 };
 
@@ -204,14 +204,14 @@ public:
     }
 
 private:
-    void animate(Bitmap &screen, float when)
+    void animate(float when)
     {     
         if (when < 0.0f)
             return;
 
         auto dx = ((int)(when * 128) / 4) * 4;
-        drawWhiteMagic(screen);
-        _graphics.rect(screen, 0, 0, dx, 64, Color::black);
+        drawWhiteMagic();
+        _graphics.rect(0, 0, dx, 64, Color::black);
 
         for (int ix=0; ix<5; ++ix)
         {
@@ -221,7 +221,7 @@ private:
                 auto y = iy * 4;
                 if (std::rand() % 6 > ix)
                 {
-                    _graphics.rect(screen, x, y, 4, 4, Color::black);
+                    _graphics.rect(x, y, 4, 4, Color::black);
                 }
             }
         }
@@ -254,7 +254,7 @@ public:
         _bootCompleted = false;
     }
 
-    void render(Bitmap &screen)
+    void render()
     {   
         auto busy = false;
         float when = (esp_timer_get_time() - _bootStart) / 1000000.0f;
@@ -262,7 +262,7 @@ public:
         {
             for (auto it : _bootAnimations) 
             {
-                busy |= it->run(screen, when); 
+                busy |= it->run(when); 
             }
             if (!busy)
             {

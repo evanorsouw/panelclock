@@ -35,15 +35,15 @@ public:
     /// @brief  draw animation for given moment in time
     /// @param when relative moment in time.
     /// @return true when done (passed end-point);
-    bool run(Bitmap &screen, float when)
+    bool run(float when)
     {
         auto fraction = (when - _start) / (_end - _start);
-        animate(screen, fraction);
+        animate(fraction);
         return !(when > _end);
     }
 
 protected:
-    virtual void animate(Bitmap &screen, float when) {}
+    virtual void animate(float when) {}
 };
 
 #endif

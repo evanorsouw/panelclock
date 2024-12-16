@@ -27,13 +27,14 @@ private:
     gpio_num_t _ioSet;
     gpio_num_t _ioUp;
     gpio_num_t _ioDown;
+    gpio_num_t _ioBoot;
     System &_system;
     std::vector<_keyinfo> _keys;
     std::mutex _mutex;
     std::queue<KeyPress> _keyQueue;
     
 public:
-    UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, System &system);
+    UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, gpio_num_t boot, System &system);
 
     void updateTask();
 

@@ -42,6 +42,17 @@ public:
         assert( _bitmap != nullptr );
     }
 
+    Bitmap(Bitmap &parent, int ox, int oy, int dx, int dy)
+        : PixelSquare(
+            std::min(std::max(0, parent.dx() - ox), dx), 
+            std::min(std::max(0, parent.dy() - oy), dy))
+    {
+        _bpp = parent._bpp;
+        _stride = parent._stride;
+        _bitmap = parent.getptr(ox, oy);
+    }
+
+
     virtual ~Bitmap()
     {
         printf("Bitmap: freed %d bytes\n", _bitmapsize);
@@ -78,65 +89,6 @@ public:
         }
     }
 
-    void add(int x, int y, uint8_t alpha)
-    {
-        assert( _bpp == 1 );
-        auto pt = getptr(x, y);
-        pt[0] = clip(pt[0] + alpha);
-    }
-
-    void add(int x, int y, const Color color, uint8_t alpha)
-    {
-        assert( _bpp == 3 );
-        auto pt = getptr(x, y);
-        if (alpha == 255)
-        {
-            pt[0] = clip(pt[0] + color.r());
-            pt[1] = clip(pt[1] + color.g());
-            pt[2] = clip(pt[2] + color.b());
-        }
-        else
-        {
-            pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
-            pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
-            pt[2] = clip(pt[2] + ((color.b() * alpha) >> 8));
-        }
-    }
-
-    void set(int x, int y, const Color color)
-    {
-        assert( _bpp == 3);
-        auto pt = getptr(x, y);
-        pt[0] = color.r();
-        pt[1] = color.g();
-        pt[2] = color.b();
-    }
-
-    void set(int x, int y, const Color color, uint8_t alpha)
-    {
-        if (alpha == 255)
-        {
-            set(x, y, color);
-        }
-        else if (alpha > 0)
-        {
-            assert( _bpp = 3 );
-
-            auto pt = getptr(x, y);
-            auto ialpha = (uint8_t)255 - alpha;
-            pt[0] = clip((pt[0] * ialpha + color.r() * alpha) >> 8);
-            pt[1] = clip((pt[1] * ialpha + color.g() * alpha) >> 8);
-            pt[2] = clip((pt[2] * ialpha + color.b() * alpha) >> 8);
-        }
-    }
-
-    Color get(int x, int y)
-    {
-        assert( _bpp == 3 );
-        auto ps = getptr(x, y);
-        return Color(ps[0], ps[1], ps[2]);
-    }
-
     void copyTo(Bitmap &tgt, int tgtx, int tgty)
     {
         CopyJob job(*this, tgt, tgtx, tgty);
@@ -154,7 +106,6 @@ public:
     }
 
     void copyTo(LedPanel &tgt, int tgtx, int tgty);
-    uint8_t clip(int v) { return v > 255 ? 255 : v; };
 };
 
 #endif

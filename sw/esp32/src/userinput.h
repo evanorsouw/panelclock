@@ -16,6 +16,7 @@ public:
     static const int KEY_SET  = 0x101;
     static const int KEY_UP   = 0x102;
     static const int KEY_DOWN = 0x103;
+    static const int KEY_BOOT = 0x104;
 
     virtual ~UserInput() {}
 

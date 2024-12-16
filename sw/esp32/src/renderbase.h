@@ -39,7 +39,7 @@ public:
     void graduallyUpdateVariable(float &current, float targetLo, float targetHi, float speed);
 
     virtual void init() {}
-    virtual void render(Bitmap &screen) {}
+    virtual void render() {}
     virtual bool interact() { return false; }
 };
 

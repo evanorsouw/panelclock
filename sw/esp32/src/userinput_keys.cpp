@@ -1,16 +1,18 @@
 
 #include "userinput_keys.h"
 
-UserInputKeys::UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, System &system)
+UserInputKeys::UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, gpio_num_t boot, System &system)
     : _system(system)
 {
     _ioSet = set;
     _ioUp = up;
     _ioDown = down;
+    _ioBoot = boot;
 
     _keys.push_back(_keyinfo { .io=set, .key=KEY_SET, .pressedSince = 0 });
     _keys.push_back(_keyinfo { .io=up, .key=KEY_UP, .pressedSince = 0 });
     _keys.push_back(_keyinfo { .io=down, .key=KEY_DOWN, .pressedSince = 0 });
+    _keys.push_back(_keyinfo { .io=boot, .key=KEY_BOOT, .pressedSince = 0 });
 
     std::for_each(_keys.begin(), _keys.end(), [](_keyinfo info){ gpio_set_direction(info.io, GPIO_MODE_INPUT);});
 }

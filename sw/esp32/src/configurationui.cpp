@@ -94,7 +94,7 @@ void ConfigurationUI::init()
     selectConfig(0);
 }
 
-void ConfigurationUI::render(Bitmap &screen)
+void ConfigurationUI::render()
 {
     auto white = Color::white * _appctx.intensity();
     auto darkgray = Color(16,16,16) * _appctx.intensity();
@@ -114,7 +114,7 @@ void ConfigurationUI::render(Bitmap &screen)
     // draw selection line background
     auto x = _updating ? xvalues : 0.0;
     auto dx = 128 - x;
-    _graphics.rect(screen, x, _selectionYBase - _configYBase, dx, _font->height(), darkred);
+    _graphics.rect(x, _selectionYBase - _configYBase, dx, _font->height(), darkred);
 
     // draw visible configs lines
     for (auto i=0; i<_configs.size(); ++i)
@@ -130,15 +130,15 @@ void ConfigurationUI::render(Bitmap &screen)
         auto y = yt + _font->height() + _font->descend() - 2;
 
         // draw label
-        _graphics.clearcliparea();
-        _graphics.text(screen, _font, margin, y, translate(config.label), white);
-        _graphics.setcliparea(irect(xvalues, 0, 128, 64));
+        //_graphics.clearcliparea();
+        _graphics.text(_font, margin, y, translate(config.label), white);
+        //_graphics.setcliparea(irect(xvalues, 0, 128, 64));
 
         // draw value
         if (i != _selectedLine || _iEditIndex < 0)
         {            
             auto x = xvalues + config._xScrollOffset;           
-            x = _graphics.text(screen, _font, x, y, config.value, color);
+            x = _graphics.text(_font, x, y, config.value, color);
             switch (config._xScrollState)
             {
             case ScrollState::Begin:
@@ -192,15 +192,15 @@ void ConfigurationUI::render(Bitmap &screen)
             {
                 xroll = x;
                 x += _rollXOffset;
-                _graphics.rect(screen, x, 0, _font->sizex(), 64, darkgray);
-                _graphics.line(screen, x, 0, x, 64, 0.5, white);
-                _graphics.line(screen, x + _font->sizex() - 1, 0, x + _font->sizex() - 1, 64, 0.5f, white);
+                _graphics.rect(x, 0, _font->sizex(), 64, darkgray);
+                _graphics.line(x, 0, x, 64, 0.5, white);
+                _graphics.line(x + _font->sizex() - 1, 0, x + _font->sizex() - 1, 64, 0.5f, white);
                 x += _font->sizex() - _rollXOffset;
                 targetXScrollOffset = config._xScrollOffset + std::min(0.0f, 128 - x);
             }
             else
             {
-                x = _graphics.text(screen, _font, x, y,  c, white);
+                x = _graphics.text(_font, x, y,  c, white);
             }            
             if (c == 0 || c == AcceptChar)
                 break;
@@ -223,15 +223,15 @@ void ConfigurationUI::render(Bitmap &screen)
             auto dy = _font->sizey();
             if (_editChars[iroll] == AcceptChar)
             {
-                _graphics.triangle(screen, x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, lime);
-                _graphics.triangle(screen, x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, lime);
+                _graphics.triangle(x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, lime);
+                _graphics.triangle(x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, lime);
             }
             else
             {
                 auto w = _font->charsize(_editChars[iroll]).dx;
                 y = yt + _font->height() + _font->descend() - 2;
                 auto xc = x + (_font->sizex() - w) / 2;
-                _graphics.text(screen, _font, xc, y, _editChars[iroll], white);
+                _graphics.text(_font, xc, y, _editChars[iroll], white);
             }
             yt += _font->height();
             iroll = (iroll + 1) % neditchars;
@@ -242,7 +242,7 @@ void ConfigurationUI::render(Bitmap &screen)
     }
     graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - 64 + _font->height(), _selectedLine * _font->height(), 2);
     graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 2);
-    _graphics.clearcliparea();
+    //_graphics.clearcliparea();
 }
 
 bool ConfigurationUI::interact()

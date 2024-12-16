@@ -6,10 +6,6 @@
 
 #include "settings.h"
 
-Settings::Settings()
-{   
-}
-
 bool Settings::loadSettings()
 {    
     nvs_handle handle;
@@ -88,6 +84,14 @@ Setting *Settings::get(const char *name) const
         printf("setting='%s' not found\n", name);
         abort();
     }
+    return it->second;
+}
+
+Setting *Settings::get(const char *name, const char *defaultValue) 
+{ 
+    auto it = _settings.find(name);
+    if (it == _settings.end())
+        return add(name, defaultValue);
     return it->second;
 }
 

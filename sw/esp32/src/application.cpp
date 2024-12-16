@@ -19,53 +19,79 @@ void Application::init()
 {
 }
 
-void Application::render(Bitmap &screen)
+void Application::render()
 {
     auto now = _system.now();
-    _graphics.clearcliparea();
 
-    drawClock(screen, 0);
-    drawDateTime(screen, now);
-    drawWeather(screen);
-    //drawSparkles(screen, now);
+    if (_system.settings().OnePanel())
+    {
+        drawClock(1, 1, 48);
+        drawTimeOnePanel(now);
+    }
+    else
+    {
+        drawClock(1, 1, 62);
+        drawDateTimeTwoPanel(now);
+        drawWeather();
+    }
 }
 
 bool Application::interact()
 {
-    if (!_userinput.hasKeyDown(UserInput::KEY_SET, 1000))
-        return false;
-
-    _userinput.flush();
-    return true;
+    if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 0))
+    {
+        if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 5000))
+        {
+            auto &settings = _system.settings();
+            auto resetsettings = _userinput.hasKeyDown(UserInput::KEY_SET, 0);
+            if (resetsettings)
+            {
+                settings.defaultSettings();
+                printf("load default settings\n");
+            }
+            else
+            {
+                settings.OnePanel(!settings.OnePanel());
+                printf("changed panel size\n");
+            }
+            settings.saveSettings();
+            esp_restart();
+        }
+    }
+    else if (_userinput.hasKeyDown(UserInput::KEY_SET, 1000))
+    {
+        _userinput.flush();
+        return true;    // enter configuration menu
+    }
+    return false;   // stay in normal clock-mode
 }
 
-void Application::drawClock(Bitmap &screen, float x)
+void Application::drawClock(float x, float y, float diameter)
 {
     auto color = Color::white * _appctx.intensity();
     auto colorsecond = Color::red * _appctx.intensity();
 
-    auto diameter = 64 - 2;
-    auto cx = 64 / 2.0f;
-    auto cy = cx;
+    auto cx = x + diameter / 2.0f;
+    auto cy = y + diameter / 2.0f;
     // draw 5 minute ticks
     for (int i=0; i< 12; ++i)
     {
-        drawLineFromCenter(screen, cx, cy, diameter, i / 12.0f, 0.9f, 1.0f, diameter / 40, color);
+        drawLineFromCenter(cx, cy, diameter, i / 12.0f, 0.9f, 1.0f, diameter / 40, color);
     }
 
     // draw center dot
-    _graphics.text(screen, _appctx.fontIcons4(), cx-2, cy+1, "0", color);
+    _graphics.text(_appctx.fontIcons4(), cx-2, cy+1, "0", color);
 
     // draw hands
     auto hours = drawtime() / (12 * 3600000.0f);
-    drawLineFromCenter(screen, cx, cy, diameter, hours, 0.2f, 0.6f, diameter / 20, color);
+    drawLineFromCenter(cx, cy, diameter, hours, 0.2f, 0.6f, diameter / 20, color);
     auto minutes = (drawtime() % 3600000) / 3600000.0f;
-    drawLineFromCenter(screen, cx, cy, diameter, minutes, 0.2f, 0.8f, diameter / 20, color);
+    drawLineFromCenter(cx, cy, diameter, minutes, 0.2f, 0.8f, diameter / 20, color);
     
     if(_system.settings().SmoothSecondHand())
     {
         auto seconds = (drawtime() % 60000) / 60000.0f;
-        drawLineFromCenter(screen, cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
+        drawLineFromCenter(cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
     }
     else
     {
@@ -77,11 +103,35 @@ void Application::drawClock(Bitmap &screen, float x)
             _lasttime = second;
             angle += 0.0015;
         }
-        drawLineFromCenter(screen, cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
+        drawLineFromCenter(cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
     }
 }
 
-void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
+void Application::drawTimeOnePanel(const timeinfo &now)
+{
+    auto color = Color::white * _appctx.intensity();
+    char buf1[20], buf2[20];
+
+    snprintf(buf1, sizeof(buf1), "%02d", now.hour());
+    snprintf(buf2, sizeof(buf2), "%02d", now.min());
+    auto sizeh = _appctx.fonttimeLarge()->textsize(buf1);
+    auto sizem = _appctx.fonttimeLarge()->textsize(buf2);
+
+    auto x = 64 - std::max(sizeh.dx, sizem.dx) - 1;
+    auto y = _appctx.fonttimeLarge()->ascend() - 2;
+    _graphics.text(_appctx.fonttimeLarge(), x, y, buf1, color);
+    y += _appctx.fonttimeLarge()->ascend() - 1;
+
+    _graphics.text(_appctx.fonttimeLarge(), x, y, buf2, color);
+    y += _appctx.fonttimeLarge()->ascend() - 2;
+
+    snprintf(buf1, sizeof(buf2), "%02d", now.sec());
+    auto size = _appctx.fonttimeSmall()->textsize(buf1);
+    x = 64 - size.dx - 1;
+    _graphics.text(_appctx.fonttimeSmall(), x, y, buf1, color);
+}
+
+void Application::drawDateTimeTwoPanel(const timeinfo &now)
 {
     auto color = Color::white * _appctx.intensity();
     char buf[40];
@@ -89,7 +139,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
     snprintf(buf, sizeof(buf), "%02d", now.sec());
     auto sizesec = _appctx.fonttimeSmall()->textsize(buf);
     auto xtim = 127 - sizesec.dx - 1;
-    _graphics.text(screen, _appctx.fonttimeSmall(),
+    _graphics.text(_appctx.fonttimeSmall(),
         xtim, 
         _appctx.fonttimeSmall()->ascend() - 1, 
         buf, color);
@@ -99,7 +149,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
     auto sizehm = _appctx.fonttimeLarge()->textsize(buf);
     auto ybase = _appctx.fonttimeLarge()->ascend() - 2;
     xtim -= sizehm.dx + 2;
-    _graphics.text(screen, _appctx.fonttimeLarge(),
+    _graphics.text(_appctx.fonttimeLarge(),
         xtim, 
         ybase, 
         buf, color);
@@ -108,7 +158,7 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
     txt[0] = std::toupper(txt[0]);
     auto size = _appctx.fontdate()->textsize(txt.c_str());
     ybase += size.dy - 1;
-    _graphics.text(screen, _appctx.fontdate(),
+    _graphics.text(_appctx.fontdate(),
         127 - size.dx - 1, 
         ybase, 
         txt.c_str(), color);
@@ -117,13 +167,13 @@ void Application::drawDateTime(Bitmap &screen, const timeinfo &now)
     snprintf(buf, sizeof(buf), "%d %c%s", now.mday(), std::toupper(month[0]), month+1);
     size = _appctx.fontdate()->textsize(buf);
     ybase += size.dy;
-    _graphics.text(screen, _appctx.fontdate(),
+    _graphics.text(_appctx.fontdate(),
         127 - size.dx - 1, 
         ybase, 
         buf, color);
 }
 
-void Application::drawWeather(Bitmap &screen)
+void Application::drawWeather()
 {
     char buf1[20], buf2[20];
 
@@ -154,7 +204,7 @@ void Application::drawWeather(Bitmap &screen)
     auto ybase = 50.2f;
     if(windspeed.isValid())
     {
-        _graphics.text(screen, _appctx.fontweatherL(),
+        _graphics.text(_appctx.fontweatherL(),
             xms, 
             ybase, 
             buf1, white);
@@ -171,14 +221,14 @@ void Application::drawWeather(Bitmap &screen)
 
     if (windchill.isValid())
     {
-        _graphics.text(screen, _appctx.fontweatherS(),
+        _graphics.text(_appctx.fontweatherS(),
             128 - WeatherImageDx - 1 - size2.dx,
             ybase - 2,
             buf2, white);
     }
     if (temperature.isValid())
     {
-        _graphics.text(screen, _appctx.fontweatherL(),
+        _graphics.text(_appctx.fontweatherL(),
             128 - WeatherImageDx - 1 - size2.dx - size1.dx, 
             ybase,
             buf1, white);
@@ -204,13 +254,13 @@ void Application::drawWeather(Bitmap &screen)
         auto x4 = cx - d * 0.5f * std::cos(angle + 0.6f);
         auto y4 = cy - d * 0.5f * std::sin(angle + 0.6f);
 
-        _graphics.triangle(screen, x1, y1, x3, y3, x4, y4, lightblue);
-        _graphics.triangle(screen, x1, y1, x2, y2, x3, y3, white);
+        _graphics.triangle(x1, y1, x3, y3, x4, y4, lightblue);
+        _graphics.triangle(x1, y1, x2, y2, x3, y3, white);
     }
-    drawWeatherImage(screen);
+    drawWeatherImage();
 }
 
-void Application::drawWeatherImage(Bitmap &screen)
+void Application::drawWeatherImage()
 {
     auto weather = _environment.weather();
     if (!weather.isValid())
@@ -230,63 +280,63 @@ void Application::drawWeatherImage(Bitmap &screen)
     default:
         break;
     case weathertype::clouded:      // bewolkt    
-        draw2Clouds(screen, px, py, pdx, pdy, white, black);
+        draw2Clouds(px, py, pdx, pdy, white, black);
         break;
     case weathertype::lightning:    // bliksem    
-        px = drawCloud(screen, px, py-2, pdx, pdy, white, darkgray);
-        drawLightning(screen, px, py, pdx, pdy, white);
+        px = drawCloud(px, py-2, pdx, pdy, white, darkgray);
+        drawLightning(px, py, pdx, pdy, white);
         break;
     case weathertype::showers:      // buien    
-        px = drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(screen, px, py, pdx, pdy, true, white);
+        px = drawCloud(px, py - 2, pdx, pdy, white, darkgray);
+        drawRain(px, py, pdx, pdy, true, white);
         break;
     case weathertype::hail:         // hagel    
-        drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
+        drawCloud(px, py - 2, pdx, pdy, white, darkgray);
         // todo:
         break;
     case weathertype::partlycloudy: // halfbewolkt    
     case weathertype::cloudy:       // lichtbewolkt    
-        drawSun(screen, px-4, py-2, pdx, pdy);
-        px = drawCloud(screen, px, py, pdx, pdy, white, black);
+        drawSun(px-4, py-2, pdx, pdy);
+        px = drawCloud(px, py, pdx, pdy, white, black);
         break;
     case weathertype::cloudyrain:   // halfbewolkt_regen    
-        drawSun(screen, px-4, py-2, pdx, pdy);
-        px = drawCloud(screen, px, py, pdx, pdy, white, black);
-        drawRain(screen, px, py, pdx, pdy, false, white);
+        drawSun(px-4, py-2, pdx, pdy);
+        px = drawCloud(px, py, pdx, pdy, white, black);
+        drawRain(px, py, pdx, pdy, false, white);
         break;
     case weathertype::clearnight:   // helderenacht    
-        drawStars(screen, px, py, pdx, pdy);
-        drawMoon(screen, px, py, pdx, pdy, white);
+        drawStars(px, py, pdx, pdy);
+        drawMoon(px, py, pdx, pdy, white);
         break;
     case weathertype::fog:          // mist    
-        drawCloud(screen, px, py - 3, pdx, pdy, lightgray, darkgray);
-        drawFog(screen, px, py, pdx, pdy, white);
+        drawCloud(px, py - 3, pdx, pdy, lightgray, darkgray);
+        drawFog(px, py, pdx, pdy, white);
         break;
     case weathertype::cloudednight: // nachtbewolkt    
-        drawMoon(screen, px, py, pdx, pdy, white);
-        drawCloud(screen, px, py, pdx, pdy, white, darkgray);
+        drawMoon(px, py, pdx, pdy, white);
+        drawCloud(px, py, pdx, pdy, white, darkgray);
         break;
     case weathertype::nightfog:     // nachtmist
-        drawMoon(screen, px, py, pdx, pdy, lightgray);
-        drawFog(screen, px, py, pdx, pdy, white);
+        drawMoon(px, py, pdx, pdy, lightgray);
+        drawFog(px, py, pdx, pdy, white);
         break;
     case weathertype::rain:         // regen    
-        px = drawCloud(screen, px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(screen, px, py, pdx, pdy, false, white);
+        px = drawCloud(px, py - 2, pdx, pdy, white, darkgray);
+        drawRain(px, py, pdx, pdy, false, white);
         break;
     case weathertype::snow:         // sneeuw
-        drawSnow(screen, px, py, pdx, pdy, white);
+        drawSnow(px, py, pdx, pdy, white);
         break;
     case weathertype::sunny:        // zonnig    
-        drawSun(screen, px, py, pdx, pdy);
+        drawSun(px, py, pdx, pdy);
         break;
     case weathertype::heavyclouds:  // zwaarbewolkt
-        draw2Clouds(screen, px, py, pdx, pdy, white, darkgray);
+        draw2Clouds(px, py, pdx, pdy, white, darkgray);
         break;
     }
 }
 
-void Application::drawLineFromCenter(Bitmap &screen, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)
+void Application::drawLineFromCenter(float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)
 {
     auto angle = PI * 2.0f * index - PI / 2.0f;
     auto radius = diameter / 2.0f;
@@ -296,10 +346,10 @@ void Application::drawLineFromCenter(Bitmap &screen, float x, float y, float dia
     auto y1 = y + sin(angle) * o1;
     auto x2 = x + cos(angle) * o2;
     auto y2 = y + sin(angle) * o2;
-    _graphics.line(screen, x1, y1, x2, y2, thickness, color);
+    _graphics.line(x1, y1, x2, y2, thickness, color);
 }
 
-void Application::drawSun(Bitmap &screen, float x, float y,  float width, float height)
+void Application::drawSun(float x, float y,  float width, float height)
 {
     auto size = std::min(width, height);
     auto p1 = phase(20000,false);
@@ -338,47 +388,47 @@ void Application::drawSun(Bitmap &screen, float x, float y,  float width, float 
         auto angle = PI / 4 * i + p1 * PI;
         auto dx = max * std::cos(angle);
         auto dy = max * std::sin(angle);
-        _graphics.line(screen, cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
+        _graphics.line(cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
     }
 
     auto s = _appctx.fontIcons9()->textsize("0");
-    _graphics.text(screen, _appctx.fontIcons9(), cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
+    _graphics.text(_appctx.fontIcons9(), cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
 }
 
-void Application::draw2Clouds(Bitmap &screen, float x, float y, float width, float height, Color pen, Color fill)
+void Application::draw2Clouds(float x, float y, float width, float height, Color pen, Color fill)
 {
     auto cx = x + phase(21000, true) * (width - 18);
     auto cy = y + (height - 18) / 2 + 18 - 4 + phase(17000, true) * 3;
-    _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "B", fill);
-    _graphics.text(screen, _appctx.fontIcons18(), cx, cy, "A", pen);
+    _graphics.text(_appctx.fontIcons18(), cx, cy, "B", fill);
+    _graphics.text(_appctx.fontIcons18(), cx, cy, "A", pen);
 
     cx = x + phase(22000, true, 3000) * (width - 22);
     cy = y + (height - 22) / 2 + 22 + 2 + phase(19000, true) * 2;
-    _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "B", fill);
-    _graphics.text(screen, _appctx.fontIcons22(), cx, cy, "A", pen);
+    _graphics.text(_appctx.fontIcons22(), cx, cy, "B", fill);
+    _graphics.text(_appctx.fontIcons22(), cx, cy, "A", pen);
 }
 
-float Application::drawCloud(Bitmap &screen, float x, float y, float dx, float dy, Color pen, Color fill)
+float Application::drawCloud(float x, float y, float dx, float dy, Color pen, Color fill)
 {
     auto tx = x + phase(21000, true, 3000) * (dx - 22);
     auto ty = y + (dy - 22) / 2 + 22 - 2 + phase(19000, true) * 4;
-    _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "B", fill);
-    _graphics.text(screen, _appctx.fontIcons22(), tx, ty, "A", pen);
+    _graphics.text(_appctx.fontIcons22(), tx, ty, "B", fill);
+    _graphics.text(_appctx.fontIcons22(), tx, ty, "A", pen);
     return tx;
 }
 
-void Application::drawLightning(Bitmap &screen, float x, float y, float dx, float dy, Color color)
+void Application::drawLightning(float x, float y, float dx, float dy, Color color)
 {
     auto tx = x - 5 + std::rand() % 10;
     auto ty = y + (dy - 18) /2 + 18 + std::rand() % 6;
 
     if (std::rand() % 1000 < 10)
     {
-        _graphics.text(screen, _appctx.fontIcons18(), tx, ty, "F", color);
+        _graphics.text(_appctx.fontIcons18(), tx, ty, "F", color);
     }
 }
 
-void Application::drawRain(Bitmap &screen, float x, float y, float w, float h, bool heavy, Color color)
+void Application::drawRain(float x, float y, float w, float h, bool heavy, Color color)
 {
     auto pw = heavy ? 1.8f : 1.0f;
     auto ph = phase(heavy ? 800 : 2000, false);
@@ -421,16 +471,16 @@ void Application::drawRain(Bitmap &screen, float x, float y, float w, float h, b
             x4 = xo + dx * (ph - 0.5f - length);
             y4 = yo + dy * (ph - 0.5f - length);
         }
-        _graphics.line(screen, x+x1, y+y1, x+x2, y+y2, pw, color);
-        _graphics.line(screen, x+x3, y+y3, x+x4, y+y4, pw, color);
+        _graphics.line(x+x1, y+y1, x+x2, y+y2, pw, color);
+        _graphics.line(x+x3, y+y3, x+x4, y+y4, pw, color);
     }
 }
 
-void Application::drawMoon(Bitmap &screen, float x, float y, float dx, float dy, Color color)
+void Application::drawMoon(float x, float y, float dx, float dy, Color color)
 {
     auto tx = x + (dx - 18) / 2 -3 + 6 * phase(25000, true, 3000);
     auto ty = y + (dy - 22) / 2 + 18 - 2;
-    _graphics.text(screen, _appctx.fontIcons18(), tx, ty, "D", color);
+    _graphics.text(_appctx.fontIcons18(), tx, ty, "D", color);
 }
 
 Color Application::starIntensity(float phase, float when)
@@ -444,22 +494,22 @@ Color Application::starIntensity(float phase, float when)
     return Color(d,d,d) * _weatherIntensity;
 }
 
-void Application::drawStars(Bitmap &screen, float x, float y, float dx, float dy)
+void Application::drawStars(float x, float y, float dx, float dy)
 {
     auto p = phase(20000, false);
-    screen.set(x + 0.10 * dx, y + 01, starIntensity(p, 0.01));
-    screen.set(x + 0.40 * dx, y + 03, starIntensity(p, 0.04));
-    screen.set(x + 0.70 * dx, y + 24, starIntensity(p, 0.02));
-    screen.set(x + 0.30 * dx, y + 07, starIntensity(p, 0.12));
-    screen.set(x + 0.90 * dx, y + 13, starIntensity(p, 0.32));
-    screen.set(x + 0.20 * dx, y + 18, starIntensity(p, 0.48));
-    screen.set(x + 0.15 * dx, y + 05, starIntensity(p, 0.39));
-    screen.set(x + 0.60 * dx, y + 17, starIntensity(p, 0.23));
-    screen.set(x + 0.80 * dx, y + 04, starIntensity(p, 0.78));
-    screen.set(x + 0.50 * dx, y + 21, starIntensity(p, 0.79));
+    _graphics.set(x + 0.10 * dx, y + 01, starIntensity(p, 0.01));
+    _graphics.set(x + 0.40 * dx, y + 03, starIntensity(p, 0.04));
+    _graphics.set(x + 0.70 * dx, y + 24, starIntensity(p, 0.02));
+    _graphics.set(x + 0.30 * dx, y + 07, starIntensity(p, 0.12));
+    _graphics.set(x + 0.90 * dx, y + 13, starIntensity(p, 0.32));
+    _graphics.set(x + 0.20 * dx, y + 18, starIntensity(p, 0.48));
+    _graphics.set(x + 0.15 * dx, y + 05, starIntensity(p, 0.39));
+    _graphics.set(x + 0.60 * dx, y + 17, starIntensity(p, 0.23));
+    _graphics.set(x + 0.80 * dx, y + 04, starIntensity(p, 0.78));
+    _graphics.set(x + 0.50 * dx, y + 21, starIntensity(p, 0.79));
 }
 
-void Application::drawFog(Bitmap &screen, float x, float y, float dx, float dy, Color color)
+void Application::drawFog(float x, float y, float dx, float dy, Color color)
 {
     auto pw = 0.8f;
     auto phase1 = phase(37000, true);
@@ -468,15 +518,15 @@ void Application::drawFog(Bitmap &screen, float x, float y, float dx, float dy, 
     auto y2 = y1 + 2;
     auto y3 = y2 + 2;
     auto y4 = y3 + 2;
-    _graphics.line(screen, x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, color);
-    _graphics.line(screen, x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, color);
-    _graphics.line(screen, x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, color);
-    _graphics.line(screen, x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, color);
-    _graphics.line(screen, x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, color);
-    _graphics.line(screen, x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
+    _graphics.line(x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, color);
+    _graphics.line(x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, color);
+    _graphics.line(x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, color);
+    _graphics.line(x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, color);
+    _graphics.line(x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, color);
+    _graphics.line(x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
 }
 
-void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy, Color color)
+void Application::drawSnow(float x, float y, float dx, float dy, Color color)
 {
     auto n1 = 19;
     auto n2 = 10;
@@ -500,45 +550,7 @@ void Application::drawSnow(Bitmap &screen, float x, float y, float dx, float dy,
 
         if (p > 0.0f && p < 1.0f)
         {
-            _graphics.rect(screen, x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
+            _graphics.rect(x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
         }
     }
-}
-
-void Application::drawSparkles(Bitmap &screen, const timeinfo &now)
-{
-    auto radius = (64 - 2) / 2.0f;
-    if (now.sec() % 5 == 0)
-    {
-        auto angle = PI * 2.0f * now.sec() / 60.0f - PI / 2.0f;
-
-        auto &sparkle = _sparkles[0];
-        if (!sparkle.active)
-        {
-            sparkle.active = true;
-            sparkle.x = 32 + std::cos(angle) * radius * 0.9f; 
-            sparkle.y = 32 + std::sin(angle) * radius * 0.9f; 
-            sparkle.angle = std::rand() % 180 * PI / 180;
-            sparkle.start = drawtime();
-        }
-    }
-    drawSparkle(screen, _sparkles[0]);
-}
-
-void Application::drawSparkle(Bitmap &screen, sparkle &sparkle)
-{
-    printf("sparkle: active=%d, x=%f,y=%f,angle=%f,start=%ld\n", sparkle.active, sparkle.x, sparkle.y, sparkle.angle, sparkle.start);
-    if (!sparkle.active)
-        return;
-
-    auto elapsed = (drawtime() - sparkle.start) / 1000.0f;
-    sparkle.active = elapsed < 1;
-
-    auto ox = 0.0f;//std::cos(sparkle.angle) * elapsed * 5;
-    auto oy = 0.0f;//std::sin(sparkle.angle) * elapsed + 5;
-    auto dx = phase(500, false) * 8;
-    auto dy = phase(400, false) * 8;
-    auto intensity = (64 + phase(300, true) * 191) * (1.0f - elapsed);
-    auto color = Color(intensity, intensity/2, intensity/2);
-    _graphics.rect(screen, sparkle.x+ox,sparkle.y+oy,dx,dy, color);
 }
