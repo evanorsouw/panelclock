@@ -7,7 +7,7 @@
 
 #include "application.h"
 
-#define PI 3.141592653f
+#define PI M_PI
 
 Application::Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, graphics, env, sys, userinput)
@@ -27,6 +27,9 @@ void Application::render()
     {
         drawClock(1, 1, 48);
         drawTimeOnePanel(now);
+
+        auto g = _graphics.view(4,4,56,56,true);
+        g.triangle(-10,-20,20,80,96,120,Color::green);
     }
     else
     {

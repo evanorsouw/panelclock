@@ -101,7 +101,7 @@ void app_main()
     auto timeupdater = new TimeSyncer(*rtc);
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 2000, apprunner, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 4000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
 
     printf("application initialized\n");

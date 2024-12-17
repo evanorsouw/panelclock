@@ -22,7 +22,7 @@ Graphics::Graphics(int dx, int dy, bool origin)
 
 void Graphics::linkBitmap(Bitmap *bitmap)
 {
-    assert( bitmap->dx() == _rasterizeMask->dx() && bitmap->dy() == _rasterizeMask->dy());
+    assert( bitmap->dx() == dx() && bitmap->dy() == dy());
     _drawingBitmap = bitmap;
     init(0, 0, bitmap->dx(), bitmap->dy(), true);
 }
@@ -39,8 +39,9 @@ void Graphics::init(int x, int y, int dx, int dy, bool origin)
         _sx = std::max(0, -x);
         _sy = std::max(0, -y);
         _ptr = _drawingBitmap->getptr(x, y);
-        _ex = std::min(dx, _drawingBitmap->dx() - x);
-        _ey = std::min(dy, _drawingBitmap->dy() - y);
+        _ex = std::min(std::min(x, 0) + dx, this->dx() - x);
+        _ey = std::min(std::min(y, 0) + dy, this->dy() - y);
+        //printf("x,y=%d,%d dx,dy=%d,%d => sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, _sx, _sy, _ex, _ey);
     }
     else
     {   // provided (x,y) in bitmap are (x,y) for this graphics instance
@@ -197,7 +198,8 @@ void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Col
     auto xr = (int)std::ceil(std::max(px1, std::max(px2, std::max(px3, px4))));
     auto yt = (int)std::min(py1, std::min(py2, std::min(py3, py4)));
     auto yb = (int)std::ceil(std::max(py1, std::max(py2, std::max(py3, py4))));
-    clearRasterizedMask(irect(xl, yt, xr, yb));
+
+    clearRasterizedMask(xl, yt, xr, yb);
 
     auto r1 = rasterizeTriangle(px1, py1, px2, py2, px3, py3);
     auto r2 = rasterizeTriangle(px2, py2, px3, py3, px4, py4);
@@ -208,7 +210,6 @@ void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Col
 float Graphics::text(Font *font, float x, float y, const char *txt, Color color, Mode mode)
 {    
     SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
-
     auto sft = font->getSFT();
 
     auto len = strlen(txt);
@@ -233,7 +234,7 @@ float Graphics::text(Font *font, float x, float y, const char *txt, Color color,
         auto sy = 0;
         auto dx = mtx.minWidth;
         auto dy = mtx.minHeight;
-        if (cliprange(sx, tx, dx, _sx, _ex) && cliprange(sy, ty, dy, _sx, _ex))
+        if (cliprange(sx, tx, dx, _sx, _ex) && cliprange(sy, ty, dy, _sy, _ey))
         {
             txtMask.width = mtx.minWidth;
             txtMask.height = mtx.minHeight;
@@ -274,7 +275,7 @@ bool Graphics::cliprange(int &srcx, int &tgtx, int &tgtdx, int min, int max)
     }
     if (tgtx + tgtdx > max)
     {
-        tgtdx -= max - tgtx - tgtdx;
+        tgtdx = max - tgtx;
     }
     return tgtdx > 0.0f;
 }
@@ -285,7 +286,7 @@ void Graphics::triangle(float x1, float y1, float x2, float y2, float x3, float 
     auto xr = (int)std::ceil(std::max(x1, std::max(x2, x3)));
     auto yt = (int)std::min(y1, std::min(y2, y3));
     auto yb = (int)std::ceil(std::max(y1, std::max(y2, y3)));
-    clearRasterizedMask(irect(xl, yt, xr, yb));
+    clearRasterizedMask(xl, yt, xr, yb);
 
     auto area = rasterizeTriangle(x1, y1, x2, y2, x3, y3);
     mergeRasterizedMask(color, area);
@@ -375,6 +376,7 @@ void Graphics::triangleBaseTop(float xbase1, float xbase2, float ybase, float xt
         y = ynext;
     } 
     while (y < ytop);
+    LOG("triangleBaseTop() - done\n");
 }
 
 void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xbase2, float ybase)
@@ -413,16 +415,18 @@ void Graphics::triangleBaseBottom(float xtop, float ytop, float xbase1, float xb
         y = ynext;
     } 
     while (y < ybase);
+    LOG("triangleBaseBottom() - done\n");
 }
 
 void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl, float dxr)
 {
-    float x = xl;
-    auto ptr = _rasterizeMask->getptr(x, y);
+    float x = std::max((float)_sx, xl);
+    float ex = std::min((float)_ex, xr);
+    auto ptr = _rasterizeMask->getptr(0, y);
+    LOG("tri-scanline x=%d,y=%d,dx=%.2f => p=%p\n", (int)x, (int)y, xr-xl, ptr);
     do
     {
         float xnext = MIN(xr, TRUNC(x + 1));
-
         float range = dxl == 0 ? 999 : dy / dxl;
         float yl1 = ((x - xl) * range);
         float yl2 = ((xnext - xl) * range);
@@ -437,31 +441,39 @@ void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl
         float axr = MIN(1, xr - x);
 
         float area = MIN(axl, axr) * MIN(ayl, ayr);
-        ptr[0] = clip(ptr[0] + (uint8_t)(area * 255));
-        ptr++;
+        ptr[(int)x] = clip(ptr[(int)x] + (uint8_t)(area * 255));
         x = xnext;
     }
-    while (x < xr);
+    while (x < ex);
 }
 
-void Graphics::clearRasterizedMask(irect area)
+void Graphics::clearRasterizedMask(int xl, int yt, int xr, int yb)
 {
-    for (auto y=area.y1; y<=area.y2; ++y)
+    clip(xl, 0, _rasterizeMask->dx() - 1);
+    clip(xr, 0, _rasterizeMask->dx() - 1);
+    clip(yt, 0, _rasterizeMask->dy() - 1);
+    clip(yb, 0, _rasterizeMask->dy() - 1);
+
+    for (auto y=yt; y<=yb; ++y)
     {
-        auto ptr = _rasterizeMask->getptr(area.x1, y);
-        std::memset(ptr, 0, area.x2 - area.x1 + 1);
+        auto ptr = _rasterizeMask->getptr(xl, y);
+        std::memset(ptr, 0, xr - xl + 1);
     }
 }
 
 void Graphics::mergeRasterizedMask(const Color color, irect area)
 {
+    clip(area.x1, 0, _rasterizeMask->dx() - 1);
+    clip(area.x2, 0, _rasterizeMask->dx() - 1);
+    clip(area.y1, 0, _rasterizeMask->dy() - 1);
+    clip(area.y2, 0, _rasterizeMask->dy() - 1);
+
     for (int y=area.y1; y <= area.y2; ++y)
     {
         auto palpha = _rasterizeMask->getptr(0, y);
         for (int x=area.x1; x <= area.x2; ++x)
         {
-            auto alpha = palpha[x];
-            set(x, y, color, alpha);
+            set(x, y, color, palpha[x]);
         }
     }
 }

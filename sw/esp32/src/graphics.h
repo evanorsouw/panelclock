@@ -43,6 +43,9 @@ private:
 
 public:
     Graphics(int dx, int dy, bool origin=true);
+
+    int dx() const { return _rasterizeMask->dx(); }
+    int dy() const { return _rasterizeMask->dy(); }
     
     void linkBitmap(Bitmap *bitmap);
     Graphics view(int x, int y, int dx, int dy, bool origin);
@@ -62,7 +65,7 @@ private:
     void triangleBaseBottom(float xtop, float ytop, float xbase1, float xbase2, float ybase);
     void trianglescanline(float y, float xl, float xr, float dy, float dxl, float dxr);
     void rectscanline(float x1, float x2, int y, float ay, const Color color, Mode mode = Mode::Set);
-    void clearRasterizedMask(irect area);
+    void clearRasterizedMask(int xl, int yt, int xr, int yb);
     void mergeRasterizedMask(const Color color, irect area);
 
     void SWAP(float &a, float &b) { float tmp=a; a=b; b=tmp; }
@@ -72,11 +75,18 @@ private:
     float TRUNC(float x) { return std::floor(x); }
     uint8_t ALPHA(float alpha) { return (uint8_t)MIN(255, alpha*255); }
 
+    template <class T> void clip(T &v, T min, T max);
     template <class T> bool cliprange(T &x, T &dx, int min, int max);
     bool cliprange(int &srcx, int &tgtx, int &tgtdx, int min, int max);
     uint8_t *getptr(int x, int y) const { return _ptr + (x * 3 + y * _stride); }
     uint8_t clip(int v) { return v > 255 ? 255 : v; };
 };
+
+template <class T>
+void Graphics::clip(T& v, T min, T max)
+{
+    v = std::max(min, std::min(max, v));
+}
 
 template <class T>
 bool Graphics::cliprange(T& x, T& dx, int min, int max)

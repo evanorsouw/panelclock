@@ -14,9 +14,11 @@ private:
 
 public:
     Setting(std::string name, const char *v) : _name(name) { set(v); }
+    Setting(std::string name, int v) : _name(name) { set(v); }
     Setting(std::string name, bool v) : _name(name) { set(v); }
 
     void set(const char * v) { _value = v; }
+    void set(int v) { _value = std::to_string(v); }
     void set(bool v) { _value = v ? "1" : "0"; }
 
     std::string name() const { return _name; }
