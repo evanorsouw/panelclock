@@ -1,0 +1,1060 @@
+
+description: fixed monochrome bitmap font for fpgaclock
+ascend: 8
+descend: 3
+linespacing: 1
+tracking: 1
+
+code: +0020
+bitmap:
+---
+
+code:33
+bitmap:
+x
+x
+x
+x
+x
+-
+x
+
+code: +0022
+baseline: 5
+bitmap:
+ x x
+ x x
+
+code: +0023
+bitmap:
+ x x
+ x x
+xxxxx
+ x x
+xxxxx
+ x x
+ x x
+ 
+code: +0024
+bitmap:
+  x 
+ xxxx
+x
+ xxx
+    x
+xxxx
+  x 
+ 
+code: +0025
+bitmap:
+ x    x
+x x  x 
+ x  x  
+   x   
+  x  x 
+ x  x x
+x    x
+
+code: +0026
+bitmap:
+ xxx
+x   x
+ x x
+ xx  
+x  x x
+x   x
+ xxx x
+ 
+code: +0027
+baseline: 5
+bitmap:
+x
+x 
+ 
+code:40
+baseline: -1
+bitmap:
+  x
+ x 
+x
+x
+x
+x
+x
+ x
+  x
+ 
+code:41
+baseline: -1
+bitmap:
+x
+ x 
+  x
+  x
+  x 
+  x
+  x
+ x
+x
+
+code:42
+baseline: 0
+bitmap:
+   x
+ x x x
+  xxx
+xxxxxxx
+  xxx
+ x x x
+   x
+ 
+code:43
+baseline: 1
+bitmap:
+  x
+  x
+xxxxx
+  x
+  x
+  
+code:44
+baseline: -3
+bitmap:
+ x
+ x
+x
+ 
+code:45
+baseline: 3
+bitmap:
+xxxx
+ 
+code:46
+bitmap:
+x
+ 
+code:47
+baseline: 0
+bitmap:
+   x
+   x
+  x
+  x
+ x
+ x
+x
+x
+ 
+ 
+code: 48
+bitmap:
+ XXXX
+X    X
+X    X
+X    X
+X    X
+X    X
+ XXXX
+
+code: 49
+bitmap:
+ X
+XX
+ X
+ X
+ X
+ X
+ X
+
+code: 50
+bitmap:
+ XXXX
+X    X
+    X
+   X
+  X
+ X
+XXXXXX
+
+code: 51
+bitmap:
+ XXXX
+X    X
+     X
+  XXX
+     X
+X    X  
+ XXXX
+ 
+code: 52
+bitmap:
+    X
+   XX
+  X X
+ X  X
+XXXXXX
+    X
+    X 
+     
+code: 53
+bitmap:
+XXXXXX
+X
+X
+ XXXX
+     X
+X    X
+ XXXX
+
+code: 54
+bitmap:
+ XXXX
+X
+X
+XXXXX
+X    X
+X    X
+ XXXX
+ 
+code: 55
+bitmap:
+XXXXXX
+     X
+    X
+   X
+  X
+ X   
+X
+   
+code: 56
+bitmap:
+ XXXX
+X    X
+X    x
+ XXXX
+X    X
+X    X
+ XXXX
+   
+code: 57
+bitmap:
+ XXXX
+X    X
+X    x
+ XXXXX
+     X
+X    X
+ XXXX
+
+code: 58
+baseline: 1
+bitmap:
+X
+-
+-
+X
+
+code: 59
+baseline: -3
+bitmap:
+ X
+-
+-
+ X
+ X
+X
+
+code: 60
+baseline: 1
+bitmap:
+  x
+ x
+x
+ X
+  X
+
+code: 61
+baseline: 2
+bitmap:
+xxxxx
+-
+xxxxx
+
+code: 62
+baseline: 1
+bitmap:
+x
+ x
+  x
+ x
+X
+
+code: 63
+bitmap:
+ xxxx
+x    x
+     x
+  xxx
+  x
+  -
+  x
+
+code: 64
+baseline: 0
+bitmap:
+  xxx
+ x   x
+x  x  x
+x x x x
+x  x x
+ x
+  xxx
+
+code: 65
+bitmap:
+ XXX 
+X   X
+X   X
+X   X
+XXXXX
+X   X
+X   X
+
+code: 66
+bitmap:
+XXXX 
+X   X
+X   X
+XXXX 
+X   X
+X   X
+XXXX 
+
+code: 67
+bitmap:
+ XXX 
+X   X
+X    
+X    
+X   
+X   X
+ XXX 
+
+code: 68
+bitmap:
+XXXX 
+X   X
+X   X  
+X   X
+X   X
+X   X
+XXXX 
+
+code: 69
+bitmap:
+XXXXX
+X   
+X     
+XXXX
+X   
+X   
+XXXXX 
+
+code: 70
+bitmap:
+XXXXX
+X   
+X     
+XXXX
+X   
+X   
+X 
+
+code: 71
+bitmap:
+ XXX
+X   X
+X     
+X XXX
+X   X
+X   X
+ XXX  
+
+code: 72
+bitmap:
+X   X
+X   X
+XXXXX
+X   X
+X   X
+X   X
+
+
+code: 73
+bitmap:
+XXX
+ X
+ X
+ X   
+ X   
+ X
+XXX 
+
+code: 74
+bitmap:
+  XXX
+   X
+   X
+   X   
+   X   
+X  X
+ XX 
+
+code: 75
+bitmap:
+X   X
+X  X
+X X
+XX
+X X
+X  X
+X   X
+
+code: 76
+bitmap:
+X    
+X   
+X  
+X 
+X  
+X   
+XXXXX
+
+code: 77
+bitmap:
+X     X
+XX   XX
+X X X X
+X  X  X
+X     X
+X     X
+X     X
+
+code: 78
+bitmap:
+X    X
+XX   X
+X X  X
+X  X X
+X   XX
+X    X
+X    X
+
+code: 79
+bitmap:
+ XXX
+X   X
+X   X
+X   X
+X   X
+X   X
+ XXX
+
+code: 80
+bitmap:
+XXXX
+X   X
+X   X
+XXXX   
+X   
+X   
+X 
+
+code: 81
+bitmap:
+ XXX
+X   X
+X   X
+X   X
+X X X
+X  X
+ XX X
+
+code: 82
+bitmap:
+XXXX
+X   X
+X   X
+XXXX 
+X   X 
+X   X
+X   X
+
+code: 83
+bitmap:
+ XXX
+X   X 
+X   
+ XXX 
+    X 
+X   X
+ XXX
+
+code: 84
+bitmap:
+XXXXX
+  X
+  X
+  X
+  X
+  X
+  X
+
+code: 85
+bitmap:
+X   X
+X   X
+X   X
+X   X
+X   X
+X   X
+ XXX
+
+
+code: 86
+bitmap:
+X     X
+X     X
+ X   X
+ X   X
+  X X
+  X X
+   X
+
+code: 87
+bitmap:
+X     X
+X     X
+X  X  X
+X  X  X
+X  X  X
+X  X  X
+ XX XX 
+
+code: 88
+bitmap:
+X     X
+ X   X 
+  X X 
+   X  
+  X X 
+ X   X
+X     X 
+
+code: 89
+bitmap:
+X     X
+ X   X 
+  X X 
+   X  
+   X  
+   X   
+   X    
+
+code: 90
+bitmap:
+XXXXXXX
+     X
+    X
+   X 
+  X 
+ X
+XXXXXXX
+
+code: 91
+baseline: -1
+bitmap:
+xx
+x
+x
+x
+x
+x
+x
+x
+xx
+
+code: 92
+bitmap:
+x
+x
+ x  
+ x
+  x
+  x
+   x 
+   x
+
+code: 93
+baseline: -1
+bitmap:
+xx
+ x
+ x 
+ x
+ x
+ x
+ x
+ x
+xx
+
+code: 94
+baseline: 4
+bitmap:
+  x
+ x x
+x   x
+ 
+code: 95
+bitmap:
+xxxxxx 
+
+code: 96
+baseline: 5
+bitmap:
+x
+ x
+
+code: 97
+bitmap:
+ XXXX
+X   X
+X   X
+X   X
+ XXXX
+ 
+code: 98
+bitmap:
+X
+X
+XXXX
+X   X
+X   X
+X   X
+XXXX
+
+
+code: 99
+bitmap:
+ XXX
+X   X
+X   
+X   X
+ XXX
+
+code: 100
+bitmap:
+    X
+    X
+ XXXX
+X   X
+X   X
+X   X
+ XXXX
+
+code: 101
+bitmap:
+ XXX
+X   X
+XXXXX   
+X   
+ XXX
+ 
+code: 102
+bitmap:
+ XX
+X
+X   
+XXX   
+X   
+X
+X
+ 
+code: 103
+baseline: -2
+bitmap:
+ XXXX
+X   X
+X   X
+X   X
+ XXXX   
+    X   
+ XXX
+ 
+code: 104
+bitmap:
+X   
+X   
+XXXX   
+X   X   
+X   X
+X   X
+X   X
+ 
+code: 105
+bitmap:
+X   
+-  
+X
+X   
+X
+X
+X
+ 
+code: 106
+baseline: -2
+bitmap:
+ X   
+ -
+ X
+ X   
+ X
+ X
+ X
+ X
+X
+
+code: 107
+bitmap:
+X   
+X 
+X   X
+X  X 
+XXX
+X  X
+X   X
+
+code: 108
+bitmap:
+X   
+X 
+X
+X   
+X
+X
+X
+
+code: 109
+bitmap:
+XXXX XXX      
+X   X   X    
+X   X   X    
+X   X   X    
+X   X   X    
+
+code: 110
+bitmap:
+XXXX      
+X   X       
+X   X       
+X   X       
+X   X       
+
+code: 111
+bitmap:
+ XXX      
+X   X       
+X   X       
+X   X       
+ XXX
+
+code: 112
+baseline: -2
+bitmap:
+XXXX      
+X   X       
+X   X       
+X   X       
+XXXX                
+X
+X
+
+code: 113
+baseline: -2
+bitmap:
+ XXXX      
+X   X       
+X   X       
+X   X       
+ XXXX                
+    X
+    X
+
+code: 114
+bitmap:
+X XX      
+XX
+X
+X
+X
+      
+code: 115
+bitmap:
+ XXX
+X
+ XX
+   X
+XXX
+    
+code: 116
+bitmap:
+ X
+ X
+XXX
+ X
+ X
+ X
+  X
+    
+code: 117
+bitmap:
+X   X
+X   X
+X   X
+X   X
+ XXXX
+
+code: 118
+bitmap:
+X   X
+X   X
+ X X
+ X X
+  X
+
+code: 119
+bitmap:
+X  X  X
+X  X  X
+X  X  X
+X  X  X
+ XX XX
+
+code: 120
+bitmap:
+X   X
+ X X
+  X 
+ X X
+X   X
+
+code: 121
+baseline: -2
+bitmap:
+X   X
+X   X
+X   X
+X   X
+ XXXX
+    X
+ XXX
+ 
+code: 122
+bitmap:
+XXXXX
+   X
+  X
+ X
+XXXXX
+
+code: 123
+baseline: -1
+bitmap:
+  X
+ X
+ X
+ X
+X
+ X
+ X
+ X
+  X
+
+code: 124
+baseline: -1
+bitmap:
+X
+X
+X
+X
+X
+X
+X
+X
+
+code: 125
+baseline: -1
+bitmap:
+X
+ X
+ X
+ X
+  X
+ X
+ X
+ X
+X
+
+code: 126
+baseline: 6
+bitmap:
+ X X
+X X
+
+code: +00A9
+bitmap:
+ xxxxx
+x     x
+x xxx x 
+x x   x
+x xxx x
+x     x
+ xxxxx
+ 
+code: U+00B0
+baseline: 4
+bitmap:
+ x
+x x
+ x
+ 
+code: +00E0
+bitmap:
+ x
+  x
+-
+ XXXX
+X   X
+X   X
+X   X
+ XXXX
+
+code: +00E1
+bitmap:
+   x
+  x
+-
+ XXXX
+X   X
+X   X
+X   X
+ XXXX
+
+code: +00E4
+bitmap:
+ x x
+-
+ XXXX
+X   X
+X   X
+X   X
+ XXXX
+
+code: +00E9
+bitmap:
+   x
+  x
+-
+ XXX
+X   X
+XXXXX   
+X   
+ XXX
+ 
+code: +00E8
+bitmap:
+ x
+  x
+-
+ XXX
+X   X
+XXXXX   
+X   
+ XXX
+ 
+code: +00EB
+bitmap:
+ x x
+-
+ XXX
+X   X
+XXXXX   
+X   
+ XXX
+ 
+code: +00F3
+bitmap:
+   x
+  x
+-
+ XXX      
+X   X       
+X   X       
+X   X       
+ XXX
+ 
+code: +00F2
+bitmap:
+ x
+  x
+-
+ XXX      
+X   X       
+X   X       
+X   X       
+ XXX
+ 
+code: +00F6
+bitmap:
+ x x
+-
+ XXX      
+X   X       
+X   X       
+X   X       
+ XXX
+
+code: +00FA
+bitmap:
+   x
+  x
+-
+X   X
+X   X
+X   X
+X   X
+ XXXX
+ 
+code: +00F9
+bitmap:
+ x
+  x
+-
+X   X
+X   X
+X   X
+X   X
+ XXXX
+ 
+code: +00FC
+bitmap:
+ x x
+-
+X   X
+X   X
+X   X
+X   X
+ XXXX
+
+ 
+ 

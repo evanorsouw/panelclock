@@ -1,0 +1,2 @@
+..\..\tools\fontcompiler\bin\Release\net8.0\fontcompiler.exe fonts\fixedfont.txt data\fixedfont.wmf
+..\..\tools\fontcompiler\bin\Release\net8.0\fontcompiler.exe fonts\fixedfont-condensed.txt data\fixedfont-condensed.wmf

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "fontparsers": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\projects\\fpgaclock\\sw\\esp32\\fonts\\8bitfont.txt \r\nD:\\projects\\fpgaclock\\sw\\esp32\\data\\fixfont.wmf "
+    }
+  }
+}
