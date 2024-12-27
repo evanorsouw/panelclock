@@ -22,7 +22,7 @@ void System::scanAPs()
 
 void System::connectWifi()
 {
-    _wifi->connect(_settings->WifiSid(), _settings->WifiPassword());
+    _wifi->connect(_settings->WifiSid().c_str(), _settings->WifiPassword().c_str());
 }
 
 timeinfo System::now() const

@@ -23,6 +23,10 @@ Color Color::navy = Color(0xFF000080);
 Color Color::brown = Color(0xFFA52A2A);
 Color Color::orangered = Color(0xFFFF4500);
 Color Color::skyblue = Color(0xFF87CEEB);
+Color Color::pastelred = Color(0xFF6961);
+Color Color::darkred = Color(0x8B0000);
+Color Color::darksalmon = Color(0xE9967A);
+Color Color::lightcoral = Color(0xF08080);
 
 Color Color::gradient(const Color &from, const Color &to, float p)
 {

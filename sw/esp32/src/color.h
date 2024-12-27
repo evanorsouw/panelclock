@@ -62,6 +62,10 @@ public:
     static Color brown;
     static Color orangered;
     static Color skyblue;
+    static Color pastelred;
+    static Color darkred;
+    static Color darksalmon;
+    static Color lightcoral;
 
     Color operator *(float v) 
     { 

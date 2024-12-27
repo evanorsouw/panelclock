@@ -13,15 +13,13 @@ class RenderBase
 {
 protected:
     ApplicationContext &_appctx;
-    Graphics &_graphics;
     Environment &_environment;
     System &_system;
     UserInput &_userinput;
 
 public:
-    RenderBase(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput) 
+    RenderBase(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput) 
         : _appctx(appdata)
-        , _graphics(graphics)
         , _environment(env) 
         , _system(sys)
         , _userinput(userinput)
@@ -39,7 +37,7 @@ public:
     void graduallyUpdateVariable(float &current, float targetLo, float targetHi, float speed);
 
     virtual void init() {}
-    virtual void render() {}
+    virtual void render(Graphics &_graphics) {}
     virtual bool interact() { return false; }
 };
 

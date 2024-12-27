@@ -31,6 +31,7 @@ private:
     QueueHandle_t _hDisplayQueue;
     int _iShowScreen;
     uint64_t _totaltime;
+    int _fpsInterval;
     uint64_t _totalrendertime;
     uint64_t _totaldisplaytime;
     int _rendercount;

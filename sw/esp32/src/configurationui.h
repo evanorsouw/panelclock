@@ -60,6 +60,7 @@ private:
     float _configYBase;
     float _selectionYBase;
     std::vector<configline> _configs;
+    int _inextReaderUpdate;
     bool _updating;
     bool _exitConfig;
     timeinfo _lastEditTime;
@@ -68,9 +69,9 @@ private:
     float _rollXOffset;
 
 public:
-    ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput);
+    ConfigurationUI(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput);
 
-    void render();
+    void render(Graphics& graphics);
     bool interact();
     void init();
 
@@ -102,7 +103,7 @@ private:
     KeyPress getKeyPress();
     bool isEditTimeout();
     bool isTimeout();
-    const char *translate(const char *txt) const { return _system.translate(txt); }
+    const std::string &translate(const std::string &txt) const { return _system.translate(txt); }
     void generateWifiLine(configline &config);
     void generateWeatherLine(configline &config);
     void initEditRoll(configline  &config);

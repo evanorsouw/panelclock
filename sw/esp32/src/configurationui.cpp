@@ -9,74 +9,74 @@ std::vector<configchoice> ConfigurationUI::_languageChoices = {
     configchoice("fr", "francais")  
 };
 std::vector<configchoice> ConfigurationUI::_dstChoices = { 
-    configchoice("0", "standard"), 
-    configchoice("1", "daylight saving") 
+    configchoice("0", ENG_STANDARD_TIME), 
+    configchoice("1", ENG_DAYLIGHT_SAVING) 
 };
 std::vector<configchoice> ConfigurationUI::_bootscreenChoices = { 
-    configchoice("0", "no bootscreen"), 
-    configchoice("1", "show bootscreen") 
+    configchoice("0", ENG_NO_BOOTSCREEN), 
+    configchoice("1", ENG_BOOTSCREEN) 
 };
 std::vector<configchoice> ConfigurationUI::_secondhandChoices = { 
-    configchoice("0", "snap"), 
-    configchoice("1", "smooth") 
+    configchoice("0", ENG_OPTION_SNAP), 
+    configchoice("1", ENG_OPTION_SMOOTH) 
 };
 std::vector<configchoice> ConfigurationUI::_flipDisplayChoices = { 
-    configchoice("0", "usbdown"), 
-    configchoice("1", "usbup") 
+    configchoice("0", ENG_USBDOWN), 
+    configchoice("1", ENG_USBUP) 
 };
 
-ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
-    : RenderBase(appdata, graphics, env, sys, userinput)
+ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput)
+    : RenderBase(appdata, env, sys, userinput)
 {
-    _font = appdata.fontdate();    
+    _font = appdata.fontSettings();    
 
-    addConfig("DST", 
+    addConfig(ENG_DST, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyDST, _dstChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyDST, _dstChoices); });
-    addConfig("year", 
+    addConfig(ENG_YEAR, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
         [this](configline& c, bool init){ return updateYear(c, init); });
-    addConfig("date", 
-        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false))); }, 
+    addConfig(ENG_DATE, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false)).c_str()); }, 
         [this](configline& c, bool init){ return updateDate(c, init); });
-    addConfig("time", 
+    addConfig(ENG_TIME, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
         [this](configline& c, bool init){ return updateTime(c, init); });
-    addConfig("ip", 
+    addConfig(ENG_IP, 
         [this](configline& c){ generateWifiLine(c); },
         nullptr);
-    addConfig("wifi", 
-        [this](configline& c){ strcpy(c.value,_system.settings().WifiSid()); }, 
+    addConfig(ENG_WIFI, 
+        [this](configline& c){ strcpy(c.value,_system.settings().WifiSid().c_str()); }, 
         [this](configline& c, bool init){ return updateWifiSid(c, init); },
         [this](configline& c){ _system.connectWifi(); });
-    addConfig("pass", 
-        [this](configline& c){ strcpy(c.value,_system.settings().WifiPassword()); }, 
+    addConfig(ENG_PASS, 
+        [this](configline& c){ strcpy(c.value,_system.settings().WifiPassword().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWifiPwd); },
         [this](configline& c){ _system.connectWifi(); });
-    addConfig("lang", 
+    addConfig(ENG_LANG, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyLanguage, _languageChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyLanguage, _languageChoices); });
-    addConfig("key", 
-        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveKey()); }, 
+    addConfig(ENG_KEY, 
+        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveKey().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveKey); },
         [this](configline& c){ _environment.update(); });
-    addConfig("loc", 
-        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveLocation()); }, 
+    addConfig(ENG_WEERLIVE_LOC, 
+        [this](configline& c){ strcpy(c.value,_system.settings().WeerliveLocation().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveLocation); },
         [this](configline& c){ _environment.update(); });
-    addConfig("weer", 
+    addConfig(ENG_WEERLIVE_WEATHER, 
         [this](configline& c){ generateWeatherLine(c); },
         nullptr);
-    addConfig("boot", 
+    addConfig(ENG_BOOT, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyBootscreen, _bootscreenChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyBootscreen, _bootscreenChoices); });
-    addConfig("sec", 
+    addConfig(ENG_SEC, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });
-    addConfig("Flip", 
+    addConfig(ENG_FLIP, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
-    addConfig("exit", 
+    addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });   
 }
@@ -91,10 +91,17 @@ void ConfigurationUI::init()
     _exitConfig = false;
     _lastEditTime = _system.now();
     _iEditIndex = -1;
+    _inextReaderUpdate = 0;
     selectConfig(0);
+
+    for (auto &config: _configs)
+    {
+        if (config.reader)
+            config.reader(config);
+    }
 }
 
-void ConfigurationUI::render()
+void ConfigurationUI::render(Graphics &graphics)
 {
     auto white = Color::white * _appctx.intensity();
     auto darkgray = Color(16,16,16) * _appctx.intensity();
@@ -104,19 +111,20 @@ void ConfigurationUI::render()
     auto labelwidth = 0.0f;
     for(auto &config : _configs)
     {
-        auto info = _font->textsize(translate(config.label));
+        auto info = _font->textsize(translate(config.label).c_str());
         labelwidth = std::max(labelwidth, info.dx);
     }
 
-    auto margin = 2.0f;
+    auto margin = 1.0f;
     auto xvalues = labelwidth + margin * 2;
 
     // draw selection line background
     auto x = _updating ? xvalues : 0.0;
-    auto dx = 128 - x;
-    _graphics.rect(x, _selectionYBase - _configYBase, dx, _font->height(), darkred);
+    auto dx = graphics.dx() - x;
+    graphics.rect(x, _selectionYBase - _configYBase, dx, _font->height(), darkred);
 
     // draw visible configs lines
+    auto view = graphics.view(xvalues, 0, graphics.dx() - xvalues, graphics.dy(), true);
     for (auto i=0; i<_configs.size(); ++i)
     {
         auto &config = _configs[i];
@@ -124,21 +132,19 @@ void ConfigurationUI::render()
         auto yb = yt + _font->height();
         auto color = config.updater ? white : lime;
 
-        if (yb < 0 || yt >= 64)
+        if (yb < 0 || yt >= view.dy())
             continue;
 
-        auto y = yt + _font->height() + _font->descend() - 2;
+        auto y = yt + _font->height() + _font->descend();
 
         // draw label
-        //_graphics.clearcliparea();
-        _graphics.text(_font, margin, y, translate(config.label), white);
-        //_graphics.setcliparea(irect(xvalues, 0, 128, 64));
+        graphics.text(_font, margin, y, translate(config.label).c_str(), white);
 
         // draw value
         if (i != _selectedLine || _iEditIndex < 0)
         {            
-            auto x = xvalues + config._xScrollOffset;           
-            x = _graphics.text(_font, x, y, config.value, color);
+            auto x = config._xScrollOffset;
+            x = view.text(_font, x, y, config.value, color);
             switch (config._xScrollState)
             {
             case ScrollState::Begin:
@@ -150,14 +156,14 @@ void ConfigurationUI::render()
                 }
                 break;
             case ScrollState::Scrolling:
-                if (x < 128)
+                if (x < view.dx())
                 {
                     config._xScrollState = ScrollState::End;
                     starttimer(config._scrolldelay);
                 }
                 else
                 {
-                    config._xScrollOffset -= std::min(2.0f, (float)elapsed(config._scrolldelay));
+                    config._xScrollOffset -= std::min(1.0f, (float)elapsed(config._scrolldelay/5));
                 }
                 break;
             case ScrollState::End:
@@ -171,7 +177,7 @@ void ConfigurationUI::render()
         }
     }
 
-    // draw textual editing interface
+    // draw textual editing interface (vertical character column)
     if (_iEditIndex >= 0)
     {
         auto neditchars = strlen(_editChars);
@@ -192,15 +198,15 @@ void ConfigurationUI::render()
             {
                 xroll = x;
                 x += _rollXOffset;
-                _graphics.rect(x, 0, _font->sizex(), 64, darkgray);
-                _graphics.line(x, 0, x, 64, 0.5, white);
-                _graphics.line(x + _font->sizex() - 1, 0, x + _font->sizex() - 1, 64, 0.5f, white);
+                graphics.rect(x, 0, _font->sizex(), 64, darkgray);
+                graphics.line(x, 0, x, 64, 0.5, white);
+                graphics.line(x + _font->sizex() - 1, 0, x + _font->sizex() - 1, 64, 0.5f, white);
                 x += _font->sizex() - _rollXOffset;
-                targetXScrollOffset = config._xScrollOffset + std::min(0.0f, 128 - x);
+                targetXScrollOffset = config._xScrollOffset + std::min(0.0f, graphics.dx() - x);
             }
             else
             {
-                x = _graphics.text(_font, x, y,  c, white);
+                x = graphics.text(_font, x, y,  c, white);
             }            
             if (c == 0 || c == AcceptChar)
                 break;
@@ -223,15 +229,15 @@ void ConfigurationUI::render()
             auto dy = _font->sizey();
             if (_editChars[iroll] == AcceptChar)
             {
-                _graphics.triangle(x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, lime);
-                _graphics.triangle(x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, lime);
+                graphics.triangle(x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, lime);
+                graphics.triangle(x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, lime);
             }
             else
             {
                 auto w = _font->charsize(_editChars[iroll]).dx;
                 y = yt + _font->height() + _font->descend() - 2;
                 auto xc = x + (_font->sizex() - w) / 2;
-                _graphics.text(_font, xc, y, _editChars[iroll], white);
+                graphics.text(_font, xc, y, _editChars[iroll], white);
             }
             yt += _font->height();
             iroll = (iroll + 1) % neditchars;
@@ -240,20 +246,19 @@ void ConfigurationUI::render()
         graduallyUpdateVariable(_rollXOffset, 0, 2);
         graduallyUpdateVariable(config._xScrollOffset, targetXScrollOffset, 2);
     }
-    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - 64 + _font->height(), _selectedLine * _font->height(), 2);
-    graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 2);
-    //_graphics.clearcliparea();
+    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - 64 + _font->height(), _selectedLine * _font->height(), 0.5);
+    graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 0.5);
 }
 
 bool ConfigurationUI::interact()
 {
-    for (auto i=0; i<_configs.size(); i++)
     {
-        auto &config = _configs[i];
-        if (config.reader && (!_updating || i != _selectedLine))
+        auto &config = _configs[_inextReaderUpdate];
+        if (config.reader && (!_updating || _inextReaderUpdate != _selectedLine))
         {
-            config.reader(_configs[i]);
+            config.reader(config);
         }
+        _inextReaderUpdate = (_inextReaderUpdate + 1) % _configs.size();
     }
 
     auto &config = _configs[_selectedLine];
@@ -403,7 +408,7 @@ bool ConfigurationUI::updateDate(configline& config, bool init)
         }
 
         now.setDate(now.year(), month, mday);
-        snprintf(config.value, sizeof(config.value),  "%02d %s", now.mday(), translate(now.monthName(false)));
+        snprintf(config.value, sizeof(config.value),  "%02d %s", now.mday(), translate(now.monthName(false)).c_str());
         
         if (!editing)
         {
@@ -495,11 +500,11 @@ bool ConfigurationUI::updateWifiSid(configline& config, bool init)
 
 void ConfigurationUI::generateSettingLine(configline& config, const char *settingKey, const std::vector<configchoice> choices) const
 {
-    auto store = _system.settings().get(settingKey)->asstring();
+    auto store = _system.settings().get(settingKey)->asstring().c_str();
     auto it = std::find_if(choices.begin(), choices.end(), [&](const configchoice &c) { return !strcmp(c.store, store); } );
     if (it == choices.end())
         it = choices.begin();
-    snprintf(config.value, sizeof(config.value), "%s", translate(it->english));
+    snprintf(config.value, sizeof(config.value), "%s", translate(it->english).c_str());
 }
 
 bool ConfigurationUI::updateSettingFreeText(configline& config, bool init, const char *settingkey)
@@ -564,7 +569,7 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
 {
     if (init)
     {
-        auto store = _system.settings().get(settingKey)->asstring();
+        auto store = _system.settings().get(settingKey)->asstring().c_str();
         for (int i=0; i<choices.size(); ++i)
         {
             if (!strcmp(choices[i].store, store))
@@ -593,7 +598,7 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
 
         idx = (idx + choices.size()) % choices.size();
         config.setpoint = idx;
-        snprintf(config.value, sizeof(config.value), "%s", translate(choices[idx].english));
+        snprintf(config.value, sizeof(config.value), "%s", translate(choices[idx].english).c_str());
     }
     return editing;
 }
@@ -650,16 +655,16 @@ void ConfigurationUI::generateWifiLine(configline& config)
         return;
     }
 
-    auto step = (_system.now().msticks() / 400) % 4;
+    auto step = (_system.now().msticks() / 300) % 4;
     char dots[5] = "    ";
     dots[step] = '.';
     if (_system.wifiScanning()) 
     {
-        snprintf(config.value, sizeof(config.value), "%s%s(%d)", translate("scanning"), dots, _system.nAPs());
+        snprintf(config.value, sizeof(config.value), "%s%s(%d)", translate(ENG_SCANNING).c_str(), dots, _system.nAPs());
     }
     else if (_system.wifiConnecting()) 
     {
-        snprintf(config.value, sizeof(config.value), "%s%s", translate("connecting"), dots);
+        snprintf(config.value, sizeof(config.value), "%s%s", translate(ENG_CONNECTING).c_str(), dots);
     }
     else
     {
@@ -671,18 +676,18 @@ void ConfigurationUI::generateWeatherLine(configline& config)
 {
     if (!_system.wifiConnected())
     {
-        snprintf(config.value, sizeof(config.value), "%s", translate("no internet"));
+        snprintf(config.value, sizeof(config.value), "%s", translate(ENG_NO_INTERNET).c_str());
     }
     else if (_environment.isupdating())
     {
         auto step = (_system.now().msticks() / 400) % 4;
         char dots[5] = "    ";
         dots[step] = '.';
-        snprintf(config.value, sizeof(config.value), "%s%s", translate("updating"), dots);
+        snprintf(config.value, sizeof(config.value), "%s%s", translate(ENG_UPDATING).c_str(), dots);
     }
     else if (_environment.valid())
     {
-        auto location = translate("somewhere");
+        auto location = translate("somewhere").c_str();
         if (_environment.location().isValid() && _environment.location().value() != "")
         {
             location = _environment.location().value().c_str();

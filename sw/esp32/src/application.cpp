@@ -6,36 +6,61 @@
 #include <esp_timer.h>
 
 #include "application.h"
+#include "xy.h"
 
 #define PI M_PI
 
-Application::Application(ApplicationContext &appdata, Graphics &graphics, Environment &env, System &sys, UserInput &userinput)
-    : RenderBase(appdata, graphics, env, sys, userinput)
+Application::Application(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput)
+    : RenderBase(appdata, env, sys, userinput)
 {
     _weatherIntensity = 0.0f;
+    _stripSegments.push_back(dateSegment());
+    _stripSegments.push_back(separatorSegment());
+    _stripSegments.push_back(temperatureSegment());
+    _stripSegments.push_back(separatorSegment());
+    _stripSegments.push_back(windangleSegment());
+    _stripSegments.push_back(windspeedSegment());
+    _stripSegments.push_back(separatorSegment());
 }
 
 void Application::init()
 {
+    _iSegment = 0;
+    _segmentOffset = 0;
 }
 
-void Application::render()
+void Application::render(Graphics& graphics)
 {
-    auto now = _system.now();
+    auto now = _system.now();   
+    auto agesec = (now.msticks() - _environment.lastupdate().msticks()) / 1000;        
+    if (_environment.valid())
+    {
+        graduallyUpdateVariable(_weatherIntensity, 1.0f, 0.05f);
+    }
+    else 
+    {
+        if (agesec < 15 * 60)
+        {
+            graduallyUpdateVariable(_weatherIntensity, 0.4f, 0.05f);
+        }
+        else
+        {
+            graduallyUpdateVariable(_weatherIntensity, 0.0f, 0.05f);
+        }
+    }
 
     if (_system.settings().OnePanel())
     {
-        drawClock(1, 1, 48);
-        drawTimeOnePanel(now);
-
-        auto g = _graphics.view(4,4,56,56,true);
-        g.triangle(-10,-20,20,80,96,120,Color::green);
+        drawClock(graphics, 1, 1, 46);
+        drawTimeOnePanel(graphics, now);
+        drawWeatherOnePanel(graphics);
+        drawSegments(graphics);
     }
     else
     {
-        drawClock(1, 1, 62);
-        drawDateTimeTwoPanel(now);
-        drawWeather();
+        drawClock(graphics, 1, 1, 62);
+        drawDateTimeTwoPanel(graphics, now);
+        drawWeatherTwoPanel(graphics);
     }
 }
 
@@ -69,7 +94,7 @@ bool Application::interact()
     return false;   // stay in normal clock-mode
 }
 
-void Application::drawClock(float x, float y, float diameter)
+void Application::drawClock(Graphics& graphics, float x, float y, float diameter)
 {
     auto color = Color::white * _appctx.intensity();
     auto colorsecond = Color::red * _appctx.intensity();
@@ -79,22 +104,22 @@ void Application::drawClock(float x, float y, float diameter)
     // draw 5 minute ticks
     for (int i=0; i< 12; ++i)
     {
-        drawLineFromCenter(cx, cy, diameter, i / 12.0f, 0.9f, 1.0f, diameter / 40, color);
+        drawLineFromCenter(graphics, cx, cy, diameter, i / 12.0f, 0.9f, 1.0f, diameter / 40, color);
     }
 
     // draw center dot
-    _graphics.text(_appctx.fontIcons4(), cx-2, cy+1, "0", color);
+    graphics.text(_appctx.fontIconsXS(), cx-2, cy+1, "0", color);
 
     // draw hands
     auto hours = drawtime() / (12 * 3600000.0f);
-    drawLineFromCenter(cx, cy, diameter, hours, 0.2f, 0.6f, diameter / 20, color);
+    drawLineFromCenter(graphics, cx, cy, diameter, hours, 0.2f, 0.6f, diameter / 20, color);
     auto minutes = (drawtime() % 3600000) / 3600000.0f;
-    drawLineFromCenter(cx, cy, diameter, minutes, 0.2f, 0.8f, diameter / 20, color);
+    drawLineFromCenter(graphics, cx, cy, diameter, minutes, 0.2f, 0.8f, diameter / 20, color);
     
     if(_system.settings().SmoothSecondHand())
     {
         auto seconds = (drawtime() % 60000) / 60000.0f;
-        drawLineFromCenter(cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
+        drawLineFromCenter(graphics, cx, cy, diameter, seconds, 0.1f, 0.9f, diameter / 60, colorsecond);
     }
     else
     {
@@ -106,11 +131,11 @@ void Application::drawClock(float x, float y, float diameter)
             _lasttime = second;
             angle += 0.0015;
         }
-        drawLineFromCenter(cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
+        drawLineFromCenter(graphics, cx, cy, diameter, angle, 0.1f, 0.9f, diameter / 60, colorsecond);
     }
 }
 
-void Application::drawTimeOnePanel(const timeinfo &now)
+void Application::drawTimeOnePanel(Graphics& graphics, const timeinfo &now)
 {
     auto color = Color::white * _appctx.intensity();
     char buf1[20], buf2[20];
@@ -122,19 +147,19 @@ void Application::drawTimeOnePanel(const timeinfo &now)
 
     auto x = 64 - std::max(sizeh.dx, sizem.dx) - 1;
     auto y = _appctx.fonttimeLarge()->ascend() - 2;
-    _graphics.text(_appctx.fonttimeLarge(), x, y, buf1, color);
+    graphics.text(_appctx.fonttimeLarge(), x, y, buf1, color);
     y += _appctx.fonttimeLarge()->ascend() - 1;
 
-    _graphics.text(_appctx.fonttimeLarge(), x, y, buf2, color);
+    graphics.text(_appctx.fonttimeLarge(), x, y, buf2, color);
     y += _appctx.fonttimeLarge()->ascend() - 2;
 
     snprintf(buf1, sizeof(buf2), "%02d", now.sec());
     auto size = _appctx.fonttimeSmall()->textsize(buf1);
     x = 64 - size.dx - 1;
-    _graphics.text(_appctx.fonttimeSmall(), x, y, buf1, color);
+    graphics.text(_appctx.fonttimeSmall(), x, y, buf1, Color::white);
 }
 
-void Application::drawDateTimeTwoPanel(const timeinfo &now)
+void Application::drawDateTimeTwoPanel(Graphics& graphics, const timeinfo &now)
 {
     auto color = Color::white * _appctx.intensity();
     char buf[40];
@@ -142,7 +167,7 @@ void Application::drawDateTimeTwoPanel(const timeinfo &now)
     snprintf(buf, sizeof(buf), "%02d", now.sec());
     auto sizesec = _appctx.fonttimeSmall()->textsize(buf);
     auto xtim = 127 - sizesec.dx - 1;
-    _graphics.text(_appctx.fonttimeSmall(),
+    graphics.text(_appctx.fonttimeSmall(),
         xtim, 
         _appctx.fonttimeSmall()->ascend() - 1, 
         buf, color);
@@ -152,7 +177,7 @@ void Application::drawDateTimeTwoPanel(const timeinfo &now)
     auto sizehm = _appctx.fonttimeLarge()->textsize(buf);
     auto ybase = _appctx.fonttimeLarge()->ascend() - 2;
     xtim -= sizehm.dx + 2;
-    _graphics.text(_appctx.fonttimeLarge(),
+    graphics.text(_appctx.fonttimeLarge(),
         xtim, 
         ybase, 
         buf, color);
@@ -161,41 +186,26 @@ void Application::drawDateTimeTwoPanel(const timeinfo &now)
     txt[0] = std::toupper(txt[0]);
     auto size = _appctx.fontdate()->textsize(txt.c_str());
     ybase += size.dy - 1;
-    _graphics.text(_appctx.fontdate(),
+    graphics.text(_appctx.fontdate(),
         127 - size.dx - 1, 
         ybase, 
         txt.c_str(), color);
 
-    auto month = _system.translate(now.monthName(false));
+    auto month = _system.translate(now.monthName(false)).c_str();
     snprintf(buf, sizeof(buf), "%d %c%s", now.mday(), std::toupper(month[0]), month+1);
     size = _appctx.fontdate()->textsize(buf);
     ybase += size.dy;
-    _graphics.text(_appctx.fontdate(),
+    graphics.text(_appctx.fontdate(),
         127 - size.dx - 1, 
         ybase, 
         buf, color);
 }
 
-void Application::drawWeather()
+void Application::drawWeatherTwoPanel(Graphics &graphics)
 {
+    int const WeatherImageDx = 32;
+    int const WeatherImageDy = 26;    
     char buf1[20], buf2[20];
-
-    auto agesec = (_system.now().msticks() - _environment.lastupdate().msticks()) / 1000;        
-    if (_environment.valid())
-    {
-        graduallyUpdateVariable(_weatherIntensity, 1.0f, 0.05f);
-    }
-    else 
-    {
-        if (agesec < 15 * 60)
-        {
-            graduallyUpdateVariable(_weatherIntensity, 0.4f, 0.05f);
-        }
-        else
-        {
-            graduallyUpdateVariable(_weatherIntensity, 0.0f, 0.05f);
-        }
-    }
 
     auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
     auto lightblue = Color(0x33, 0xcc, 0xff) * (_appctx.intensity() * _weatherIntensity);
@@ -207,7 +217,7 @@ void Application::drawWeather()
     auto ybase = 50.2f;
     if(windspeed.isValid())
     {
-        _graphics.text(_appctx.fontweatherL(),
+        graphics.text(_appctx.fontweatherL(),
             xms, 
             ybase, 
             buf1, white);
@@ -224,55 +234,64 @@ void Application::drawWeather()
 
     if (windchill.isValid())
     {
-        _graphics.text(_appctx.fontweatherS(),
+        graphics.text(_appctx.fontweatherS(),
             128 - WeatherImageDx - 1 - size2.dx,
             ybase - 2,
             buf2, white);
     }
     if (temperature.isValid())
     {
-        _graphics.text(_appctx.fontweatherL(),
+        graphics.text(_appctx.fontweatherL(),
             128 - WeatherImageDx - 1 - size2.dx - size1.dx, 
             ybase,
             buf1, white);
     }
-    auto arrowsize = 14;
-    auto x = xms - arrowsize;
-    auto y = 36;
-
-    auto windangle = _environment.windangle();
-    if (windangle.isValid())
+    if (_environment.windangle().isValid())
     {
-        auto pw = arrowsize / 21.0f;
-        auto d = arrowsize - pw - 1.0f;
-        auto cx = x + (pw + d) / 2.0f;
-        auto cy = y + (pw + d) / 2.0f;
-        auto angle = windangle.value() + phase(9000,true) * phase(800,true) * 0.1;
-        auto x1 = cx + d * 0.5f * std::cos(angle);
-        auto y1 = cy + d * 0.5f * std::sin(angle);
-        auto x3 = cx - d * 0.25f * std::cos(angle);
-        auto y3 = cy - d * 0.25f * std::sin(angle);
-        auto x2 = cx - d * 0.5f * std::cos(angle - 0.6f);
-        auto y2 = cy - d * 0.5f * std::sin(angle - 0.6f);
-        auto x4 = cx - d * 0.5f * std::cos(angle + 0.6f);
-        auto y4 = cy - d * 0.5f * std::sin(angle + 0.6f);
-
-        _graphics.triangle(x1, y1, x3, y3, x4, y4, lightblue);
-        _graphics.triangle(x1, y1, x2, y2, x3, y3, white);
+        drawWindArrow(graphics, xms - 14, 36, 14, _environment.windangle().value(), lightblue, white);
     }
-    drawWeatherImage();
+    auto view = graphics.view(graphics.dx() - WeatherImageDx, graphics.dy() - WeatherImageDy, WeatherImageDx, WeatherImageDy, true);
+    drawWeatherImage(view, false);
 }
 
-void Application::drawWeatherImage()
+void Application::drawWeatherOnePanel(Graphics &graphics)
+{
+    auto view = graphics.view(40, 30, 24, 24, true);
+    drawWeatherImage(view, true);
+}
+
+void Application::drawWindArrow(Graphics& graphics, int x, int y, int size, float angle, Color col1, Color col2)
+{
+    auto pw = size / 21.0f;
+    auto d = size - pw - 1.0f;
+    auto cx = x + (pw + d) / 2.0f;
+    auto cy = y + (pw + d) / 2.0f;
+    angle += phase(9000,true) * phase(800,true) * 0.1f;
+    auto x1 = cx + d * 0.5f * std::cos(angle);
+    auto y1 = cy + d * 0.5f * std::sin(angle);
+    auto x3 = cx - d * 0.25f * std::cos(angle);
+    auto y3 = cy - d * 0.25f * std::sin(angle);
+    auto x2 = cx - d * 0.5f * std::cos(angle - 0.6f);
+    auto y2 = cy - d * 0.5f * std::sin(angle - 0.6f);
+    auto x4 = cx - d * 0.5f * std::cos(angle + 0.6f);
+    auto y4 = cy - d * 0.5f * std::sin(angle + 0.6f);
+
+    graphics.triangle(x1, y1, x3, y3, x4, y4, col1);
+    graphics.triangle(x1, y1, x2, y2, x3, y3, col2);
+}
+
+void Application::drawWeatherImage(Graphics& graphics, bool onepanel)
 {
     auto weather = _environment.weather();
     if (!weather.isValid())
         return;
 
-    float px = 128 - WeatherImageDx;
-    float py = 64 - WeatherImageDy;
-    float pdx = WeatherImageDx;
-    float pdy = WeatherImageDy;
+    float x = 0;
+    float y = 0;
+    float dx = graphics.dx();
+    float dy = graphics.dy();
+    float oneox = onepanel ? 2 : 0;
+    fxy xy;
 
     auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
     auto darkgray = Color::darkgray * (_appctx.intensity() * _weatherIntensity);
@@ -283,63 +302,63 @@ void Application::drawWeatherImage()
     default:
         break;
     case weathertype::clouded:      // bewolkt    
-        draw2Clouds(px, py, pdx, pdy, white, black);
+        draw2Clouds(graphics, x + oneox, y, dx - oneox, dy, white, black);
         break;
     case weathertype::lightning:    // bliksem    
-        px = drawCloud(px, py-2, pdx, pdy, white, darkgray);
-        drawLightning(px, py, pdx, pdy, white);
+        xy = drawCloud(graphics, x + oneox, y-2, dx - oneox, dy, white, darkgray);
+        drawLightning(graphics, xy.x, xy.y, white);
         break;
     case weathertype::showers:      // buien    
-        px = drawCloud(px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(px, py, pdx, pdy, true, white);
+        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
+        drawRain(graphics, xy.x, xy.y, true, white);
         break;
     case weathertype::hail:         // hagel    
-        drawCloud(px, py - 2, pdx, pdy, white, darkgray);
+        drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
         // todo:
         break;
     case weathertype::partlycloudy: // halfbewolkt    
     case weathertype::cloudy:       // lichtbewolkt    
-        drawSun(px-4, py-2, pdx, pdy);
-        px = drawCloud(px, py, pdx, pdy, white, black);
+        drawSun(graphics, x + 4 + oneox, y-2, dx - oneox, dy);
+        drawCloud(graphics, x + oneox, y, dx - oneox, dy, white, black);
         break;
     case weathertype::cloudyrain:   // halfbewolkt_regen    
-        drawSun(px-4, py-2, pdx, pdy);
-        px = drawCloud(px, py, pdx, pdy, white, black);
-        drawRain(px, py, pdx, pdy, false, white);
+        drawSun(graphics, x + 4 + oneox, y - 2, dx - oneox, dy);
+        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, black);
+        drawRain(graphics, xy.x, xy.y, false, white);
         break;
     case weathertype::clearnight:   // helderenacht    
-        drawStars(px, py, pdx, pdy);
-        drawMoon(px, py, pdx, pdy, white);
+        drawStars(graphics, x, y, dx, dy);
+        drawMoon(graphics, x + oneox, y, dx - oneox, dy, white);
         break;
     case weathertype::fog:          // mist    
-        drawCloud(px, py - 3, pdx, pdy, lightgray, darkgray);
-        drawFog(px, py, pdx, pdy, white);
+        drawCloud(graphics, x + oneox, y - 3, dx - oneox, dy, lightgray, darkgray);
+        drawFog(graphics, x, y, dx, dy, white);
         break;
     case weathertype::cloudednight: // nachtbewolkt    
-        drawMoon(px, py, pdx, pdy, white);
-        drawCloud(px, py, pdx, pdy, white, darkgray);
+        drawMoon(graphics, x + oneox, y, dx - oneox, dy, white);
+        drawCloud(graphics, x + oneox, y, dx - oneox, dy, white, darkgray);
         break;
     case weathertype::nightfog:     // nachtmist
-        drawMoon(px, py, pdx, pdy, lightgray);
-        drawFog(px, py, pdx, pdy, white);
+        drawMoon(graphics, x + oneox, y, dx - oneox, dy, lightgray);
+        drawFog(graphics, x, y, dx, dy, white);
         break;
     case weathertype::rain:         // regen    
-        px = drawCloud(px, py - 2, pdx, pdy, white, darkgray);
-        drawRain(px, py, pdx, pdy, false, white);
+        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
+        drawRain(graphics, xy.x, xy.y, false, white);
         break;
     case weathertype::snow:         // sneeuw
-        drawSnow(px, py, pdx, pdy, white);
+        drawSnow(graphics, x, y, dx, dy, white);
         break;
     case weathertype::sunny:        // zonnig    
-        drawSun(px, py, pdx, pdy);
+        drawSun(graphics, x + oneox, y, dx, dy);
         break;
     case weathertype::heavyclouds:  // zwaarbewolkt
-        draw2Clouds(px, py, pdx, pdy, white, darkgray);
+        draw2Clouds(graphics, x + oneox, y, dx - oneox, dy, white, darkgray);
         break;
     }
 }
 
-void Application::drawLineFromCenter(float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)
+void Application::drawLineFromCenter(Graphics& graphics, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color)
 {
     auto angle = PI * 2.0f * index - PI / 2.0f;
     auto radius = diameter / 2.0f;
@@ -349,10 +368,10 @@ void Application::drawLineFromCenter(float x, float y, float diameter, float ind
     auto y1 = y + sin(angle) * o1;
     auto x2 = x + cos(angle) * o2;
     auto y2 = y + sin(angle) * o2;
-    _graphics.line(x1, y1, x2, y2, thickness, color);
+    graphics.line(x1, y1, x2, y2, thickness, color);
 }
 
-void Application::drawSun(float x, float y,  float width, float height)
+void Application::drawSun(Graphics& graphics, float x, float y,  float width, float height)
 {
     auto size = std::min(width, height);
     auto p1 = phase(20000,false);
@@ -391,55 +410,66 @@ void Application::drawSun(float x, float y,  float width, float height)
         auto angle = PI / 4 * i + p1 * PI;
         auto dx = max * std::cos(angle);
         auto dy = max * std::sin(angle);
-        _graphics.line(cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
+        graphics.line(cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
     }
 
-    auto s = _appctx.fontIcons9()->textsize("0");
-    _graphics.text(_appctx.fontIcons9(), cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
+    auto s = _appctx.fontIconsS()->textsize("0");
+    graphics.text(_appctx.fontIconsS(), cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
 }
 
-void Application::draw2Clouds(float x, float y, float width, float height, Color pen, Color fill)
+void Application::draw2Clouds(Graphics& graphics, float x, float y, float width, float height, Color pen, Color fill)
 {
-    auto cx = x + phase(21000, true) * (width - 18);
-    auto cy = y + (height - 18) / 2 + 18 - 4 + phase(17000, true) * 3;
-    _graphics.text(_appctx.fontIcons18(), cx, cy, "B", fill);
-    _graphics.text(_appctx.fontIcons18(), cx, cy, "A", pen);
+    auto font = _appctx.fontIconsL();
+    auto cx = x + phase(21000, true) * (width - font->sizex());
+    auto cy = y + (height - font->sizey()) / 2 + font->sizey() - 4 + phase(17000, true) * 3;
+    graphics.text(font, cx, cy, "B", fill);
+    graphics.text(font, cx, cy, "A", pen);
 
-    cx = x + phase(22000, true, 3000) * (width - 22);
-    cy = y + (height - 22) / 2 + 22 + 2 + phase(19000, true) * 2;
-    _graphics.text(_appctx.fontIcons22(), cx, cy, "B", fill);
-    _graphics.text(_appctx.fontIcons22(), cx, cy, "A", pen);
+    font = _appctx.fontIconsXL();
+    cx = x + phase(22000, true, 3000) * (width - font->sizex());
+    cy = y + (height - font->sizey()) / 2 + font->sizey() + 2 + phase(19000, true) * 2;
+    graphics.text(font, cx, cy, "B", fill);
+    graphics.text(font, cx, cy, "A", pen);
 }
 
-float Application::drawCloud(float x, float y, float dx, float dy, Color pen, Color fill)
+fxy Application::drawCloud(Graphics& graphics, float x, float y, float dx, float dy, Color pen, Color fill)
 {
-    auto tx = x + phase(21000, true, 3000) * (dx - 22);
-    auto ty = y + (dy - 22) / 2 + 22 - 2 + phase(19000, true) * 4;
-    _graphics.text(_appctx.fontIcons22(), tx, ty, "B", fill);
-    _graphics.text(_appctx.fontIcons22(), tx, ty, "A", pen);
-    return tx;
+    auto font = _appctx.fontIconsXL();
+    auto tx = x + phase(21000, true, 3000) * (dx - font->sizex());
+    auto ty = y + (dy - font->sizey()) / 2 + font->sizey() - 2 + phase(19000, true) * 4;
+    graphics.text(font, tx, ty, "B", fill);
+    graphics.text(font, tx, ty, "A", pen);
+    return fxy(tx, ty - font->sizey() * 0.7f);
 }
 
-void Application::drawLightning(float x, float y, float dx, float dy, Color color)
+void Application::drawLightning(Graphics& graphics, float x, float y, Color color)
 {
-    auto tx = x - 5 + std::rand() % 10;
-    auto ty = y + (dy - 18) /2 + 18 + std::rand() % 6;
+    y -= 2;
+    auto wcloud = _appctx.fontIconsXL()->textsize("B").dx;
+    auto font = _appctx.fontIconsL();
+    auto wlightning = font->textsize("F").dx;
+    auto tx = x + std::rand() % ((int)(wcloud - wlightning));
+    auto ty = y + (graphics.dy() - font->sizey()) / 2 + font->sizey() + std::rand() % 6;
 
-    if (std::rand() % 1000 < 10)
+    if (std::rand() % 1000 < 20)
     {
-        _graphics.text(_appctx.fontIcons18(), tx, ty, "F", color);
+        graphics.text(font, tx, ty, "F", color);
     }
 }
 
-void Application::drawRain(float x, float y, float w, float h, bool heavy, Color color)
+void Application::drawRain(Graphics& graphics, float x, float y, bool heavy, Color color)
 {
+    y -= 2;
+    x += 2;
+    auto wcloud = _appctx.fontIconsXL()->textsize("B").dx;
+    auto h = graphics.dy() - y;
     auto pw = heavy ? 1.8f : 1.0f;
     auto ph = phase(heavy ? 800 : 2000, false);
     for (auto i = 0; i < (heavy ? 4 : 3); ++i)
     {
-        auto xo = (i + 0.5) * (heavy ? 0.17f : 0.22f) * w;
+        auto xo = (i + 0.5) * (heavy ? 0.17f : 0.22f) * wcloud;
         auto yo = 0.4f * h;
-        auto dx = -w * (heavy ? 0.15f : 0.05f);
+        auto dx = -wcloud * (heavy ? 0.15f : 0.05f);
         auto dy = h - yo - pw;
         ph = (ph + i * 0.2f);
         while (ph > 1.0f) ph -= 1.0f;
@@ -474,19 +504,21 @@ void Application::drawRain(float x, float y, float w, float h, bool heavy, Color
             x4 = xo + dx * (ph - 0.5f - length);
             y4 = yo + dy * (ph - 0.5f - length);
         }
-        _graphics.line(x+x1, y+y1, x+x2, y+y2, pw, color);
-        _graphics.line(x+x3, y+y3, x+x4, y+y4, pw, color);
+        graphics.line(x+x1, y+y1, x+x2, y+y2, pw, color);
+        graphics.line(x+x3, y+y3, x+x4, y+y4, pw, color);
     }
 }
 
-void Application::drawMoon(float x, float y, float dx, float dy, Color color)
+void Application::drawMoon(Graphics& graphics, float x, float y, float dx, float dy, Color color)
 {
-    auto tx = x + (dx - 18) / 2 -3 + 6 * phase(25000, true, 3000);
-    auto ty = y + (dy - 22) / 2 + 18 - 2;
-    _graphics.text(_appctx.fontIcons18(), tx, ty, "D", color);
+    auto font = _appctx.fontIconsL();
+    auto size = font->textsize("D");
+    auto tx = x + (dx - size.dx) / 2 -3 + 6 * phase(25000, true, 3000);
+    auto ty = y + (dy - size.dy) / 2 + size.dy - 2;
+    graphics.text(font, tx, ty, "D", color);
 }
 
-Color Application::starIntensity(float phase, float when)
+Color Application::starIntensity(Graphics& graphics, float phase, float when)
 {
     float dist = 0.02f;
     auto d = std::abs(phase - when);
@@ -497,22 +529,22 @@ Color Application::starIntensity(float phase, float when)
     return Color(d,d,d) * _weatherIntensity;
 }
 
-void Application::drawStars(float x, float y, float dx, float dy)
+void Application::drawStars(Graphics& graphics, float x, float y, float dx, float dy)
 {
     auto p = phase(20000, false);
-    _graphics.set(x + 0.10 * dx, y + 01, starIntensity(p, 0.01));
-    _graphics.set(x + 0.40 * dx, y + 03, starIntensity(p, 0.04));
-    _graphics.set(x + 0.70 * dx, y + 24, starIntensity(p, 0.02));
-    _graphics.set(x + 0.30 * dx, y + 07, starIntensity(p, 0.12));
-    _graphics.set(x + 0.90 * dx, y + 13, starIntensity(p, 0.32));
-    _graphics.set(x + 0.20 * dx, y + 18, starIntensity(p, 0.48));
-    _graphics.set(x + 0.15 * dx, y + 05, starIntensity(p, 0.39));
-    _graphics.set(x + 0.60 * dx, y + 17, starIntensity(p, 0.23));
-    _graphics.set(x + 0.80 * dx, y + 04, starIntensity(p, 0.78));
-    _graphics.set(x + 0.50 * dx, y + 21, starIntensity(p, 0.79));
+    graphics.set(x + 0.10 * dx, y + 01, starIntensity(graphics, p, 0.01));
+    graphics.set(x + 0.40 * dx, y + 03, starIntensity(graphics, p, 0.04));
+    graphics.set(x + 0.70 * dx, y + 24, starIntensity(graphics, p, 0.02));
+    graphics.set(x + 0.30 * dx, y + 07, starIntensity(graphics, p, 0.12));
+    graphics.set(x + 0.90 * dx, y + 13, starIntensity(graphics, p, 0.32));
+    graphics.set(x + 0.20 * dx, y + 18, starIntensity(graphics, p, 0.48));
+    graphics.set(x + 0.15 * dx, y + 05, starIntensity(graphics, p, 0.39));
+    graphics.set(x + 0.60 * dx, y + 17, starIntensity(graphics, p, 0.23));
+    graphics.set(x + 0.80 * dx, y + 04, starIntensity(graphics, p, 0.78));
+    graphics.set(x + 0.50 * dx, y + 21, starIntensity(graphics, p, 0.79));
 }
 
-void Application::drawFog(float x, float y, float dx, float dy, Color color)
+void Application::drawFog(Graphics& graphics, float x, float y, float dx, float dy, Color color)
 {
     auto pw = 0.8f;
     auto phase1 = phase(37000, true);
@@ -521,15 +553,15 @@ void Application::drawFog(float x, float y, float dx, float dy, Color color)
     auto y2 = y1 + 2;
     auto y3 = y2 + 2;
     auto y4 = y3 + 2;
-    _graphics.line(x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, color);
-    _graphics.line(x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, color);
-    _graphics.line(x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, color);
-    _graphics.line(x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, color);
-    _graphics.line(x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, color);
-    _graphics.line(x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
+    graphics.line(x + dx * (0.2f + 0.2f * phase1), y1,   x + dx * (0.7f + 0.05f * phase1), y1, pw, color);
+    graphics.line(x + dx * (0.2f + 0.05f * phase2), y2,  x + dx * (0.55f + 0.1f * phase1), y2, pw, color);
+    graphics.line(x + dx * (0.65f + 0.05f * phase1), y2, x + dx * (0.9f - 0.1f * phase2), y2, pw, color);
+    graphics.line(x + dx * (0.25f - 0.05f * phase1), y3, x + dx * (0.4f + 0.15f * phase2), y3, pw, color);
+    graphics.line(x + dx * (0.45f + 0.25f * phase2), y3, x + dx * (0.95f - 0.2f * phase1), y3, pw, color);
+    graphics.line(x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
 }
 
-void Application::drawSnow(float x, float y, float dx, float dy, Color color)
+void Application::drawSnow(Graphics& graphics, float x, float y, float dx, float dy, Color color)
 {
     auto n1 = 19;
     auto n2 = 10;
@@ -553,7 +585,150 @@ void Application::drawSnow(float x, float y, float dx, float dy, Color color)
 
         if (p > 0.0f && p < 1.0f)
         {
-            _graphics.rect(x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
+            graphics.rect(x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
         }
     }
 }
+
+void Application::drawSegments(Graphics& graphics)
+{
+    auto height = 14;
+    auto x = (int)(-_segmentOffset);
+    auto offset = -x - _segmentOffset;
+    auto i = _iSegment;
+
+    auto widthview = graphics.view(0, graphics.dy() - height, graphics.dx(), height, true);
+
+    while (x < graphics.dx())
+    {
+        auto &segment = _stripSegments[i];
+        auto width = segment.width(widthview);
+        auto view = graphics.view(x, graphics.dy() - height, width, height,  true);
+        segment.render(view, offset);
+        x += width;
+        if (++i == _stripSegments.size())
+        {
+            i = 0;
+        }
+    }
+
+    _segmentOffset += 0.5;
+    if (_segmentOffset >= _stripSegments[_iSegment].width(widthview))
+    {
+        _segmentOffset = 0;
+        if (++_iSegment == _stripSegments.size())
+        {
+            _iSegment = 0;
+        }
+    }
+}
+
+Application::stripsegment Application::temperatureSegment()
+{
+    auto buf1 = new char[40];
+    auto buf2 = new char[40];
+    auto font1 = _appctx.fontweatherL();
+    auto font2 = _appctx.fontweatherS();
+    return stripsegment {
+        .width = [this,buf1,buf2,font1,font2](Graphics& graphics) { 
+            *buf2 = 0;
+            if (_environment.temperature().isValid())
+            {
+                sprintf(buf1, "%.1f°", _environment.temperature().value());
+                if (_environment.windchill().isValid())
+                {
+                    sprintf(buf2, "(%.1f)", _environment.windchill().value());
+                }
+            }
+            else
+            {
+                sprintf(buf1, "--°");
+            }
+            return font1->textsize(buf1).dx + font2->textsize(buf2).dx;
+        },
+        .render = [this,buf1,buf2,font1,font2](Graphics& graphics, float ox) {
+            auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
+            ox += graphics.text(font1, ox, font1->ascend(), buf1, white);
+            graphics.text(font2, ox, font2->ascend() + 1, buf2, white);
+        }
+    };
+}
+
+Application::stripsegment Application::windangleSegment()
+{
+    auto buf = new char[40];
+    return stripsegment {
+        .width = [this,buf](Graphics& graphics) { return graphics.dy() + 1; },
+        .render = [this,buf](Graphics& graphics, float ox) {
+            auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
+            auto lightblue = Color(0x33, 0xcc, 0xff) * (_appctx.intensity() * _weatherIntensity);
+            drawWindArrow(graphics, 0, 0, graphics.dy(), _environment.windangle().value(),  white, lightblue);
+        }
+    };
+}
+
+Application::stripsegment Application::windspeedSegment()
+{
+    auto buf = new char[40];
+    auto font = _appctx.fontweatherL();
+    return stripsegment {
+        .width = [this,buf,font](Graphics& graphics) { 
+            if (_environment.windspeed().isValid())
+            {
+                sprintf(buf, "%.1f ms", _environment.windspeed().value());
+            }
+            else
+            {
+                sprintf(buf, "-- ms");
+            }
+            return font->textsize(buf).dx;
+        },
+        .render = [this,buf,font](Graphics& graphics, float ox) {
+            auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
+            graphics.text(font, ox, font->ascend(), buf, white);
+        }
+    };
+}
+
+Application::stripsegment Application::dateSegment()
+{
+    auto buf = new char[40];
+    auto font = _appctx.fontweatherL();
+    return stripsegment {
+        .width = [this,buf,font](Graphics& graphics) { 
+            auto now = _system.now();   
+            sprintf(buf, "%s %d %s %d", 
+                _system.translate(now.dayOfWeek(false)).c_str(),
+                now.mday(),
+                _system.translate(now.monthName(false)).c_str(),
+                now.year());
+            return font->textsize(buf).dx;
+        },
+        .render = [this,buf,font](Graphics& graphics, float ox) {
+            auto white = Color::white * _appctx.intensity();
+            graphics.text(font, ox, font->ascend(), buf, white);
+        }
+    };
+}
+
+Application::stripsegment Application::separatorSegment()
+{
+    return stripsegment {
+        .width = [=](Graphics& graphics) { return 9; },
+        .render = [this](Graphics& graphics, float ox) {
+            auto darkgray = Color::darkgray * _appctx.intensity();
+            graphics.rect(4 + ox, 4, 1, graphics.dy()-8, darkgray);
+        }
+    };
+}
+
+Application::stripsegment Application::colorSegment(int dx, Color color)
+{
+    return stripsegment {
+        .width = [=](Graphics& graphics) { return dx; },
+        .render = [=](Graphics& graphics, float ox) {
+            graphics.rect(ox, 0, graphics.dx(), graphics.dy(), color);
+        }
+    };
+}
+

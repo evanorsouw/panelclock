@@ -41,19 +41,19 @@ public:
     bool OnePanel() const { return get(KeyOnePanel)->asbool(); }
     void OnePanel(bool value) { return get(KeyOnePanel)->set(value); }
 
-    const char *Language() const { return get(KeyLanguage)->asstring(); }
+    const std::string &Language() const { return get(KeyLanguage)->asstring(); }
     void Language(const char *value) { return get(KeyLanguage)->set(value); }
 
-    const char *WifiSid() const { return get(KeyWifiSid)->asstring(); }
+    const std::string &WifiSid() const { return get(KeyWifiSid)->asstring(); }
     void WifiSid(const char *value) { return get(KeyWifiSid)->set(value); }
 
-    const char *WifiPassword() const { return get(KeyWifiPwd)->asstring(); }
+    const std::string &WifiPassword() const { return get(KeyWifiPwd)->asstring(); }
     void WifiPassword(const char *value) { return get(KeyWifiPwd)->set(value); }
 
-    const char *WeerliveKey() const { return get(KeyWeerliveKey)->asstring(); }
+    const std::string &WeerliveKey() const { return get(KeyWeerliveKey)->asstring(); }
     void WeerliveKey(const char *value) { return get(KeyWeerliveKey)->set(value); }
 
-    const char *WeerliveLocation() const { return get(KeyWeerliveLocation)->asstring(); }
+    const std::string &WeerliveLocation() const { return get(KeyWeerliveLocation)->asstring(); }
     void WeerliveLocation(const char *value) { return get(KeyWeerliveLocation)->set(value); }
 
     bool DST() const { return get(KeyDST)->asbool(); }

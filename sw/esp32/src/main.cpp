@@ -82,8 +82,9 @@ void app_main()
     FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
     FpgaConfig.configure();
 
-    auto settings = new AppSettings();
-    auto panel = new LedPanel(128, 64, *spi, settings->get(settings->KeyFlipDisplay));
+    auto settings = new AppSettings();    
+    auto panel = new LedPanel(settings->OnePanel() ? 64 : 128, 64, *spi, settings->get(settings->KeyFlipDisplay));
+
     auto graphics = new Graphics(panel->dx(), panel->dy());
     auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA);
     i2c->start();
@@ -94,9 +95,9 @@ void app_main()
 
     auto appdata = new ApplicationContext(*settings);
 
-    auto appui = new Application(*appdata, *graphics, *environment, *system, *userinput);
-    auto bootui = new BootAnimations(*appdata, *graphics, *environment, *system, *userinput);
-    auto configui = new ConfigurationUI(*appdata, *graphics, *environment, *system, *userinput);
+    auto appui = new Application(*appdata, *environment, *system, *userinput);
+    auto bootui = new BootAnimations(*appdata, *environment, *system, *userinput);
+    auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
     auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc);
 

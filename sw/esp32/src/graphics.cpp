@@ -5,9 +5,12 @@
 # include <fcntl.h>
 # include <sys/stat.h>
 
+#include "bitmapfont.h"
 #include "esp_heap_caps.h"
 #include "esp_system.h"
 #include "graphics.h"
+#include "truetypefont.h"
+#include "utf8encoding.h"
 
 #if 0
   #define LOG(...) printf(__VA_ARGS__)
@@ -17,33 +20,35 @@
 
 Graphics::Graphics(int dx, int dy, bool origin)
 {
+    _dx = 0;
+    _dy = 0;
     _rasterizeMask = new Bitmap(dx, dy, 1);
 }
 
 void Graphics::linkBitmap(Bitmap *bitmap)
 {
-    assert( bitmap->dx() == dx() && bitmap->dy() == dy());
+    assert( bitmap->dx() == _rasterizeMask->dx() && bitmap->dy() == _rasterizeMask->dy());
     _drawingBitmap = bitmap;
-    init(0, 0, bitmap->dx(), bitmap->dy(), true);
+    init(0, 0, bitmap->dx(), bitmap->dy(), true, true);
 }
 
-void Graphics::init(int x, int y, int dx, int dy, bool origin)
+void Graphics::init(int x, int y, int dx, int dy, bool setoriginatxy, bool cliptoregion)
 {
     dx = std::max(0, dx);
     dy = std::max(0, dy);
     _stride = _drawingBitmap->stride();
 
-    if (origin)
+    if (setoriginatxy && cliptoregion)
     {   // provided (x,y) in bitmap are (0,0) for this Graphics instance
         // drawing is clipped to (dx,dy) or until bitmap edge
         _sx = std::max(0, -x);
         _sy = std::max(0, -y);
         _ptr = _drawingBitmap->getptr(x, y);
-        _ex = std::min(std::min(x, 0) + dx, this->dx() - x);
-        _ey = std::min(std::min(y, 0) + dy, this->dy() - y);
-        //printf("x,y=%d,%d dx,dy=%d,%d => sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, _sx, _sy, _ex, _ey);
+        _ex = std::min(dx, _rasterizeMask->dx() - x);
+        _ey = std::min(dy, _rasterizeMask->dy() - y);
+        //printf("x,y=%d,%d dx,dy=%d,%d => dx=%d,dy=%d, sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, dx, dy, _sx, _sy, _ex, _ey);
     }
-    else
+    else if (!setoriginatxy && cliptoregion)
     {   // provided (x,y) in bitmap are (x,y) for this graphics instance
         // drawing is clipped to (dx, dy)
         _sx = std::max(0, x);
@@ -51,7 +56,31 @@ void Graphics::init(int x, int y, int dx, int dy, bool origin)
         _ptr = _drawingBitmap->getptr(0, 0);
         _ex = std::min(std::max(_sx, x + dx), _drawingBitmap->dx());
         _ey = std::min(std::max(_sy, y + dy), _drawingBitmap->dy());
+        //printf("x,y=%d,%d dx,dy=%d,%d => sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, _sx, _sy, _ex, _ey);
     }
+    else if (setoriginatxy && !cliptoregion)
+    {   // provided (x,y) in bitmap are (0,0) for this Graphics instance
+        // drawing is clipped to the parents region
+        _sx = std::max(0, -x);
+        _sy = std::max(0, -y);
+        _ptr = _drawingBitmap->getptr(x, y);
+        _ex = _sx + _rasterizeMask->dx();
+        _ey = _sy + _rasterizeMask->dy();
+        //printf("x,y=%d,%d dx,dy=%d,%d => dx=%d,dy=%d, sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, dx, dy, _sx, _sy, _ex, _ey);
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
+Graphics Graphics::offset(int x, int y)
+{
+    Graphics view;
+    view._drawingBitmap = _drawingBitmap;
+    view._rasterizeMask = _rasterizeMask;
+    view.init(x, y, dx(), dy(), false, false);
+    return view;
 }
 
 Graphics Graphics::view(int x, int y, int dx, int dy, bool origin)
@@ -59,7 +88,7 @@ Graphics Graphics::view(int x, int y, int dx, int dy, bool origin)
     Graphics view;
     view._drawingBitmap = _drawingBitmap;
     view._rasterizeMask = _rasterizeMask;
-    view.init(x,y, dx, dy, origin);
+    view.init(x, y, dx, dy, origin, true);
     return view;
 }
 
@@ -72,7 +101,7 @@ void Graphics::add(int x, int y, const Color color, uint8_t alpha)
         pt[1] = clip(pt[1] + color.g());
         pt[2] = clip(pt[2] + color.b());
     }
-    else
+    else if (alpha > 0)
     {
         pt[0] = clip(pt[0] + ((color.r() * alpha) >> 8));
         pt[1] = clip(pt[1] + ((color.g() * alpha) >> 8));
@@ -167,9 +196,6 @@ void Graphics::rectscanline(float x1, float x2, int y, float ay, Color color, Mo
 
 void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Color color)
 {
-    if (y1<0 || y2<0 || y1 > 64 || y2 > 64)
-        return;     // !!! TODO: use proper clipping
-        
     auto dx = x2 - x1;
     auto dy = y2 - y1;
 
@@ -209,6 +235,19 @@ void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Col
 
 float Graphics::text(Font *font, float x, float y, const char *txt, Color color, Mode mode)
 {    
+    if (font->getFontType() == Font::FontType::TTF)
+        return textTTF((TrueTypeFont*)font, x, y, txt, color, mode);
+    return textWMF((BitmapFont*)font, x, y, txt, color, mode);
+}
+
+float Graphics::text(Font *font, float x, float y, char c, Color color, Mode mode)
+{    
+    char buf[2] = { c, 0 };
+    return text(font, x, y, buf, color, mode);
+}
+
+float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, Color color, Mode mode)
+{
     SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
     auto sft = font->getSFT();
 
@@ -258,10 +297,48 @@ float Graphics::text(Font *font, float x, float y, const char *txt, Color color,
     return x;
 }
 
-float Graphics::text(Font *font, float x, float y, char c, Color color, Mode mode)
-{    
-    char buf[2] = { c, 0 };
-    return text(font, x, y, buf, color, mode);
+float Graphics::textWMF(BitmapFont *font, float x, float y, const char *txt, Color color, Mode mode)
+{
+    int codepoint;
+    int idx = 0;
+    while((codepoint = UTF8Encoding::nextCodepoint(txt, idx)) != 0)
+    {
+        auto glyph = font->getGlyph(codepoint);
+        if (glyph == nullptr)
+            continue;
+
+        auto sx = 0;
+        auto sy = 0;
+        auto tx = (int)std::floor(x);
+        auto ty = (int)std::floor(y - glyph->height - glyph->baselineOffset);
+        auto dx = (int)std::floor(glyph->width);
+        auto dy = (int)std::floor(glyph->height);
+
+        if (cliprange(sx, tx, dx, _sx, _ex) && cliprange(sy, ty, dy, _sy, _ey))
+        {
+            auto stride = (glyph->width + 7) / 8;
+            auto pb = &glyph->glyphData1 + sy * stride + sx / 8;
+
+            for (auto iy=0; iy < dy; iy++)
+            {
+                for (auto ix=0; ix < dx; ++ix)
+                {
+                    auto ib = sx + ix;
+                    auto bit = pb[ib/8] & (0x80 >> (ib&7));
+                    if (bit != 0)
+                    {
+                        mode == Mode::Set
+                        ? set(tx + ix, ty + iy, color)
+                        : add(tx + ix, ty + iy, color, 255);
+                    }
+                }
+                pb += stride;
+            }
+        }
+        x += glyph->width + font->tracking();
+    }
+
+    return x;
 }
 
 bool Graphics::cliprange(int &srcx, int &tgtx, int &tgtdx, int min, int max)
@@ -423,7 +500,9 @@ void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl
     float x = std::max((float)_sx, xl);
     float ex = std::min((float)_ex, xr);
     auto ptr = _rasterizeMask->getptr(0, y);
-    LOG("tri-scanline x=%d,y=%d,dx=%.2f => p=%p\n", (int)x, (int)y, xr-xl, ptr);
+    if (x > ex)
+        return;
+    LOG("tri-scanline x=%d,y=%d,dx=%.2f => p=%p\n", (int)x, (int)y, ex-x, ptr);
     do
     {
         float xnext = MIN(xr, TRUNC(x + 1));
@@ -454,10 +533,10 @@ void Graphics::clearRasterizedMask(int xl, int yt, int xr, int yb)
     clip(yt, 0, _rasterizeMask->dy() - 1);
     clip(yb, 0, _rasterizeMask->dy() - 1);
 
-    for (auto y=yt; y<=yb; ++y)
+    for (auto y=yt; y<yb; ++y)
     {
         auto ptr = _rasterizeMask->getptr(xl, y);
-        std::memset(ptr, 0, xr - xl + 1);
+        std::memset(ptr, 0, xr - xl);
     }
 }
 
@@ -468,10 +547,10 @@ void Graphics::mergeRasterizedMask(const Color color, irect area)
     clip(area.y1, 0, _rasterizeMask->dy() - 1);
     clip(area.y2, 0, _rasterizeMask->dy() - 1);
 
-    for (int y=area.y1; y <= area.y2; ++y)
+    for (int y=area.y1; y < area.y2; ++y)
     {
         auto palpha = _rasterizeMask->getptr(0, y);
-        for (int x=area.x1; x <= area.x2; ++x)
+        for (int x=area.x1; x < area.x2; ++x)
         {
             set(x, y, color, palpha[x]);
         }

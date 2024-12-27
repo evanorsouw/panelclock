@@ -21,10 +21,10 @@ public:
     void set(int v) { _value = std::to_string(v); }
     void set(bool v) { _value = v ? "1" : "0"; }
 
-    std::string name() const { return _name; }
+    const std::string &name() { return _name; }
     bool asbool() const { return _value == "1"; }
     int asint() const { return atoi(_value.c_str()); }
-    const char *asstring() const { return _value.c_str(); }
+    const std::string &asstring() { return _value; }
 };
 
 class Settings

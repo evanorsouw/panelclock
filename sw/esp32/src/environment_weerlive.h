@@ -51,6 +51,8 @@ public:
     optional<float> windspeed() const { return _values.windspeed; };
     optional<float> airpressure() const { return _values.airpressure; };
 
+    void _setweathertype(int type) { _values.weather.set((weathertype)type); }
+
 private:
     bool handleJson(const JsonEntry &json);
     weathertype parseWeather(const char *image);

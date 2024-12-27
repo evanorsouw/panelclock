@@ -49,7 +49,7 @@ bool Settings::saveSettings()
     for(auto setting : _settings)
     {
         auto name = setting.first.c_str();
-        auto value = setting.second->asstring();
+        auto value = setting.second->asstring().c_str();
         printf("write setting '%s':'%s'\n", name, value);
         nvs_set_str(handle, name, value);
     }

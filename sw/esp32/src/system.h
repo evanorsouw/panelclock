@@ -33,7 +33,7 @@ public:
     const char *IPAddress() const { return _wifi->ip(); }
     timeinfo now() const;
     void now(const timeinfo &now);
-    const char *translate(const char *in) { return _translator->translate(in); }
+    const std::string &translate(const std::string &in) { return _translator->translate(in); }
     AppSettings &settings() const { return *_settings; }
 
 private:

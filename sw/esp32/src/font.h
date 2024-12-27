@@ -3,57 +3,41 @@
 #define _FONT_H_
 
 #include <map>
-#include "schrift.h"
+#include <string>
 
 struct textinfo
 {
+    textinfo() : dx(0.0f), dy(0.0f) {}
+    textinfo(float ix, float iy) : dx(ix), dy(iy) {}
     float dx;
     float dy;
 };
 
-struct fontinfo
-{
-    SFT_Font *font;
-    int usecount;
-};
-
 class Font
 {
-friend class Graphics;
+protected:
+    enum class FontType { TTF, WMF };
 
 private:
-    static std::map<const char *, fontinfo> _loadedFonts;
-    const char *_fontname;
-    SFT _sft;
-    float _dx;
-    float _dy;
-    SFT_LMetrics _lmetrics;
+    static std::map<std::string, Font*> _loadedFonts;
+    FontType _type;
 
-    Font(const char *fontname, SFT sft, SFT_LMetrics lmetrics, int dx, int dy) 
-        : _fontname(fontname)
-        , _sft(sft)
-        , _dx(dx)
-        , _dy(dy)
-        , _lmetrics(lmetrics) 
-        {}
+protected:
+    Font(FontType type) : _type(type) {}
 
 public:
     static Font *getFont(const char *font, float dx, float dy);
+    virtual ~Font() {}
+    FontType getFontType() const { return _type; }
 
-    virtual ~Font();
+    virtual textinfo textsize(const char *txt, int n = 0) const = 0;
+    virtual textinfo charsize(char c) const = 0;
 
-    textinfo textsize(const char *txt, int n = 0);
-    textinfo charsize(char c);
-
-    float sizex() const { return _dx; }
-    float sizey() const { return _dy; }
-    float ascend() const { return _lmetrics.ascender; }
-    float descend() const { return _lmetrics.descender; }
-    float height() const { return ascend() - descend(); }
-
-private:
-    SFT getSFT() { return _sft; }
-    static SFT_Font *loadfont(const char *fontname);
+    virtual float sizex() const = 0;
+    virtual float sizey() const = 0;
+    virtual float ascend() const = 0;
+    virtual float descend() const = 0;
+    virtual float height() const = 0;
 };
 
 #endif

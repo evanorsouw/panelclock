@@ -23,6 +23,7 @@ ApplicationRunner::ApplicationRunner(
     _appctx.starttimer(_totalrendertime);
     _appctx.starttimer(_totaldisplaytime);
     _rendercount = 0;
+    _fpsInterval = 10000;
 
     _iShowScreen = 0;
 
@@ -108,21 +109,21 @@ void ApplicationRunner::stepGUI()
     switch (_mode)
     {
     case UIMode::Boot:
-        _bootui.render();
+        _bootui.render(_graphics);
         if (interact && _bootui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Entering);
         }
         break;
     case UIMode::DateTime:
-        _appui.render();
+        _appui.render(_graphics);
         if (interact && _appui.interact())
         {
             startMode(UIMode::Config, TransitionPhase::Leaving);
         }
         break;
     case UIMode::Config:
-        _configui.render();
+        _configui.render(_graphics);
         if (interact && _configui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);
@@ -160,16 +161,17 @@ void ApplicationRunner::monitorRefreshRate()
 {
     _rendercount++;
     auto elapsed = _appctx.elapsed(_totaltime);
-    if (elapsed > 10000)
+    if (elapsed > _fpsInterval)
     {
         _appctx.starttimer(_totaltime);
-        auto fps = _rendercount / 10.0f;
+        auto fps = _rendercount / (_fpsInterval / 1000.0f);
         auto prender = _totalrendertime * 100.0f / elapsed;
         auto pdisplay = _totaldisplaytime * 100.0f / elapsed;
 
         _rendercount = 0;
         _totaldisplaytime = 0;
         _totalrendertime = 0;
+        _fpsInterval = 10000;//std::min(_fpsInterval * 2, 10*60*1000);
         printf("%.1f fps, render=%.1f%%, display=%.1f%%\n", fps, prender, pdisplay);
     }
 }

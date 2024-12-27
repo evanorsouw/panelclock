@@ -9,6 +9,9 @@
 #include "color.h"
 #include "font.h"
 
+class TrueTypeFont;
+class BitmapFont;
+
 struct irect
 {
     irect () : irect(0,0,0,0) {}
@@ -30,6 +33,8 @@ class Graphics
 private:
     Bitmap *_drawingBitmap;
     Bitmap *_rasterizeMask;
+    int _dx;
+    int _dy;
     int _sx;    // start including
     int _sy;    // start including
     int _ex;    // end excluding
@@ -39,15 +44,28 @@ private:
 
 private:
     Graphics() {}
-    void init(int x, int y, int dx, int dy, bool origin);
+    void init(int x, int y, int dx, int dy, bool origin, bool clip);
 
 public:
     Graphics(int dx, int dy, bool origin=true);
 
-    int dx() const { return _rasterizeMask->dx(); }
-    int dy() const { return _rasterizeMask->dy(); }
+    int dx() const { return _ex - _sx; }
+    int dy() const { return _ey - _sy; }
     
     void linkBitmap(Bitmap *bitmap);
+    /// @brief get a graphics instance where (0,0) is moveed to a different location.
+    /// @param x offset for x
+    /// @param y offset for y
+    /// @return 
+    Graphics offset(int x, int y);
+    /// @brief get a clipped graphics instance for a specific region
+    /// @param x x coordinate for the region
+    /// @param y y coordinate for the region
+    /// @param dx width of the region
+    /// @param dy height of the region
+    /// @param origin when true, then the new instance has its (0,0) at (x,y), when false
+    ///        (0,0) remains the same, but the region is clipped.
+    /// @return a new clipped instance
     Graphics view(int x, int y, int dx, int dy, bool origin);
 
     void add(int x, int y, const Color color, uint8_t alpha);
@@ -67,6 +85,9 @@ private:
     void rectscanline(float x1, float x2, int y, float ay, const Color color, Mode mode = Mode::Set);
     void clearRasterizedMask(int xl, int yt, int xr, int yb);
     void mergeRasterizedMask(const Color color, irect area);
+
+    float textTTF(TrueTypeFont *font, float x, float y, const char *txt, Color color, Mode mode);
+    float textWMF(BitmapFont *font, float x, float y, const char *txt, Color color, Mode mode);
 
     void SWAP(float &a, float &b) { float tmp=a; a=b; b=tmp; }
     float MIN(float a, float b) { return a < b ? a : b; }

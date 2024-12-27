@@ -8,21 +8,21 @@
 
 enum class weathertype {
     unknown,
-    clouded,      // bewolkt    
-    lightning,    // bliksem    
-    showers,      // buien    
-    hail,         // hagel    
-    partlycloudy, // halfbewolkt    
-    cloudyrain,   // halfbewolkt_regen    
-    clearnight,   // helderenacht    
-    cloudy,       // lichtbewolkt    
-    fog,          // mist    
-    cloudednight, // nachtbewolkt    
-    nightfog,     // nachtmist
-    rain,         // regen    
-    snow,         // regen    
-    sunny,        // zonnig    
-    heavyclouds,  // zonnig
+    clouded,      // 1:bewolkt    
+    lightning,    // 2:bliksem    
+    showers,      // 3:buien    
+    hail,         // 4:hagel    
+    partlycloudy, // 5:halfbewolkt    
+    cloudyrain,   // 6:halfbewolkt_regen    
+    clearnight,   // 7:helderenacht    
+    cloudy,       // 8:lichtbewolkt    
+    fog,          // 9:mist    
+    cloudednight, // 10:nachtbewolkt    
+    nightfog,     // 11:nachtmist
+    rain,         // 12:regen    
+    snow,         // 13:sneeuw
+    sunny,        // 14:zonnig    
+    heavyclouds,  // 15:storm
 };
 
 template<class T>
@@ -34,7 +34,7 @@ private:
     
 public:
     void set(const T &value) { _value = value; _valid = true; }
-    void clear() { _valid = false; }
+    void clear() { _value = T(); _valid = false; }
     bool isValid() const { return _valid; }
     const T &value() const { return _value; }
 };
@@ -51,6 +51,9 @@ struct EnvironmentValues
     optional<float> windangle;
     optional<float> windspeed;
     optional<float> airpressure;
+
+    EnvironmentValues() { clear(); }
+    ~EnvironmentValues() {}
 
     void clear()
     {
@@ -89,6 +92,8 @@ struct Environment
     virtual optional<float> windangle() const = 0;        // radians
     virtual optional<float> windspeed() const = 0;        // ms/s
     virtual optional<float> airpressure() const = 0;      // mbar
+
+    virtual void _setweathertype(int type) = 0;
 };
 
 #endif
