@@ -46,12 +46,13 @@ public:
         {
             printf("%02x ", buf[i]);
         }
+        printf("rtc read time => ");
         printTod(_lastReadTod);
     }
 
     void setTime(tod *now)
     {
-        printf("rtc write time: ");
+        printf("rtc write time ");
         printTod(now);        
 
         _i2c->write(SLAVE_ADDR, 0, dec2bcd(now->sec));
@@ -90,7 +91,7 @@ private:
 
     void printTod(tod *now)
     {
-        printf(" => %04d-%02d-%02d %02d:%02d:%02d (wday:%d)\n", 
+        printf("%04d-%02d-%02d %02d:%02d:%02d (wday:%d)\n", 
             now->year, now->mon + 1, now->mday,
             now->hour, now->min, now->sec,
             now->wday);

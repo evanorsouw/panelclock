@@ -3,28 +3,99 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include "color.h"
 #include "environment_weerlive.h"
 #include "httpclient.h"
 
 static struct {
     const char *imageName;
-    weathertype type;
+    std::vector<WeatherLayer> layers;
 } weathertypes[] = {
-    { "bliksem", weathertype::lightning },
-    { "buien", weathertype::showers },
-    { "bewolkt", weathertype::clouded },
-    { "hagel", weathertype::hail },
-    { "halfbewolkt", weathertype::partlycloudy },
-    { "halfbewolkt_regen", weathertype::cloudyrain },
-    { "helderenacht", weathertype::clearnight },
-    { "lichtbewolkt", weathertype::cloudy },
-    { "mist", weathertype::fog },
-    { "wolkennacht", weathertype::cloudednight },
-    { "nachtmist", weathertype::nightfog },
-    { "regen", weathertype::rain },
-    { "sneeuw", weathertype::snow },
-    { "zonnig", weathertype::sunny },
-    { "zwaarbewolkt", weathertype::heavyclouds }
+    { "bliksem",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::CloudWithLightning, .oy=-3 }
+      }
+    },
+    { "wolkennacht",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Moon },
+        WeatherLayer { .icon = WeatherIcon::Cloud }
+      }
+    },
+    { "buien",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::CloudWithHeavyRain, .oy=-4 }
+      }
+    },
+    { "bewolkt",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Cloud, .color1 = Color(0,0,0), .oy=-4, .fontsize='l' },
+        WeatherLayer { .icon = WeatherIcon::Cloud, .oy=2, .phase1=22000, .phase1offset=3000, .phase2=19000 }
+      }
+    },
+    { "hagel",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::CloudWithHail, .color1=Color(0x203250), .color2=Color(0xDEF0F9), .oy=-4 },
+      }
+    },
+    { "halfbewolkt",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::SunWithRays, .ox=-3, .oy=-3 },
+        WeatherLayer { .icon = WeatherIcon::Cloud },
+      }
+    },
+    { "halfbewolkt_regen",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::SunWithRays, .ox=-3, .oy=-3 },
+        WeatherLayer { .icon = WeatherIcon::CloudWithLightRain, .oy=-2 },
+      }
+    },
+    { "helderenacht",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Stars },
+        WeatherLayer { .icon = WeatherIcon::Moon, .fontsize='l' }
+      }
+    },
+    { "lichtbewolkt",
+
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::SunWithRays, .ox=-3, .oy=-3 },
+        WeatherLayer { .icon = WeatherIcon::Cloud }
+      }
+    },
+    { "mist",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Cloud, .color2=Color(128,128,128), .oy=-4 },
+        WeatherLayer { .icon = WeatherIcon::Fog }
+      }
+    },
+    { "nachtmist",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Moon, .color1=Color(128,128,128), .fontsize='l' },
+        WeatherLayer { .icon = WeatherIcon::Fog }
+      }
+    },
+    { "regen",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::CloudWithLightRain, .oy=-3 },
+      }
+    },
+    { "sneeuw",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::SnowFlakes },
+      }
+    },
+    { "zonnig",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::SunWithRays },
+      }
+    },
+    { "zwaarbewolkt",
+      std::vector<WeatherLayer>{ 
+        WeatherLayer { .icon = WeatherIcon::Cloud, .color1 = Color(1,1,1) },
+        WeatherLayer { .icon = WeatherIcon::Cloud },
+      }
+    }
 };
 
 static struct {
@@ -49,9 +120,8 @@ static struct {
     { "OZO", 202.5 }
 };
 
-int EnvironmentWeerlive::update()
+void EnvironmentWeerlive::update()
 {
-    int nextAttempt = 10 * 60 * 1000;   // update every 10 minutes, that is the rate at which weerlive effectively updates.
     if (_updating)
     {
         printf("update weerlive ignore, already in progress\n");
@@ -66,7 +136,6 @@ int EnvironmentWeerlive::update()
         {
             printf("weather: no internet\n");
             _parsedValues.invalidReason = "no internet";
-            nextAttempt = 1 * 60 * 1000;
         }
         else
         {
@@ -82,45 +151,20 @@ int EnvironmentWeerlive::update()
                 snprintf(buf, sizeof(buf), "server response %d", result);
                 printf("weather: %s\n", buf);
                 _parsedValues.invalidReason = buf;
-                nextAttempt = 2 * 60 * 1000;
             }
             else
             {
                 _values = _parsedValues;        
-                printf("weather: ");
+                _values.print();
                 if (valid())
                 {
                     _lastupdate = _system->now();
-                    if (location().isValid())
-                        printf("location=%s ", location().value().c_str());
-                    if (temperature().isValid())
-                        printf("temp=%.1f ", temperature().value());
-                    if (windchill().isValid())
-                        printf("gtemp=%.1f ", windchill().value());
-                    if (windspeed().isValid())
-                        printf("windspeed=%.1f ", windspeed().value());
-                    if (windangle().isValid())
-                        printf("windangle=%.2f ", windangle().value());
-                    if (weather().isValid())
-                        printf("weather=%d ", (int)weather().value());
-                    if (airpressure().isValid())
-                        printf("airpressure=%.1f ", airpressure().value());
-                    if (sunrise().isValid())
-                        printf("up:%02d:%02d ", sunrise().value().tm_hour, sunrise().value().tm_min);
-                    if (sunset().isValid())
-                        printf("set:%02d:%02d ", sunset().value().tm_hour, sunset().value().tm_min);
-                    printf("\n");
-                }
-                else
-                {
-                    printf("error=%s\n", invalidReason().c_str());
                 }
             }
         }
         _values = _parsedValues;        
         _updating = false;
     }
-    return nextAttempt;
 }
 
 bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
@@ -211,14 +255,14 @@ tm EnvironmentWeerlive::parseTime(const char *s)
     return tm { 0 };
 }
 
-weathertype EnvironmentWeerlive::parseWeather(const char *image)
+std::vector<WeatherLayer> EnvironmentWeerlive::parseWeather(const char *image)
 {
     for (int i=0; i<(sizeof(weathertypes) / sizeof(weathertypes[0])); ++i)
     {
         if (!strcmp(image, weathertypes[i].imageName))
-            return weathertypes[i].type;
+            return weathertypes[i].layers;
     }
-    return weathertype::unknown;
+    return std::vector<WeatherLayer>();
 }
 
 float EnvironmentWeerlive::parseWindr(const char *r)

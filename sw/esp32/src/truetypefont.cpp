@@ -8,6 +8,7 @@
 #include <esp_heap_caps.h>
 
 #include "truetypefont.h"
+#include "utf8encoding.h"
 
 #if 0
   #define LOG(...) printf(__VA_ARGS__)
@@ -69,6 +70,8 @@ TrueTypeFont *TrueTypeFont::getFont(const char *fontname, float dx, float dy)
     printf("usecount for font %s: %d, height=%.1f, ascend=%.1f, descend=%.1f\n", 
         it->first, it->second.usecount, 
         font->height(), font->ascend(), font->descend());
+    SFT_GMetrics gmetrics;
+    sft_gmetrics(&sft, 0x20, &gmetrics);
 
     return font;
 }
@@ -131,32 +134,34 @@ SFT_Font *TrueTypeFont::loadFont(const char *fontname)
     return font;
 }
 
-textinfo TrueTypeFont::textsize(const char *txt, int n) const
+textinfo TrueTypeFont::textsize(const char *txt) const
 {
     textinfo size(0, _lmetrics.ascender - _lmetrics.descender);
 
-    if (n == 0) n = -1;
-    while (*txt && n-- != 0)
+    auto codepoint = 0;
+    auto i = 0;
+    while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
     {
         SFT_Glyph glyph;
-        sft_lookup(&_sft, *txt++, &glyph);
+        sft_lookup(&_sft, codepoint, &glyph);
         if (glyph == 0)
             continue;
 
-        SFT_GMetrics mtx;
-        sft_gmetrics(&_sft, glyph, &mtx);
+        SFT_GMetrics mtx = {0};
+        if (sft_gmetrics(&_sft, glyph, &mtx) == -1)
+            continue;
 
         size.dx += mtx.advanceWidth;
     }
     return size;
 }
 
-textinfo TrueTypeFont::charsize(char c) const
+textinfo TrueTypeFont::charsize(int codepoint) const
 {
     textinfo size(0, _lmetrics.ascender - _lmetrics.descender);
 
     SFT_Glyph glyph;
-    sft_lookup(&_sft, c, &glyph);
+    sft_lookup(&_sft, codepoint, &glyph);
     if (glyph != 0)
     {
         SFT_GMetrics mtx;

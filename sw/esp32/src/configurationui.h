@@ -6,7 +6,7 @@
 #include <functional>
 #include <esp_timer.h>
 
-#include "environment.h"
+#include "environmentselector.h"
 #include "font.h"
 #include "graphics.h"
 #include "renderbase.h"
@@ -22,19 +22,26 @@ struct configline
     {
         label = nullptr;
         value[0] = 0;
-        _xScrollState = ScrollState::Begin;
-        _xScrollOffset = 0;
-        _scrolldelay = 0;
+        xValueScrollState = ScrollState::Begin;
+        xValueScrollOffset = 0;
+        xValueScrollDelay = 0;
+        xLabelScrollState = ScrollState::Begin;
+        xLabelScrollOffset = 0;
+        xLabelScrollDelay = 0;
     }
     const char *label;
     char value[50];
-    std::function<void(configline &)> reader;
-    std::function<bool(configline &, bool)> updater;
-    std::function<void(configline &)> onexitaction;
+    std::function<void(configline&)> reader;
+    std::function<bool(configline&, bool)> updater;
+    std::function<bool(configline&)> visible;
+    std::function<void(configline&)> onexitaction;
     float setpoint;
-    float _xScrollOffset;
-    ScrollState _xScrollState;
-    uint64_t _scrolldelay;
+    float xLabelScrollOffset;
+    ScrollState xLabelScrollState;
+    uint64_t xLabelScrollDelay;
+    float xValueScrollOffset;
+    ScrollState xValueScrollState;
+    uint64_t xValueScrollDelay;
 };
 
 struct configchoice
@@ -49,12 +56,16 @@ private:
     static constexpr const char *_editChars = "\x01""0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ_ !?$@#%^&*()-+={}[]<>:;\"`~',./|\\";
     static const char AcceptChar = 0x01;
     static std::vector<configchoice> _languageChoices;
-    static std::vector<configchoice> _dstChoices;
+    static std::vector<configchoice> _tzChoices;
     static std::vector<configchoice> _bootscreenChoices;
     static std::vector<configchoice> _secondhandChoices;
     static std::vector<configchoice> _flipDisplayChoices;
+    static std::vector<configchoice> _timeModeChoices;
+    static std::vector<configchoice> _weatherChoices;
 
     Font *_font;
+    float _margin;
+    float _labelwidth;
     float _keySetLine;
     int _selectedLine;
     float _configYBase;
@@ -69,7 +80,7 @@ private:
     float _rollXOffset;
 
 public:
-    ConfigurationUI(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput);
+    ConfigurationUI(ApplicationContext &appdata, EnvironmentSelector &env, System &sys, UserInput &userinput);
 
     void render(Graphics& graphics);
     bool interact();
@@ -83,17 +94,26 @@ private:
     /// @param updater the optional lambda that is called when the config is in edit-mode. The init
     /// flags is true first call in a edit series abnd may be used for initialization.
     /// When updater is nullptr, the item becomes readonly.
+    /// @param visible optional lambda that is used to dynamically (e.g. based on other settings)
+    /// determine if this setting is visible or not.
+    /// When visible is nullptr, the setting is visible.
     /// @param onexitaction the optional lambda called when updating the config ends. can be used
-    /// to trigger bhaviour to take the new settings into account.
+    /// to trigger behaviour to take the new settings into account.
     void addConfig(const char *label,
         std::function<void(configline& cfg)> reader,
-        std::function<bool(configline& cfg, bool init)> updater,
+        std::function<bool(configline& cfg, bool init)> updater = nullptr,
+        std::function<bool(configline& cfg)> visible = nullptr,
         std::function<void(configline& cfg)> onexitaction = nullptr);
-        
+    configline& getConfig(int i);
+    int nConfigs();
+
+    void calculateLabelWidth();
+    void updateScrollState(ScrollState &scrollstate, float &scrolloffset, uint64_t &scrolldelay, bool endfits);
     void selectConfig(int i);
     bool updateWifiSid(configline &config, bool init);
     void generateSettingLine(configline &line, const char *settingKey, const std::vector<configchoice> choices) const;
     bool updateSettingFreeText(configline &config, bool init, const char *settingKey);
+    bool updateSettingInteger(configline &config, bool init, const char *settingKey, int min, int max);
     bool updateSettingChoices(configline &config, bool init, const char *settingKey, const std::vector<configchoice> &choices);
     bool updateYear(configline &config, bool init);
     bool updateDate(configline &config, bool init);
@@ -101,7 +121,7 @@ private:
     void repeatUpdateOnKey(int activateKey, int pressedKey, std::function<void(float)> handler);
     int getKey();
     KeyPress getKeyPress();
-    bool isEditTimeout();
+    bool isEditCancelled();
     bool isTimeout();
     const std::string &translate(const std::string &txt) const { return _system.translate(txt); }
     void generateWifiLine(configline &config);

@@ -9,7 +9,7 @@ class Color
 {
 private:
     union {
-        unsigned long argb;
+        uint32_t argb;
         struct {
             uint8_t b;
             uint8_t g;
@@ -19,8 +19,9 @@ private:
     } _color;
 
 public:
-    Color(const Color& rhs) { _color = rhs._color; }
-    Color(unsigned long argb) { _color.argb = argb; }
+    Color() { _color.argb = 0u; }
+    Color(const Color& rhs) = default;
+    Color(uint32_t argb) { _color.argb = argb; }
     Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
     {
         _color.cmp.r = r;
@@ -39,6 +40,8 @@ public:
     uint8_t b() const { return _color.cmp.b; }
     uint8_t a() const { return _color.cmp.a; }
     Color& a(uint8_t alpha) { _color.cmp.a = alpha; return *this; }
+
+    operator uint32_t() const { return _color.argb; }
 
     static Color transparant;
     static Color black;
@@ -66,6 +69,8 @@ public:
     static Color darkred;
     static Color darksalmon;
     static Color lightcoral;
+    static Color maya;
+    static Color azure;
 
     Color operator *(float v) 
     { 

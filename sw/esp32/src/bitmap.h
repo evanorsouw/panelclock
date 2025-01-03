@@ -10,7 +10,7 @@
 #include "color.h"
 #include "copyjob.h"
 #include "pixelsquare.h"
-#include <esp_heap_caps.h>
+#include "diagnostic.h"
 
 class LedPanel;
 
@@ -34,10 +34,7 @@ public:
         _bitmapsize = dy * _stride;
         _bitmap = (uint8_t*)malloc(_bitmapsize);
         printf("Bitmap(%d,%d,%d): allocated %d bytes @%p\n", dx, dy, bpp, _bitmapsize, _bitmap);
-
-        printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-        printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
-        printf("total free DMA: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+        Diagnostic::printmeminfo();
 
         assert( _bitmap != nullptr );
     }
@@ -58,9 +55,7 @@ public:
         printf("Bitmap: freed %d bytes\n", _bitmapsize);
         free(_bitmap);
         _bitmap = 0;
-
-        printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-        printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));    
+        Diagnostic::printmeminfo();
     }
 
     int stride() const { return _stride; }

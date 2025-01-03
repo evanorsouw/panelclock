@@ -251,11 +251,12 @@ float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, C
     SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
     auto sft = font->getSFT();
 
-    auto len = strlen(txt);
-    for (int i=0; i<len; ++i)
+    int codepoint;
+    int idx = 0;
+    while((codepoint = UTF8Encoding::nextCodepoint(txt, idx)) != 0)
     {
         SFT_Glyph glyph;
-        sft_lookup(&sft, txt[i], &glyph);
+        sft_lookup(&sft, codepoint, &glyph);
         if (glyph == 0)
             continue;
 

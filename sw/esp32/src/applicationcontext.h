@@ -23,8 +23,8 @@ private:
     Font *_fontWhiteMagic;
     Font *_fontweatherL;
     Font *_fontweatherS;
-    Font *_fontIconsXS;
     Font *_fontIconsS;
+    Font *_fontIconsM;
     Font *_fontIconsL;
     Font *_fontIconsXL;
     Font *_fontSettings;
@@ -35,27 +35,27 @@ public:
     {
         if (_settings.OnePanel())
         {
-            _fonttimeSmall = Font::getFont("arial-bold-digits.ttf", 9, 10);
-            _fonttimeLarge = Font::getFont("arial-bold-digits.ttf", 12, 12);
-            _fontIconsXS = Font::getFont("panelicons.ttf", 3, 3);
-            _fontIconsS = Font::getFont("panelicons.ttf", 7, 7);
+            _fonttimeSmall = Font::getFont("ArialRoundBold.ttf", 9, 10);
+            _fonttimeLarge = Font::getFont("ArialRoundBold.ttf", 12, 12);
+            _fontIconsS = Font::getFont("panelicons.ttf", 3, 3);
+            _fontIconsM = Font::getFont("panelicons.ttf", 7, 7);
             _fontIconsL = Font::getFont("panelicons.ttf", 12, 12);
             _fontIconsXL = Font::getFont("panelicons.ttf", 16, 16);        
             _fontSettings = Font::getFont("fixedfont-condensed.wmf", 0, 0);
         }
         else{
-            _fonttimeSmall = Font::getFont("arial-bold-digits.ttf", 9, 11);
-            _fonttimeLarge = Font::getFont("arial-bold-digits.ttf", 14, 14);
-            _fontIconsXS = Font::getFont("panelicons.ttf", 4, 4);
-            _fontIconsS = Font::getFont("panelicons.ttf", 9, 9);
+            _fonttimeSmall = Font::getFont("ArialRoundBold.ttf", 9, 11);
+            _fonttimeLarge = Font::getFont("ArialRoundBold.ttf", 14, 14);
+            _fontIconsS = Font::getFont("panelicons.ttf", 4, 4);
+            _fontIconsM = Font::getFont("panelicons.ttf", 9, 9);
             _fontIconsL = Font::getFont("panelicons.ttf", 18, 18);
             _fontIconsXL = Font::getFont("panelicons.ttf", 22, 22);
             _fontSettings = Font::getFont("fixedfont.wmf", 0, 0);
         }
-        _fontdate = Font::getFont("arial-rounded-stripped.ttf", 11, 11);
-        _fontWhiteMagic = Font::getFont("arial-rounded-stripped.ttf", 20, 28);
-        _fontweatherL = Font::getFont("arial-rounded-stripped.ttf", 9, 10);
-        _fontweatherS = Font::getFont("arial-rounded-stripped.ttf", 7, 7);
+        _fontdate = Font::getFont("ArialRoundRegular.ttf", 11, 11);
+        _fontWhiteMagic = Font::getFont("ArialRoundBold.ttf", 20, 28);
+        _fontweatherL = Font::getFont("ArialRoundRegular.ttf", 9, 10);
+        _fontweatherS = Font::getFont("ArialRoundRegular.ttf", 7, 7);
         _intensity = 1;
     }
 
@@ -98,8 +98,8 @@ public:
     Font *fontWhiteMagic() const { return _fontWhiteMagic; }
     Font *fontweatherL() const { return _fontweatherL; }
     Font *fontweatherS() const { return _fontweatherS; }
-    Font *fontIconsXS() const { return _fontIconsXS; }
     Font *fontIconsS() const { return _fontIconsS; }
+    Font *fontIconsM() const { return _fontIconsM; }
     Font *fontIconsL() const { return _fontIconsL; }
     Font *fontIconsXL() const { return _fontIconsXL; }
     Font *fontSettings() const { return _fontSettings; }

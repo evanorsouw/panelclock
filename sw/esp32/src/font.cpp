@@ -38,7 +38,10 @@ Font *Font::getFont(const char *fontname, float dx, float dy)
                 it = _loadedFonts.find(fontname);
             }
         }
-
+    }
+    else
+    {
+        font = it->second;
     }
     return font;
 }

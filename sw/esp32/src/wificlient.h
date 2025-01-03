@@ -5,10 +5,12 @@
 #include <string>
 #include <map>
 #include <mutex>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
-
 #include "esp_wifi.h"
+
+#include "events.h"
 
 enum class WifiMode { Init, Scanning, Connecting, Connected };
 
@@ -28,7 +30,7 @@ private:
     std::string _sid;
     std::string _password;
     esp_netif_ip_info_t _ipinfo;
-    EventGroupHandle_t _eventGroup;
+    Event *_wifiConnectionEvent;
     char _ip[40];
     wifi_scan_config_t _scanConfig;
     wifi_ap_record_t _scannedAppoints[MAXAP];
@@ -38,7 +40,7 @@ private:
     WifiMode _mode;
 
 public:
-    WifiClient();
+    WifiClient(Event *wifiConnectionEvent);
     virtual ~WifiClient();
     
     bool isConnecting() const { return _mode == WifiMode::Connecting; }

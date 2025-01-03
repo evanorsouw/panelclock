@@ -1,19 +1,16 @@
-#ifndef _ENVIRONMENT_WEERLIVE_H_
-#define _ENVIRONMENT_WEERLIVE_H_
+#ifndef _ENVIRONMENT_OPENWEATHER_H_
+#define _ENVIRONMENT_OPENWEATHER_H_
 
 #include "environment.h"
-#include "jsonparser.h"
 #include "settings.h"
 #include "system.h"
 
-class EnvironmentWeerlive : public EnvironmentBase
+class EnvironmentOpenWeather : public EnvironmentBase
 {
 private:
     System *_system;
     Setting *_accesskey;
     Setting *_location;
-    enum class ParseState { WaitArray, WaitObject1, Reading, Completed, Failed };
-    ParseState _state;
     optional<uint64_t> _timestamp;
     EnvironmentValues _parsedValues;
     EnvironmentValues _values;
@@ -23,23 +20,23 @@ private:
 public:
     /// @param accesskey the accesskey to their API, request one at their site.
     /// @param location the location name you want the info for. 
-    /// E.g. "Amsterdam" or longitude/lattitude longitude e.g. "52.091,5.112"
-    EnvironmentWeerlive(System *system, Settings &settings, Event *event)
-        : EnvironmentBase(name(), event)
+    /// E.g. "Amsterdam" or longitude/lattitude longitude e.g. "52.0910879,5.1124231"
+    EnvironmentOpenWeather(System *system, Settings &settings, Event *updateEvent)
+        : EnvironmentBase(name(), updateEvent)
     {
         _system = system;
-        _accesskey = settings.get(AppSettings::KeyWeerliveKey);
-        _location = settings.get(AppSettings::KeyWeerliveLocation);
+        _accesskey = settings.get(AppSettings::KeyOpenWeatherKey);
+        _location = settings.get(AppSettings::KeyOpenWeatherLocation);
         _parsedValues.clear();
         _updating = false;
         _lastupdate = system->now();
     }
 
-    static const char *name() { return "weerlive"; }
+    static const char *name() { return "openweather"; }
 
     void update() override;
-    bool isUpdating() const { return _updating; }
-    timeinfo lastUpdate() const { return _lastupdate; }
+    bool isUpdating() const override { return _updating; }
+    timeinfo lastUpdate() const override { return _lastupdate; }
 
     std::string invalidReason() const override { return _values.invalidReason; };
     optional<std::string> location() const override { return _values.location; }
@@ -53,10 +50,10 @@ public:
     optional<float> airpressure() const override { return _values.airpressure; };
 
 private:
-    bool handleJson(const JsonEntry &json);
-    std::vector<WeatherLayer> parseWeather(const char *image);
-    float parseWindr(const char *r);
-    tm parseTime(const char *s);
+    bool parseJson(const char *buf);
+    tm parseTime(time_t when);
+    float parseWindAngle(float angle);
+    std::vector<WeatherLayer> parseWeather(int id);
 };
 
 #endif

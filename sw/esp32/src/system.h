@@ -14,10 +14,12 @@ private:
     WifiClient *_wifi;
     AppSettings *_settings;
     DS3231 *_rtc;
+    Events *_events;
+    Event *_wifiConnectedEvent;
     Translator *_translator;
 
 public:
-    System(AppSettings *settings, DS3231 *rtc);
+    System(AppSettings *settings, DS3231 *rtc, Events *events);
     virtual ~System();
 
     void scanAPs();
@@ -25,6 +27,7 @@ public:
     int nAPs() const { return _wifi->nAPs(); }
     const char *APSID(int i) const { return _wifi->APSID(i); }
 
+    Event *wifiConnectedEvent() { return _wifiConnectedEvent; }
     bool wifiConnecting() const { return _wifi->isConnecting(); }
     bool wifiConnected() const { return _wifi->isConnected(); }
     bool wifiScanning() const { return _wifi->isScanning(); }

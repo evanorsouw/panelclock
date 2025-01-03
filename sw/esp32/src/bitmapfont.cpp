@@ -8,6 +8,7 @@
 #include <esp_heap_caps.h>
 
 #include "bitmapfont.h"
+#include "utf8encoding.h"
 
 #if 0
   #define LOG(...) printf(__VA_ARGS__)
@@ -73,23 +74,28 @@ BitmapFont *BitmapFont::getFont(const char *fontname)
     return font;
 }
 
-textinfo BitmapFont::textsize(const char *txt, int n) const
+textinfo BitmapFont::textsize(const char *txt) const
 {
     textinfo size(0, height());
-    if (n == 0) n = -1;
-    while (*txt && n-- != 0)
+
+    auto codepoint = 0;
+    auto i = 0;
+    while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
     {
-        auto csize = charsize(*txt++);
-        if (size.dx > 0)
-            size.dx += _info->tracking;
-        size.dx += csize.dx;
+        auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)codepoint; });
+        if (it != _glyphs.end())
+        {
+            size.dx += it->second->width;
+            if (size.dx > 0)
+                size.dx += _info->tracking;
+        }
     }
     return size;
 }
 
-textinfo BitmapFont::charsize(char c) const
+textinfo BitmapFont::charsize(int codepoint) const
 {
-    auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)c; });
+    auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)codepoint; });
     if (it == _glyphs.end())
         return textinfo();
     return textinfo(it->second->width, height());

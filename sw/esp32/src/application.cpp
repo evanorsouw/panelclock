@@ -10,7 +10,7 @@
 
 #define PI M_PI
 
-Application::Application(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput)
+Application::Application(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, env, sys, userinput)
 {
     _weatherIntensity = 0.0f;
@@ -32,7 +32,7 @@ void Application::init()
 void Application::render(Graphics& graphics)
 {
     auto now = _system.now();   
-    auto agesec = (now.msticks() - _environment.lastupdate().msticks()) / 1000;        
+    auto agesec = (now.msticks() - _environment.lastUpdate().msticks()) / 1000;        
     if (_environment.valid())
     {
         graduallyUpdateVariable(_weatherIntensity, 1.0f, 0.05f);
@@ -108,7 +108,7 @@ void Application::drawClock(Graphics& graphics, float x, float y, float diameter
     }
 
     // draw center dot
-    graphics.text(_appctx.fontIconsXS(), cx-2, cy+1, "0", color);
+    graphics.text(_appctx.fontIconsS(), cx-2, cy+1, "0", color);
 
     // draw hands
     auto hours = drawtime() / (12 * 3600000.0f);
@@ -156,7 +156,7 @@ void Application::drawTimeOnePanel(Graphics& graphics, const timeinfo &now)
     snprintf(buf1, sizeof(buf2), "%02d", now.sec());
     auto size = _appctx.fonttimeSmall()->textsize(buf1);
     x = 64 - size.dx - 1;
-    graphics.text(_appctx.fonttimeSmall(), x, y, buf1, Color::white);
+    graphics.text(_appctx.fonttimeSmall(), x, y, buf1, color);
 }
 
 void Application::drawDateTimeTwoPanel(Graphics& graphics, const timeinfo &now)
@@ -251,17 +251,18 @@ void Application::drawWeatherTwoPanel(Graphics &graphics)
         drawWindArrow(graphics, xms - 14, 36, 14, _environment.windangle().value(), lightblue, white);
     }
     auto view = graphics.view(graphics.dx() - WeatherImageDx, graphics.dy() - WeatherImageDy, WeatherImageDx, WeatherImageDy, true);
-    drawWeatherImage(view, false);
+    drawWeatherImage(view);
 }
 
 void Application::drawWeatherOnePanel(Graphics &graphics)
 {
     auto view = graphics.view(40, 30, 24, 24, true);
-    drawWeatherImage(view, true);
+    drawWeatherImage(view);
 }
 
 void Application::drawWindArrow(Graphics& graphics, int x, int y, int size, float angle, Color col1, Color col2)
 {
+    angle = -angle; // y-axis is positive downwards.
     auto pw = size / 21.0f;
     auto d = size - pw - 1.0f;
     auto cx = x + (pw + d) / 2.0f;
@@ -280,7 +281,7 @@ void Application::drawWindArrow(Graphics& graphics, int x, int y, int size, floa
     graphics.triangle(x1, y1, x2, y2, x3, y3, col2);
 }
 
-void Application::drawWeatherImage(Graphics& graphics, bool onepanel)
+void Application::drawWeatherImage(Graphics& graphics)
 {
     auto weather = _environment.weather();
     if (!weather.isValid())
@@ -290,71 +291,50 @@ void Application::drawWeatherImage(Graphics& graphics, bool onepanel)
     float y = 0;
     float dx = graphics.dx();
     float dy = graphics.dy();
-    float oneox = onepanel ? 2 : 0;
     fxy xy;
 
-    auto white = Color::white * (_appctx.intensity() * _weatherIntensity);
-    auto darkgray = Color::darkgray * (_appctx.intensity() * _weatherIntensity);
-    auto lightgray = Color::lightgray * (_appctx.intensity() * _weatherIntensity);
-    auto black = Color::black;
-    switch (weather.value())
+    for(auto &layer : weather.value())
     {
-    default:
-        break;
-    case weathertype::clouded:      // bewolkt    
-        draw2Clouds(graphics, x + oneox, y, dx - oneox, dy, white, black);
-        break;
-    case weathertype::lightning:    // bliksem    
-        xy = drawCloud(graphics, x + oneox, y-2, dx - oneox, dy, white, darkgray);
-        drawLightning(graphics, xy.x, xy.y, white);
-        break;
-    case weathertype::showers:      // buien    
-        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
-        drawRain(graphics, xy.x, xy.y, true, white);
-        break;
-    case weathertype::hail:         // hagel    
-        drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
-        // todo:
-        break;
-    case weathertype::partlycloudy: // halfbewolkt    
-    case weathertype::cloudy:       // lichtbewolkt    
-        drawSun(graphics, x + 4 + oneox, y-2, dx - oneox, dy);
-        drawCloud(graphics, x + oneox, y, dx - oneox, dy, white, black);
-        break;
-    case weathertype::cloudyrain:   // halfbewolkt_regen    
-        drawSun(graphics, x + 4 + oneox, y - 2, dx - oneox, dy);
-        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, black);
-        drawRain(graphics, xy.x, xy.y, false, white);
-        break;
-    case weathertype::clearnight:   // helderenacht    
-        drawStars(graphics, x, y, dx, dy);
-        drawMoon(graphics, x + oneox, y, dx - oneox, dy, white);
-        break;
-    case weathertype::fog:          // mist    
-        drawCloud(graphics, x + oneox, y - 3, dx - oneox, dy, lightgray, darkgray);
-        drawFog(graphics, x, y, dx, dy, white);
-        break;
-    case weathertype::cloudednight: // nachtbewolkt    
-        drawMoon(graphics, x + oneox, y, dx - oneox, dy, white);
-        drawCloud(graphics, x + oneox, y, dx - oneox, dy, white, darkgray);
-        break;
-    case weathertype::nightfog:     // nachtmist
-        drawMoon(graphics, x + oneox, y, dx - oneox, dy, lightgray);
-        drawFog(graphics, x, y, dx, dy, white);
-        break;
-    case weathertype::rain:         // regen    
-        xy = drawCloud(graphics, x + oneox, y - 2, dx - oneox, dy, white, darkgray);
-        drawRain(graphics, xy.x, xy.y, false, white);
-        break;
-    case weathertype::snow:         // sneeuw
-        drawSnow(graphics, x, y, dx, dy, white);
-        break;
-    case weathertype::sunny:        // zonnig    
-        drawSun(graphics, x + oneox, y, dx, dy);
-        break;
-    case weathertype::heavyclouds:  // zwaarbewolkt
-        draw2Clouds(graphics, x + oneox, y, dx - oneox, dy, white, darkgray);
-        break;
+        switch (layer.icon)
+        {
+            case WeatherIcon::CloudWithLightning:
+                xy = drawCloud(graphics, x, y, dx, dy, layer);
+                drawLightning(graphics, xy.x, xy.y, layer);
+                break;
+            case WeatherIcon::Cloud:
+                drawCloud(graphics, x, y, dx, dy, layer);
+                break;
+            case WeatherIcon::CloudWithHail:
+                xy = drawCloud(graphics, x, y, dx, dy, layer);
+                drawHail(graphics, xy.x, xy.y, layer);
+                break;
+            case WeatherIcon::CloudWithHeavyRain:
+                xy = drawCloud(graphics, x, y, dx, dy, layer);
+                drawRain(graphics, xy.x, xy.y, true, layer);
+                break;
+            case WeatherIcon::CloudWithLightRain:
+                xy = drawCloud(graphics, x, y, dx, dy, layer);
+                drawRain(graphics, xy.x, xy.y, false, layer);
+                break;
+            case WeatherIcon::SunWithRays:
+                drawSun(graphics, x, y, dx, dy, true, layer);
+                break;
+            case WeatherIcon::SunWithoutRays:
+                drawSun(graphics, x, y, dx, dy, false, layer);
+                break;
+            case WeatherIcon::Moon:
+                drawMoon(graphics, x, y, dx, dy, layer);
+                break;
+            case WeatherIcon::Fog:
+                drawFog(graphics, x, y, dx, dy, layer);
+                break;
+            case WeatherIcon::SnowFlakes:
+                drawSnow(graphics, x, y, dx, dy, layer);
+                break;
+            case WeatherIcon::Stars:
+                drawStars(graphics, x, y, dx, dy, layer);
+                break;
+        }
     }
 }
 
@@ -371,15 +351,17 @@ void Application::drawLineFromCenter(Graphics& graphics, float x, float y, float
     graphics.line(x1, y1, x2, y2, thickness, color);
 }
 
-void Application::drawSun(Graphics& graphics, float x, float y,  float width, float height)
+void Application::drawSun(Graphics& graphics, float x, float y, float width, float height, bool drawRays, const WeatherLayer &layer)
 {
+    x += layer.ox;
+    y += layer.oy;
     auto size = std::min(width, height);
-    auto p1 = phase(20000,false);
-    auto p2 = phase(3000,true) * 0.1f + 1.0f;
+    auto p1 = phase(layer.phase1 == 0 ? 20000 : layer.phase1, false);
+    auto p2 = phase(layer.phase2 == 0 ? 3000 : layer.phase2, true) * 0.1f + 1.0f;
     auto pw = std::max(1.0f, size / 22.0f);
 
-    auto horizoncolor = Color(226,90,56) * (_appctx.intensity() * _weatherIntensity);
-    auto nooncolor = Color(255,242,127) * (_appctx.intensity() * _weatherIntensity);
+    auto horizoncolor = scaleWeatherColor(Color(226,90,56));
+    auto nooncolor = scaleWeatherColor(Color(255,242,127));
     auto color = nooncolor;
 
     if (_environment.sunrise().isValid() && _environment.sunset().isValid())
@@ -405,69 +387,67 @@ void Application::drawSun(Graphics& graphics, float x, float y,  float width, fl
     auto max = size * 0.35f * p2;
     auto cx = x + width / 2;
     auto cy = y + height / 2;
-    for (auto i = 0; i < 8; ++i)
+    if (drawRays)
     {
-        auto angle = PI / 4 * i + p1 * PI;
-        auto dx = max * std::cos(angle);
-        auto dy = max * std::sin(angle);
-        graphics.line(cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
+        for (auto i = 0; i < 8; ++i)
+        {
+            auto angle = PI / 4 * i + p1 * PI;
+            auto dx = max * std::cos(angle);
+            auto dy = max * std::sin(angle);
+            graphics.line(cx + dx * 0.65f, cy + dy * 0.65f, cx + dx, cy + dy, pw, color);
+        }
     }
-
-    auto s = _appctx.fontIconsS()->textsize("0");
-    graphics.text(_appctx.fontIconsS(), cx - s.dx/2, cy - 1 + s.dy/2, "0", color);
+    auto font = _appctx.fontIconsM();
+    auto s = font->textsize("0");
+    graphics.text(font, cx - s.dx/2, cy + s.dy/2 - 1, "0", color);
 }
 
-void Application::draw2Clouds(Graphics& graphics, float x, float y, float width, float height, Color pen, Color fill)
+fxy Application::drawCloud(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer)
 {
-    auto font = _appctx.fontIconsL();
-    auto cx = x + phase(21000, true) * (width - font->sizex());
-    auto cy = y + (height - font->sizey()) / 2 + font->sizey() - 4 + phase(17000, true) * 3;
-    graphics.text(font, cx, cy, "B", fill);
-    graphics.text(font, cx, cy, "A", pen);
+    x += layer.ox;
+    y += layer.oy;
+    auto phase1 = layer.phase1 == 0 ? 21000 : layer.phase1;
+    auto phase2 = layer.phase2 == 0 ? 17000 : layer.phase2;
+    auto font = getSizedIconFont(layer.fontsize, 'X');
 
-    font = _appctx.fontIconsXL();
-    cx = x + phase(22000, true, 3000) * (width - font->sizex());
-    cy = y + (height - font->sizey()) / 2 + font->sizey() + 2 + phase(19000, true) * 2;
-    graphics.text(font, cx, cy, "B", fill);
-    graphics.text(font, cx, cy, "A", pen);
+    auto tx = x + phase(phase1, true, layer.phase1offset) * (dx - font->sizex());
+    auto ty = y + (dy - font->sizey()) / 2 + font->sizey() - 2 + phase(phase2, true) * 4;
+    graphics.text(font, tx, ty, "B", scaleWeatherColor(layer.color1, Color::darkgray));
+    graphics.text(font, tx, ty, "A", scaleWeatherColor(layer.color2, Color::white));
+    return fxy(tx, ty - font->sizey() * 0.5f);
 }
 
-fxy Application::drawCloud(Graphics& graphics, float x, float y, float dx, float dy, Color pen, Color fill)
+void Application::drawLightning(Graphics& graphics, float x, float y, const WeatherLayer &layer)
 {
-    auto font = _appctx.fontIconsXL();
-    auto tx = x + phase(21000, true, 3000) * (dx - font->sizex());
-    auto ty = y + (dy - font->sizey()) / 2 + font->sizey() - 2 + phase(19000, true) * 4;
-    graphics.text(font, tx, ty, "B", fill);
-    graphics.text(font, tx, ty, "A", pen);
-    return fxy(tx, ty - font->sizey() * 0.7f);
-}
+    x += layer.ox;
+    y += layer.oy - 2;
+    auto font = getSizedIconFont(layer.fontsize);
+    auto color = scaleWeatherColor(layer.color1, Color::white);
 
-void Application::drawLightning(Graphics& graphics, float x, float y, Color color)
-{
-    y -= 2;
-    auto wcloud = _appctx.fontIconsXL()->textsize("B").dx;
-    auto font = _appctx.fontIconsL();
-    auto wlightning = font->textsize("F").dx;
+    auto wcloud = font->textsize("B").dx;
+    auto wlightning = font->textsize("E").dx;
     auto tx = x + std::rand() % ((int)(wcloud - wlightning));
     auto ty = y + (graphics.dy() - font->sizey()) / 2 + font->sizey() + std::rand() % 6;
 
     if (std::rand() % 1000 < 20)
     {
-        graphics.text(font, tx, ty, "F", color);
+        graphics.text(font, tx, ty, "E", color);
     }
 }
 
-void Application::drawRain(Graphics& graphics, float x, float y, bool heavy, Color color)
+void Application::drawRain(Graphics& graphics, float x, float y, bool heavy, const WeatherLayer &layer)
 {
-    y -= 2;
-    x += 2;
-    auto wcloud = _appctx.fontIconsXL()->textsize("B").dx;
+    auto font = getSizedIconFont(layer.fontsize);
+    auto color = scaleWeatherColor(layer.color1, Color::white);
+    y += layer.ox - 2;
+    x += layer.ox + 2;
+    auto wcloud = font->textsize("B").dx;
     auto h = graphics.dy() - y;
     auto pw = heavy ? 1.8f : 1.0f;
     auto ph = phase(heavy ? 800 : 2000, false);
     for (auto i = 0; i < (heavy ? 4 : 3); ++i)
     {
-        auto xo = (i + 0.5) * (heavy ? 0.17f : 0.22f) * wcloud;
+        auto xo = (i + 0.5) * (heavy ? 0.22f : 0.30f) * wcloud;
         auto yo = 0.4f * h;
         auto dx = -wcloud * (heavy ? 0.15f : 0.05f);
         auto dy = h - yo - pw;
@@ -509,46 +489,68 @@ void Application::drawRain(Graphics& graphics, float x, float y, bool heavy, Col
     }
 }
 
-void Application::drawMoon(Graphics& graphics, float x, float y, float dx, float dy, Color color)
+void Application::drawHail(Graphics& graphics, float x, float y, const WeatherLayer &layer)
 {
-    auto font = _appctx.fontIconsL();
+    auto font = getSizedIconFont(layer.fontsize, 'X');
+    auto color = scaleWeatherColor(layer.color1, Color::white);
+    auto wcloud = font->textsize("B").dx;
+    auto whail = 2.5f;
+    auto dy = graphics.dy() - y;
+    auto oph = phase(7000, true) * phase(5300, true, 900);
+
+    for (int i=0; i< 5; ++i)
+    {
+        auto ph = phase(800, false, 300 * (i + oph));
+        auto hx = x + whail / 2 + (wcloud - whail) * i / 5;
+        auto hy = y + std::fmod(ph * dy, dy); 
+        graphics.rect(hx, hy, whail, whail, color);
+    }
+}
+
+void Application::drawMoon(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer)
+{
+    auto font = getSizedIconFont(layer.fontsize, 'X');
+    auto color = scaleWeatherColor(layer.color1, Color::white);
+    y += layer.ox;
+    x += layer.ox;
     auto size = font->textsize("D");
-    auto tx = x + (dx - size.dx) / 2 -3 + 6 * phase(25000, true, 3000);
+    auto tx = x + (dx - size.dx) / 2 -3 + 6 * phase(layer.phase1 == 0 ? 25000 : layer.phase1, true, layer.phase1offset == 0 ? 3000 : layer.phase1offset);
     auto ty = y + (dy - size.dy) / 2 + size.dy - 2;
     graphics.text(font, tx, ty, "D", color);
 }
 
-Color Application::starIntensity(Graphics& graphics, float phase, float when)
+Color Application::starIntensity(float phase, float when)
 {
     float dist = 0.02f;
     auto d = std::abs(phase - when);
     if (d > dist)
-        return Color(32,32,32) * _weatherIntensity;
+        return scaleWeatherColor(Color(32,32,32));
     d = dist - d;
     d = 32 + (d * 223.f / dist);
-    return Color(d,d,d) * _weatherIntensity;
+    return scaleWeatherColor(Color(d,d,d));
 }
 
-void Application::drawStars(Graphics& graphics, float x, float y, float dx, float dy)
+void Application::drawStars(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer)
 {
-    auto p = phase(20000, false);
-    graphics.set(x + 0.10 * dx, y + 01, starIntensity(graphics, p, 0.01));
-    graphics.set(x + 0.40 * dx, y + 03, starIntensity(graphics, p, 0.04));
-    graphics.set(x + 0.70 * dx, y + 24, starIntensity(graphics, p, 0.02));
-    graphics.set(x + 0.30 * dx, y + 07, starIntensity(graphics, p, 0.12));
-    graphics.set(x + 0.90 * dx, y + 13, starIntensity(graphics, p, 0.32));
-    graphics.set(x + 0.20 * dx, y + 18, starIntensity(graphics, p, 0.48));
-    graphics.set(x + 0.15 * dx, y + 05, starIntensity(graphics, p, 0.39));
-    graphics.set(x + 0.60 * dx, y + 17, starIntensity(graphics, p, 0.23));
-    graphics.set(x + 0.80 * dx, y + 04, starIntensity(graphics, p, 0.78));
-    graphics.set(x + 0.50 * dx, y + 21, starIntensity(graphics, p, 0.79));
+    auto p = phase(layer.phase1 == 0 ? 20000 : layer.phase1, false);
+    graphics.set(x + 0.10 * dx, y + 01, starIntensity(p, 0.01));
+    graphics.set(x + 0.40 * dx, y + 03, starIntensity(p, 0.04));
+    graphics.set(x + 0.70 * dx, y + 24, starIntensity(p, 0.02));
+    graphics.set(x + 0.30 * dx, y + 07, starIntensity(p, 0.12));
+    graphics.set(x + 0.90 * dx, y + 13, starIntensity(p, 0.32));
+    graphics.set(x + 0.20 * dx, y + 18, starIntensity(p, 0.48));
+    graphics.set(x + 0.15 * dx, y + 05, starIntensity(p, 0.39));
+    graphics.set(x + 0.60 * dx, y + 17, starIntensity(p, 0.23));
+    graphics.set(x + 0.80 * dx, y + 04, starIntensity(p, 0.78));
+    graphics.set(x + 0.50 * dx, y + 21, starIntensity(p, 0.79));
 }
 
-void Application::drawFog(Graphics& graphics, float x, float y, float dx, float dy, Color color)
+void Application::drawFog(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer)
 {
+    auto color = scaleWeatherColor(layer.color1, Color::white);
     auto pw = 0.8f;
-    auto phase1 = phase(37000, true);
-    auto phase2 = phase(19000, true);
+    auto phase1 = phase(layer.phase1 == 0 ? 37000 : layer.phase1, true);
+    auto phase2 = phase(layer.phase2 == 0 ? 19000 : layer.phase2, true);
     auto y1 = y + (dy - 7) / 2 + 2;
     auto y2 = y1 + 2;
     auto y3 = y2 + 2;
@@ -561,11 +563,12 @@ void Application::drawFog(Graphics& graphics, float x, float y, float dx, float 
     graphics.line(x + dx * (0.4f - 0.3f * phase1), y4,   x + dx * (0.75f + 0.05f * phase2), y4, pw, color);
 }
 
-void Application::drawSnow(Graphics& graphics, float x, float y, float dx, float dy, Color color)
+void Application::drawSnow(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer)
 {
+    auto color = scaleWeatherColor(layer.color1, Color::white);
     auto n1 = 19;
     auto n2 = 10;
-    auto ph = phase(10000,false) * n1;
+    auto ph = phase(layer.phase1 == 0 ? 10000 : layer.phase1, false) * n1;
     auto d = dx * 0.05f;
     for (int i = 0; i < n1; ++i)
     {
@@ -585,7 +588,7 @@ void Application::drawSnow(Graphics& graphics, float x, float y, float dx, float
 
         if (p > 0.0f && p < 1.0f)
         {
-            graphics.rect(x + tx, y + ty, d, d * (0.3f + 0.7f * phase(1000 + i*400, true)), color);
+            graphics.rect(x + tx, y + ty, d, d * (0.3f + 0.7f * phase((layer.phase2 == 0 ? 1000 : layer.phase2) + i*400, true)), color);
         }
     }
 }
@@ -637,7 +640,7 @@ Application::stripsegment Application::temperatureSegment()
                 sprintf(buf1, "%.1f°", _environment.temperature().value());
                 if (_environment.windchill().isValid())
                 {
-                    sprintf(buf2, "(%.1f)", _environment.windchill().value());
+                    sprintf(buf2, " (%.1f)", _environment.windchill().value());
                 }
             }
             else
@@ -732,3 +735,43 @@ Application::stripsegment Application::colorSegment(int dx, Color color)
     };
 }
 
+Application::stripsegment Application::sunRiseSegment()
+{
+    auto buf = new char[40];
+    auto fonttext = _appctx.fontweatherS();
+    auto fonticons = _appctx.fontIconsM();
+    return stripsegment {
+        .width = [this,buf,fonttext,fonticons](Graphics& graphics) { 
+            auto &sunrise = _environment.sunrise();
+            *buf = 0;
+            if (sunrise.isValid())
+            {
+                sprintf(buf, "%d:%02d", sunrise.value().tm_hour, sunrise.value().tm_min);
+            }
+            auto txtdx = fonttext->textsize(buf).dx;
+            auto sundx = fonticons->textsize("0").dx; // circle
+            return txtdx + sundx;
+        },
+        .render = [this,buf,fonttext](Graphics& graphics, float ox) {
+            auto coltxt = Color::white * _appctx.intensity();
+            graphics.text(fonttext, 0, fonttext->ascend(), buf, coltxt);
+        }
+    };
+}
+
+Font *Application::getSizedIconFont(char size, char defaultSize)
+{
+    size = size == 0 ? defaultSize : size;
+    switch (std::tolower(size))
+    {
+        case 's': 
+            return _appctx.fontIconsS();
+        case 'm': 
+        default:
+            return _appctx.fontIconsM();
+        case 'l': 
+            return _appctx.fontIconsL();
+        case 'x': 
+            return _appctx.fontIconsXL();
+    }
+}

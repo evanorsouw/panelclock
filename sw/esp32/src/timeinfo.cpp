@@ -20,7 +20,7 @@ timeinfo::timeinfo()
 
 timeinfo::timeinfo(const timeval &tv)
 {
-    _tm = *localtime(&tv.tv_sec);
+    localtime_r(&tv.tv_sec, &_tm);
     _tm.tm_isdst = -1;
     _millies = tv.tv_usec / 1000;
     _msticks = (tv.tv_sec * 1000000 + tv.tv_usec) / 1000;
@@ -53,6 +53,6 @@ int timeinfo::daysInMonth(int month, bool leapyear)
 void timeinfo::set(time_t offsetSeconds)
 {
     auto secs = mktime(&_tm) + offsetSeconds;
-    _tm = *localtime(&secs);
+    localtime_r(&secs, &_tm);
     _msticks = secs * 1000 + _millies;
 }

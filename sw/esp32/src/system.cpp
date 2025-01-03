@@ -1,9 +1,11 @@
 #include "system.h"
 
-System::System(AppSettings *settings, DS3231 *rtc) 
+System::System(AppSettings *settings, DS3231 *rtc, Events *events) 
 {
     _settings = settings;
     _rtc = rtc;
+    _events = events;
+    _wifiConnectedEvent = events->allocate("wificonnection");
     _wifi = nullptr;
     _translator = new Translator(settings->get(settings->KeyLanguage));
     startWifi();
@@ -29,11 +31,8 @@ timeinfo System::now() const
 {
     struct timeval tv;
     gettimeofday(&tv, nullptr);
-
-    if (_settings->DST())
-    {
-        tv.tv_sec += 3600;
-    }
+    struct tm tm;
+    localtime_r(&tv.tv_sec, &tm);
     return timeinfo(tv);
 }
 
@@ -50,7 +49,7 @@ void System::now(const timeinfo &now)
     _rtc->setTime(&tod);
     
     struct timeval tv;
-    tv.tv_sec = mktime((struct tm*)now.tm()) - (now.dst() ? 3600 : 0);
+    tv.tv_sec = mktime((struct tm*)now.tm());
     tv.tv_usec = now.millies() * 1000;
     settimeofday(&tv, nullptr);
 }
@@ -59,7 +58,7 @@ void System::startWifi()
 {
     if (!_wifi)
     {
-        _wifi = new WifiClient();
+        _wifi = new WifiClient(_wifiConnectedEvent);
         connectWifi();
     }
 }

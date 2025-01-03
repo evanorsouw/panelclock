@@ -3,6 +3,14 @@
 #include <cstring>
 #include "esp_crt_bundle.h"
 #include "httpclient.h"
+#include "diagnostic.h"
+
+#if 0
+  #define LOG(...) printf(__VA_ARGS__)
+#else
+  #define LOG(...)
+#endif
+
 
 struct bufferinfo
 {
@@ -13,7 +21,6 @@ struct bufferinfo
 
 HTTPClient::~HTTPClient()
 {
-
 }
 
 esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
@@ -22,26 +29,26 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
     switch (evt->event_id) 
     {
         case HTTP_EVENT_ERROR:
-            //printf("http error\n");
+            LOG("http error\n");
             break;
         case HTTP_EVENT_ON_CONNECTED:
-            //printf("http connected\n");
+            LOG("http connected\n");
             break;
         case HTTP_EVENT_HEADER_SENT:
-            //printf("http header sent\n");
+            LOG("http header sent\n");
             break;
         case HTTP_EVENT_ON_HEADER:
-            //printf("http header key=%s, value=%s\n", evt->header_key, evt->header_value);
+            LOG("http header key=%s, value=%s\n", evt->header_key, evt->header_value);
             break;
         case HTTP_EVENT_ON_DATA:
-            //printf("http received data %d bytes\n", evt->data_len);
+            LOG("http received data %d bytes\n", evt->data_len);
             handler(evt->data, evt->data_len);
             break;
         case HTTP_EVENT_ON_FINISH:
-            //printf("http finish\n");
+            LOG("http finish\n");
             break;
         case HTTP_EVENT_DISCONNECTED:
-            //printf("http disconnected\n");
+            LOG("http disconnected\n");
             break;        
         default:
             break;
@@ -51,8 +58,7 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 
 int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
 {
-    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
+    Diagnostic::printmeminfo();
 
     esp_http_client_config_t config = { 0 } ;
     config.url = url;

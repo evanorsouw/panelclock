@@ -5,9 +5,11 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
 #include <driver/gpio.h>
 #include "esp_chip_info.h"
 #include "esp_flash.h"
+#include "events.h"
 #include "i2cwrapper.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -21,6 +23,7 @@
 #include "color.h"
 #include "ds3231.h"
 #include "environment_weerlive.h"
+#include "environment_openweather.h"
 #include "fpgaconfigurator.h"
 #include "graphics.h"
 #include "ledpanel.h"
@@ -78,6 +81,8 @@ void app_main()
     initNVS();
     init_spiffs();
 
+    auto events = new Events();
+
     auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 5400000, false);
     FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
     FpgaConfig.configure();
@@ -89,9 +94,11 @@ void app_main()
     auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA);
     i2c->start();
     auto rtc = new DS3231(i2c);
-    auto system = new System(settings, rtc);
+    auto system = new System(settings, rtc, events);
     auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, BUTTON_BOOT, *system);
-    auto environment = new EnvironmentWeerlive(system, settings->get(settings->KeyWeerliveKey), settings->get(settings->KeyWeerliveLocation));
+    auto environmentWL = new EnvironmentWeerlive(system, *settings, events->allocate("weerlive"));
+    auto environmentOW = new EnvironmentOpenWeather(system, *settings, events->allocate("openweather"));
+    auto environment = new EnvironmentSelector(std::vector<EnvironmentBase*>{ environmentWL, environmentOW }, *settings);
 
     auto appdata = new ApplicationContext(*settings);
 
@@ -99,34 +106,37 @@ void app_main()
     auto bootui = new BootAnimations(*appdata, *environment, *system, *userinput);
     auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
     auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system, *graphics);
-    auto timeupdater = new TimeSyncer(*rtc);
+    auto timeupdater = new TimeSyncer(*rtc, *settings);
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 4000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
 
+
+
     printf("application initialized\n");
-    printf("total free DRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_8BIT), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-    printf("total free IRAM: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT), heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT));
-    printf("total free DMA: %d (largest block: %d)\n", heap_caps_get_free_size(MALLOC_CAP_DMA), heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    Diagnostic::printmeminfo();
+
+    timeupdater->update(true);     // force immediate update from RTC
+
+    uint64_t timetimeout = 0;
 
     // use main thread for running periodic tasks.
-    uint64_t timesync = appdata->starttimer();
-    uint64_t weersync = appdata->starttimer();
-    int timetimeout = 1 * 1000;
-    int weathertimeout = 5 * 1000;
- 
     for (;;)
     {
-        // timer update from RTC
-        if (appdata->timeoutAndRestart(timesync, timetimeout))
+        events->wait(60000);
+
+        if (system->wifiConnectedEvent()->wasSet() && system->wifiConnected())
         {
-            timetimeout = timeupdater->update();
+            environment->triggerUpdate();
         }
-        // update weather data
-        if (appdata->timeoutAndRestart(weersync, weathertimeout))
+        if (environment->triggerUpdateEvent()->wasSet())
         {
-            weathertimeout = environment->update();
+            environment->update();
+        }
+        if (appdata->timeoutAndRestart(timetimeout, 12*60*1000))    // update from RTC every 12H
+        {
+            timeupdater->update(false); // ignore RTC when NTP is enabled
         }
     }
 }

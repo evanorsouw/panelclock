@@ -3,4 +3,6 @@
 nvs,      data, nvs,     ,        0x6000,
 phy_init, data, phy,     ,        0x1000,
 factory,  app,  factory, ,        2M,
-storage,  data, spiffs,  ,        2M
+storage,  data, spiffs,  ,        2M,
+ota_0,    app, ota_0,    ,        1M,
+ota_1,    app, ota_1,    ,        1M

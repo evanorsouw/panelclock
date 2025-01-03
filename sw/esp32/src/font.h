@@ -30,8 +30,8 @@ public:
     virtual ~Font() {}
     FontType getFontType() const { return _type; }
 
-    virtual textinfo textsize(const char *txt, int n = 0) const = 0;
-    virtual textinfo charsize(char c) const = 0;
+    virtual textinfo textsize(const char *txt) const = 0;
+    virtual textinfo charsize(int codepoint) const = 0;
 
     virtual float sizex() const = 0;
     virtual float sizey() const = 0;

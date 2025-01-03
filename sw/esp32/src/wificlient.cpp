@@ -5,14 +5,12 @@
 #include "esp_log.h"
 #include "wificlient.h"
 
-#define WIFI_CONNECTED_BIT (0x0001)
-
-WifiClient::WifiClient()
+WifiClient::WifiClient(Event *wifiConnectionEvent)
 {
     _sid = "";
     _password = "";
     _ip[0] = 0;
-    _eventGroup = xEventGroupCreate();
+    _wifiConnectionEvent = wifiConnectionEvent;
     _mode = WifiMode::Init;
 
     _nAccessPoints = 0;
@@ -45,7 +43,7 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
                 default:
                     break;
             }
-            xEventGroupClearBits(_eventGroup, WIFI_CONNECTED_BIT);
+            _wifiConnectionEvent->set();
         } 
         else if (event_id == WIFI_EVENT_SCAN_DONE) 
         {            
@@ -71,9 +69,9 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
                 (int)((_ipinfo.ip.addr>>8) & 0xFF),
                 (int)((_ipinfo.ip.addr>>16) & 0xFF),
                 (int)((_ipinfo.ip.addr>>24) & 0xFF));
-            xEventGroupSetBits(_eventGroup, WIFI_CONNECTED_BIT);
             _mode = WifiMode::Connected;
             printf("wifi connection to sid %s, ip=%s\n", _sid.c_str(), _ip);
+            _wifiConnectionEvent->set();
         }
     }
 }
@@ -88,8 +86,7 @@ WifiClient::~WifiClient()
 
 bool WifiClient::waitForConnection(int timeoutMs) const
 {
-    auto ticks = (timeoutMs == 0) ? portMAX_DELAY : timeoutMs / portTICK_PERIOD_MS;
-    xEventGroupWaitBits(_eventGroup, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, ticks);
+    _wifiConnectionEvent->wait(timeoutMs);
     return _mode == WifiMode::Connected;
 }
 

@@ -32,6 +32,7 @@ bool Settings::loadSettings()
     }
     nvs_release_iterator(it);
     nvs_close(handle);
+
     return true;
 }
 
@@ -59,13 +60,18 @@ bool Settings::saveSettings()
     return true;
 }
 
+void Settings::onChanged(std::function<void(Setting*)> callback)
+{
+    _onChangedCallbacks.push_back(callback);
+}
+
 Setting *Settings::add(const char *name, const char *value)
 {
     Setting *setting;
     auto it = std::find_if(_settings.begin(), _settings.end(), [&](std::pair<std::string, Setting*> kv) { return kv.first == name; });
     if (it == _settings.end())
     {
-        setting = new Setting(name, value);
+        setting = new Setting(this, name, value);
         _settings[name] = setting;            
     }
     else

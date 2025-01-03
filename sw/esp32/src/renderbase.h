@@ -13,12 +13,12 @@ class RenderBase
 {
 protected:
     ApplicationContext &_appctx;
-    Environment &_environment;
+    IEnvironment &_environment;
     System &_system;
     UserInput &_userinput;
 
 public:
-    RenderBase(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput) 
+    RenderBase(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput) 
         : _appctx(appdata)
         , _environment(env) 
         , _system(sys)

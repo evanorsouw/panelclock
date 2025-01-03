@@ -42,7 +42,7 @@ private:
 
 
 public:
-    Application(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput);
+    Application(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput);
 
     void init();
     void render(Graphics &graphics);
@@ -55,19 +55,19 @@ private:
     void drawWeatherOnePanel(Graphics& graphics);
     void drawWeatherTwoPanel(Graphics& graphics);
     void drawWindArrow(Graphics& graphics, int x, int y, int size, float angle, Color col1, Color col2);
-    void drawWeatherImage(Graphics& graphics, bool onepanel);
+    void drawWeatherImage(Graphics& graphics);
     void drawWindAngle(Graphics& graphics);
     void drawLineFromCenter(Graphics& graphics, float x, float y, float diameter, float index, float l1, float l2, float thickness, Color color);
-    void drawSun(Graphics& graphics, float x, float y, float dx, float dy);
-    fxy drawCloud(Graphics& graphics, float x, float y, float dx, float dy, Color line, Color fill);
-    void draw2Clouds(Graphics& graphics, float x, float y, float dx, float dy, Color line, Color fill);
-    void drawLightning(Graphics& graphics, float x, float y, Color color);
-    void drawRain(Graphics& graphics, float x, float y, bool heavy, Color color);
-    void drawMoon(Graphics& graphics, float x, float y, float dx, float dy, Color color);
-    void drawStars(Graphics& graphics, float x, float y, float dx, float dy);
-    Color starIntensity(Graphics& graphics, float phase, float when);
-    void drawFog(Graphics& graphics, float x, float y, float dx, float dy, Color color);
-    void drawSnow(Graphics& graphics, float x, float y, float dx, float dy, Color color);
+    void drawSun(Graphics& graphics, float x, float y, float width, float height, bool drawRays, const WeatherLayer &layer);
+    fxy drawCloud(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
+    void drawLightning(Graphics& graphics, float x, float y, const WeatherLayer &layer);
+    void drawRain(Graphics& graphics, float x, float y, bool heavy, const WeatherLayer &layer);
+    void drawHail(Graphics& graphics, float x, float y, const WeatherLayer &layer);
+    void drawMoon(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
+    void drawStars(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
+    Color starIntensity(float phase, float when);
+    void drawFog(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
+    void drawSnow(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
 
     void drawSegments(Graphics& graphics);
     stripsegment temperatureSegment();
@@ -76,6 +76,11 @@ private:
     stripsegment dateSegment();
     stripsegment separatorSegment();
     stripsegment colorSegment(int dx, Color color);
+    stripsegment sunRiseSegment();
+
+    Font *getSizedIconFont(char size, char defaultSize='L');
+    Color scaleWeatherColor(Color color, Color defaultColor) { return scaleWeatherColor(color == Color::transparant ? defaultColor : color); }
+    Color scaleWeatherColor(Color color) { return color * (_appctx.intensity() * _weatherIntensity); }        
 };
 
 #endif

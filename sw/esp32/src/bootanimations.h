@@ -236,7 +236,7 @@ private:
     bool _bootCompleted;
 
 public:
-    BootAnimations(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput)
+    BootAnimations(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
         : RenderBase(appdata, env, sys, userinput)
     {
     }

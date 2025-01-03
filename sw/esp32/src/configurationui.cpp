@@ -1,6 +1,9 @@
 
 #include <algorithm>
 #include "configurationui.h"
+#include "environment_weerlive.h"
+#include "environment_openweather.h"
+#include "environmentselector.h"
 #include "timeinfo.h"
 
 std::vector<configchoice> ConfigurationUI::_languageChoices = { 
@@ -8,9 +11,15 @@ std::vector<configchoice> ConfigurationUI::_languageChoices = {
     configchoice("en", "english"), 
     configchoice("fr", "francais")  
 };
-std::vector<configchoice> ConfigurationUI::_dstChoices = { 
-    configchoice("0", ENG_STANDARD_TIME), 
-    configchoice("1", ENG_DAYLIGHT_SAVING) 
+// timezones retrieved from
+// https://raw.githubusercontent.com/nayarsystems/posix_tz_db/refs/heads/master/zones.csv
+std::vector<configchoice> ConfigurationUI::_tzChoices = { 
+   configchoice("GMT0BST,M3.5.0/1, M10.5.0", "London"),
+   configchoice("WET0WEST,M3.5.0/1, M10.5.0", "Lisbon"),
+   configchoice("IST-1GMT0,M10.5.0, M3.5.0/1", "Dublin"),
+   configchoice("CET-1CEST,M3.5.0, M10.5.0/3", "Amsterdam"),
+   configchoice("EET-2EEST,M3.5.0/3, M10.5.0/4", "Athens"),   
+   configchoice(">>>", "Custom"),
 };
 std::vector<configchoice> ConfigurationUI::_bootscreenChoices = { 
     configchoice("0", ENG_NO_BOOTSCREEN), 
@@ -24,49 +33,85 @@ std::vector<configchoice> ConfigurationUI::_flipDisplayChoices = {
     configchoice("0", ENG_USBDOWN), 
     configchoice("1", ENG_USBUP) 
 };
+std::vector<configchoice> ConfigurationUI::_timeModeChoices = { 
+    configchoice("0", ENG_AUTOMATIC), 
+    configchoice("1", ENG_MANUAL) 
+};
+std::vector<configchoice> ConfigurationUI::_weatherChoices;
 
-ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Environment &env, System &sys, UserInput &userinput)
+ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelector &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, env, sys, userinput)
 {
     _font = appdata.fontSettings();    
-
+    _margin = 1.0f;
+    
     addConfig(ENG_DST, 
-        [this](configline& c){ generateSettingLine(c, AppSettings::KeyDST, _dstChoices); }, 
-        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyDST, _dstChoices); });
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyTZ, _tzChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTZ, _tzChoices); });
     addConfig(ENG_YEAR, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
         [this](configline& c, bool init){ return updateYear(c, init); });
     addConfig(ENG_DATE, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false)).c_str()); }, 
         [this](configline& c, bool init){ return updateDate(c, init); });
+    addConfig(ENG_TIME_MODE, 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyTimeMode, _timeModeChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTimeMode, _timeModeChoices); });
     addConfig(ENG_TIME, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
-        [this](configline& c, bool init){ return updateTime(c, init); });
+        [this](configline& c, bool init){ return updateTime(c, init); },
+        [this](configline& c){ return _system.settings().TimeMode() == 1; });        
+    addConfig(ENG_NTP_SERVER, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%s", _system.settings().NTPServer().c_str()); },  
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyNTPServer); },
+        [this](configline& c){ return _system.settings().TimeMode() == 0; });        
+    addConfig(ENG_NTP_INTERVAL, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%d:%02d", 
+            _system.settings().NTPInterval()/60, _system.settings().NTPInterval()%60); },  
+        [this](configline& c, bool init){ return updateSettingInteger(c, init, AppSettings::KeyNTPInterval, 1, 24*60); },
+        [this](configline& c){ return _system.settings().TimeMode() == 0; });        
     addConfig(ENG_IP, 
-        [this](configline& c){ generateWifiLine(c); },
-        nullptr);
+        [this](configline& c){ generateWifiLine(c); });
     addConfig(ENG_WIFI, 
         [this](configline& c){ strcpy(c.value,_system.settings().WifiSid().c_str()); }, 
         [this](configline& c, bool init){ return updateWifiSid(c, init); },
+        nullptr,
         [this](configline& c){ _system.connectWifi(); });
     addConfig(ENG_PASS, 
         [this](configline& c){ strcpy(c.value,_system.settings().WifiPassword().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWifiPwd); },
+        nullptr,
         [this](configline& c){ _system.connectWifi(); });
     addConfig(ENG_LANG, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyLanguage, _languageChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyLanguage, _languageChoices); });
-    addConfig(ENG_KEY, 
+    addConfig(ENG_WEATHER_SOURCE, 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyWeatherSource, _weatherChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyWeatherSource, _weatherChoices); },
+        nullptr,
+        [this](configline& c){ _environment.triggerUpdate(); });
+    addConfig(ENG_WEATHER_KEY, 
         [this](configline& c){ strcpy(c.value,_system.settings().WeerliveKey().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveKey); },
-        [this](configline& c){ _environment.update(); });
-    addConfig(ENG_WEERLIVE_LOC, 
+        [this](configline& c){ return _system.settings().WeatherSource() == EnvironmentWeerlive::name(); },      
+        [this](configline& c){ _environment.triggerUpdate(); });
+    addConfig(ENG_WEATHER_LOC, 
         [this](configline& c){ strcpy(c.value,_system.settings().WeerliveLocation().c_str()); }, 
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyWeerliveLocation); },
-        [this](configline& c){ _environment.update(); });
-    addConfig(ENG_WEERLIVE_WEATHER, 
-        [this](configline& c){ generateWeatherLine(c); },
-        nullptr);
+        [this](configline& c){ return _system.settings().WeatherSource() == EnvironmentWeerlive::name(); }, 
+        [this](configline& c){ _environment.triggerUpdate(); });
+    addConfig(ENG_WEATHER_KEY, 
+        [this](configline& c){ strcpy(c.value,_system.settings().OpenWeatherKey().c_str()); }, 
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyOpenWeatherKey); },
+        [this](configline& c){ return _system.settings().WeatherSource() == EnvironmentOpenWeather::name(); },      
+        [this](configline& c){ _environment.triggerUpdate(); });
+    addConfig(ENG_WEATHER_LOC, 
+        [this](configline& c){ strcpy(c.value,_system.settings().OpenWeatherLocation().c_str()); }, 
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyOpenWeatherLocation); },
+        [this](configline& c){ return _system.settings().WeatherSource() == EnvironmentOpenWeather::name(); }, 
+        [this](configline& c){ _environment.triggerUpdate(); });
+    addConfig(ENG_WEATHER, 
+        [this](configline& c){ generateWeatherLine(c); });
     addConfig(ENG_BOOT, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyBootscreen, _bootscreenChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyBootscreen, _bootscreenChoices); });
@@ -78,7 +123,15 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, Environment &env, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
     addConfig(ENG_EXIT, 
         nullptr, 
-        [this](configline&, bool){ _exitConfig = true; return false; });   
+        [this](configline&, bool){ _exitConfig = true; return false; });
+
+    for (auto e : env.sources())
+    {
+        auto name = e->source();
+        _weatherChoices.push_back(configchoice{name,name});
+    }
+
+    calculateLabelWidth();
 }
 
 void ConfigurationUI::init()
@@ -103,94 +156,71 @@ void ConfigurationUI::init()
 
 void ConfigurationUI::render(Graphics &graphics)
 {
-    auto white = Color::white * _appctx.intensity();
-    auto darkgray = Color(16,16,16) * _appctx.intensity();
-    auto lime = Color::lime * _appctx.intensity();
-    auto darkred = Color(19,0,0) * _appctx.intensity();
-
-    auto labelwidth = 0.0f;
-    for(auto &config : _configs)
-    {
-        auto info = _font->textsize(translate(config.label).c_str());
-        labelwidth = std::max(labelwidth, info.dx);
-    }
-
-    auto margin = 1.0f;
-    auto xvalues = labelwidth + margin * 2;
+    auto colUpdating = Color::white * _appctx.intensity();
+    auto colAccept = Color::lime * _appctx.intensity();
+    auto colWritable = Color::white * _appctx.intensity() * (_updating ? 0.5f : 1.0f);
+    auto colSelect = Color(16,16,16) * _appctx.intensity();
+    auto colReadonly = Color::lime * _appctx.intensity() * (_updating ? 0.5f : 1.0f);
+    
+    auto xvalues = _labelwidth + 2;
 
     // draw selection line background
     auto x = _updating ? xvalues : 0.0;
     auto dx = graphics.dx() - x;
-    graphics.rect(x, _selectionYBase - _configYBase, dx, _font->height(), darkred);
+    graphics.rect(x, _selectionYBase - _configYBase, dx, _font->height(), colSelect);
 
     // draw visible configs lines
-    auto view = graphics.view(xvalues, 0, graphics.dx() - xvalues, graphics.dy(), true);
-    for (auto i=0; i<_configs.size(); ++i)
+    auto yt = - _configYBase;
+    for (auto i=0; i<nConfigs(); ++i)
     {
-        auto &config = _configs[i];
-        auto yt = i * _font->height() - _configYBase;
-        auto yb = yt + _font->height();
-        auto color = config.updater ? white : lime;
+        if (yt >= graphics.dy())
+            break;
 
-        if (yb < 0 || yt >= view.dy())
+        auto &config = getConfig(i);
+        if (!config.visible(config))
             continue;
 
-        auto y = yt + _font->height() + _font->descend();
+        auto yb = yt + _font->height();
+        if (yb >= 0)
+        {
+            auto y = _font->height() + _font->descend();
 
-        // draw label
-        graphics.text(_font, margin, y, translate(config.label).c_str(), white);
+            // draw label
+            auto x = _margin;
+            auto view = graphics.view(x, yt, _labelwidth, yb - yt, true);
+            x = view.text(_font, config.xLabelScrollOffset, y, translate(config.label).c_str(), colWritable);  
+            updateScrollState(config.xLabelScrollState, config.xLabelScrollOffset, config.xLabelScrollDelay, x < view.dx());
 
-        // draw value
-        if (i != _selectedLine || _iEditIndex < 0)
-        {            
-            auto x = config._xScrollOffset;
-            x = view.text(_font, x, y, config.value, color);
-            switch (config._xScrollState)
+            // draw value
+            auto editing = i == _selectedLine && _updating;
+            auto textEditing = editing && _iEditIndex >= 0;
+            if (!textEditing)
             {
-            case ScrollState::Begin:
-                config._xScrollOffset = 0;
-                if (timeout(config._scrolldelay, 1000))
-                {
-                    starttimer(config._scrolldelay);
-                    config._xScrollState = ScrollState::Scrolling;
-                }
-                break;
-            case ScrollState::Scrolling:
-                if (x < view.dx())
-                {
-                    config._xScrollState = ScrollState::End;
-                    starttimer(config._scrolldelay);
-                }
-                else
-                {
-                    config._xScrollOffset -= std::min(1.0f, (float)elapsed(config._scrolldelay/5));
-                }
-                break;
-            case ScrollState::End:
-                if (timeout(config._scrolldelay, 1500))
-                {
-                    config._xScrollState = ScrollState::Begin;
-                    starttimer(config._scrolldelay);
-                }
-                break;
+                x = _margin + _labelwidth + 2;
+                view = graphics.view(x, yt, graphics.dx() - x, yb - yt, true);
+                auto color = config.updater ? (editing ? colUpdating : colWritable) : colReadonly;
+                x = view.text(_font, config.xValueScrollOffset, y, config.value, color);    
+                updateScrollState(config.xValueScrollState, config.xValueScrollOffset, config.xValueScrollDelay, x < view.dx());
             }
         }
+        yt += _font->height();
     }
 
     // draw textual editing interface (vertical character column)
     if (_iEditIndex >= 0)
     {
         auto neditchars = strlen(_editChars);
-        auto &config =  _configs[_selectedLine];
+        auto &config =  getConfig(_selectedLine);
 
-        auto x = xvalues + config._xScrollOffset;
+        auto x = config.xValueScrollOffset;
         auto xroll = x;
 
         // draw text and empty vertical character-roll
         auto yt = _selectedLine * _font->height() - _configYBase;
         auto yb = yt + _font->height();
-        auto y = yt + _font->height() + _font->descend() - 2;
-        auto targetXScrollOffset = config._xScrollOffset;
+        auto y = _font->height() + _font->descend() - 2;
+        auto targetXScrollOffset = config.xValueScrollOffset;
+        auto view = graphics.view(xvalues, yt, graphics.dx() - x, yb - yt, true);
         for (auto i=0; i < sizeof(config.value); ++i)
         {
             auto c = config.value[i];
@@ -198,15 +228,15 @@ void ConfigurationUI::render(Graphics &graphics)
             {
                 xroll = x;
                 x += _rollXOffset;
-                graphics.rect(x, 0, _font->sizex(), 64, darkgray);
-                graphics.line(x, 0, x, 64, 0.5, white);
-                graphics.line(x + _font->sizex() - 1, 0, x + _font->sizex() - 1, 64, 0.5f, white);
+                graphics.rect(xvalues + x, 0, _font->sizex(), graphics.dy(), colSelect);
+                graphics.line(xvalues + x, 0, xvalues + x, graphics.dy(), 0.5, colUpdating);
+                graphics.line(xvalues + x + _font->sizex() + 1, 0, xvalues + x + _font->sizex() + 1, graphics.dy(), 0.5f, colUpdating);
                 x += _font->sizex() - _rollXOffset;
-                targetXScrollOffset = config._xScrollOffset + std::min(0.0f, graphics.dx() - x);
+                targetXScrollOffset = config.xValueScrollOffset + std::min(0.0f, graphics.dx() - x - xvalues);
             }
             else
             {
-                x = graphics.text(_font, x, y,  c, white);
+                x = view.text(_font, x, y,  c, colUpdating);
             }            
             if (c == 0 || c == AcceptChar)
                 break;
@@ -222,46 +252,92 @@ void ConfigurationUI::render(Graphics &graphics)
         }
         x = xroll + _rollXOffset;
         yt = yb - _font->height();
-        while (yt < 64)
+        while (yt < graphics.dy())
         {
             auto y = yt;
             auto dx = _font->sizex();
             auto dy = _font->sizey();
             if (_editChars[iroll] == AcceptChar)
             {
-                graphics.triangle(x+1, y+3, x+3, y+3, x+dx/3, y+dy-1, lime);
-                graphics.triangle(x+dx-3, y+1, x+dx, y+1, x+dx/3, y+dy-1, lime);
+                auto xc = x + xvalues;
+                graphics.triangle(xc+1, y+3, xc+3, y+3, xc+dx/3, y+dy-1, colAccept);
+                graphics.triangle(xc+dx-3, y+1, xc+dx, y+1, xc+dx/3, y+dy-1, colAccept);
             }
             else
             {
                 auto w = _font->charsize(_editChars[iroll]).dx;
                 y = yt + _font->height() + _font->descend() - 2;
-                auto xc = x + (_font->sizex() - w) / 2;
-                graphics.text(_font, xc, y, _editChars[iroll], white);
+                auto xc = xvalues + x + (_font->sizex() - w) / 2;
+                graphics.text(_font, xc, y, _editChars[iroll], colUpdating);
             }
             yt += _font->height();
             iroll = (iroll + 1) % neditchars;
         }
         graduallyUpdateVariable(_rollYOffset, 0, 2);
         graduallyUpdateVariable(_rollXOffset, 0, 2);
-        graduallyUpdateVariable(config._xScrollOffset, targetXScrollOffset, 2);
+        graduallyUpdateVariable(config.xValueScrollOffset, targetXScrollOffset, 2);
     }
-    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - 64 + _font->height(), _selectedLine * _font->height(), 0.5);
-    graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 0.5);
+    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - graphics.dy() + _font->height(), _selectedLine * _font->height(), 0.6f);
+    graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 1.0f);
+}
+
+void ConfigurationUI::calculateLabelWidth()
+{
+    _labelwidth = 0.0f;
+    for(auto &config : _configs)
+    {
+        auto info = _font->textsize(translate(config.label).c_str());
+        _labelwidth = std::max(_labelwidth, info.dx);
+    }
+    _labelwidth = std::min(_labelwidth, 24.0f);
+}
+
+void ConfigurationUI::updateScrollState(ScrollState &scrollstate, float &scrolloffset, uint64_t &scrolldelay, bool endfits)
+{
+    switch (scrollstate)
+    {
+    case ScrollState::Begin:
+        scrolloffset = 0;
+        if (timeout(scrolldelay, 1000))
+        {
+            starttimer(scrolldelay);
+            scrollstate = ScrollState::Scrolling;
+        }
+        break;
+    case ScrollState::Scrolling:
+        if (endfits)
+        {
+            scrollstate = ScrollState::End;
+            starttimer(scrolldelay);
+        }
+        else
+        {
+            scrolloffset -= std::min(1.0f, (float)elapsed(scrolldelay / 8));
+        }
+        break;
+    case ScrollState::End:
+        if (timeout(scrolldelay, 1500))
+        {
+            scrollstate = ScrollState::Begin;
+            starttimer(scrolldelay);
+        }
+        break;
+    }
 }
 
 bool ConfigurationUI::interact()
 {
     {
-        auto &config = _configs[_inextReaderUpdate];
+        // iteratively update the dynamic value for each configline
+        auto &config = getConfig(_inextReaderUpdate);
         if (config.reader && (!_updating || _inextReaderUpdate != _selectedLine))
         {
             config.reader(config);
         }
-        _inextReaderUpdate = (_inextReaderUpdate + 1) % _configs.size();
+        _inextReaderUpdate = (_inextReaderUpdate + 1) % nConfigs();
     }
 
-    auto &config = _configs[_selectedLine];
+    auto &config = getConfig(_selectedLine);
     if (_updating)
     {
         _updating = config.updater(config, false);
@@ -288,7 +364,7 @@ bool ConfigurationUI::interact()
             repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ _keySetLine += delta; });
             repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ _keySetLine -= delta; });
         }
-        _keySetLine = std::max(0.0f, std::min(_keySetLine, _configs.size() - 1.0f));
+        _keySetLine = std::max(0.0f, std::min(_keySetLine, nConfigs() - 1.0f));
         if ((int)_keySetLine != _selectedLine)
         {
             selectConfig((int)_keySetLine);
@@ -306,9 +382,10 @@ bool ConfigurationUI::interact()
 }
 
 void ConfigurationUI::addConfig(const char *label,
-    std::function<void(configline &)> reader,
-    std::function<bool(configline &, bool)> updater,
-    std::function<void(configline &)> onexit)
+    std::function<void(configline&)> reader,
+    std::function<bool(configline&, bool)> updater,
+    std::function<bool(configline&)> visible,
+    std::function<void(configline&)> onexit)
 {
     _configs.push_back(configline());
     auto &config = _configs.back();
@@ -317,26 +394,53 @@ void ConfigurationUI::addConfig(const char *label,
     config.value[0] = 0;
     config.reader = reader;
     config.updater = updater;
+    config.visible = visible != nullptr ? visible : [=](configline&){ return true; };
     config.onexitaction = onexit;
+}
+
+configline& ConfigurationUI::getConfig(int i)
+{
+    for(auto &config : _configs)
+    {
+        if (config.visible(config))
+        {
+            if (i-- == 0)
+                return config;
+        }
+    }
+    // should never reach
+    return _configs[0];
+}
+
+int ConfigurationUI::nConfigs()
+{
+    auto n = 0;
+    for(auto &config : _configs)
+    {
+        if (config.visible(config))
+            n++;
+    }
+    return n;
 }
 
 void ConfigurationUI::selectConfig(int i)
 {
+    auto n= nConfigs();
     if (i < _selectedLine)
     {
-        while (!_configs[i].updater && i > 0 && i < _configs.size())
+        while (!getConfig(i).updater && i > 0 && i < n)
         {
             i--;
         }
     }
     else
     {
-        while(!_configs[i].updater && i >= 0 && (i + 1 < _configs.size()))
+        while(!getConfig(i).updater && i >= 0 && (i + 1 < n))
         {
             i++;
         }
     }
-    if (i>=0 && i < _configs.size() && _configs[i].updater)
+    if (i>=0 && i < n && getConfig(i).updater)
     {
         _selectedLine = i;
         printf("selectedline=%d\n", _selectedLine);
@@ -350,7 +454,7 @@ bool ConfigurationUI::updateYear(configline& config, bool init)
         config.setpoint = _system.now().year();
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto key = getKey();
@@ -380,7 +484,7 @@ bool ConfigurationUI::updateDate(configline& config, bool init)
         config.setpoint = _system.now().yday();
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto key = getKey();
@@ -426,7 +530,7 @@ bool ConfigurationUI::updateTime(configline& config, bool init)
         config.setpoint = now.hour() * 60 + now.min();
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto key = getKey();
@@ -461,7 +565,7 @@ bool ConfigurationUI::updateWifiSid(configline& config, bool init)
         _system.scanAPs();
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto naps = _system.nAPs();
@@ -516,7 +620,7 @@ bool ConfigurationUI::updateSettingFreeText(configline& config, bool init, const
         config.setpoint = rollIndex(config.value[_iEditIndex]);
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto key = getKey();
@@ -565,6 +669,39 @@ bool ConfigurationUI::updateSettingFreeText(configline& config, bool init, const
     return editing;
 }
 
+bool ConfigurationUI::updateSettingInteger(configline& config, bool init, const char *settingKey, int min, int max)
+{
+    if (init)
+    {
+        config.setpoint = _system.settings().get(settingKey)->asint();
+    }
+
+    auto editing = !isEditCancelled();
+    if (editing)
+    {
+        auto key = getKey();
+        editing = key != UserInput::KEY_SET;
+        if (editing)       
+        {
+            repeatUpdateOnKey(UserInput::KEY_DOWN, key, [&](float delta){ config.setpoint += delta; });
+            repeatUpdateOnKey(UserInput::KEY_UP, key, [&](float delta){ config.setpoint -= delta; });
+        }
+        if (config.setpoint < min)
+            config.setpoint = min;
+        else if (config.setpoint >= max)
+            config.setpoint = max;
+        
+        auto integer = (int)config.setpoint;
+        snprintf(config.value, sizeof(config.value), "%d:%02d", integer / 60, integer % 60);
+
+        if (!editing)
+        {
+            _system.settings().get(settingKey)->set(integer);
+        }
+    }
+    return editing;
+}
+
 bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const char *settingKey, const std::vector<configchoice> &choices)
 {
     if (init)
@@ -577,7 +714,7 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
         }
     }
 
-    auto editing = !isEditTimeout();
+    auto editing = !isEditCancelled();
     if (editing)
     {
         auto key = getKey();
@@ -586,12 +723,19 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
         {
             case UserInput::KEY_SET:
                 _system.settings().get(settingKey)->set(choices[idx].store);
+                calculateLabelWidth();
                 editing = false;
                 break;
             case UserInput::KEY_UP:
+                config.xValueScrollState = ScrollState::End;
+                config.xValueScrollOffset = 0;
+                starttimer(config.xLabelScrollDelay);
                 idx++;
                 break;
             case UserInput::KEY_DOWN:
+                config.xValueScrollState = ScrollState::End;
+                config.xValueScrollOffset = 0;
+                starttimer(config.xLabelScrollDelay);
                 idx--;
                 break;
         }
@@ -632,9 +776,9 @@ void ConfigurationUI::repeatUpdateOnKey(int activateKey, int keyPressed, std::fu
     handler(delta);
 }
 
-bool ConfigurationUI::isEditTimeout()
+bool ConfigurationUI::isEditCancelled()
 {
-    return _userinput.hasKeyDown(UserInput::KEY_SET, 2000);
+    return _userinput.hasKeyDown(UserInput::KEY_SET, 1500);
 }
 
 bool ConfigurationUI::isTimeout()
@@ -655,7 +799,7 @@ void ConfigurationUI::generateWifiLine(configline& config)
         return;
     }
 
-    auto step = (_system.now().msticks() / 300) % 4;
+    auto step = (_system.now().msticks() / 1000) % 4;
     char dots[5] = "    ";
     dots[step] = '.';
     if (_system.wifiScanning()) 
@@ -678,7 +822,7 @@ void ConfigurationUI::generateWeatherLine(configline& config)
     {
         snprintf(config.value, sizeof(config.value), "%s", translate(ENG_NO_INTERNET).c_str());
     }
-    else if (_environment.isupdating())
+    else if (_environment.isUpdating())
     {
         auto step = (_system.now().msticks() / 400) % 4;
         char dots[5] = "    ";
@@ -705,7 +849,7 @@ void ConfigurationUI::initEditRoll(configline  &config)
 {
     _rollXOffset = 0;
     _rollYOffset = 0;
-    config._xScrollOffset = 0;
+    config.xValueScrollOffset = 0;
 }
 
 int ConfigurationUI::rollIndex(char c)
