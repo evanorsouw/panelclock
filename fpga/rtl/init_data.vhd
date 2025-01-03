@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity whitemagic_init_screen is
+entity cleardisplay_init_data is
 port (         
    i_idx   : in  unsigned(15 downto 0);
    --
@@ -11,33 +11,20 @@ port (
 );
 end entity;
 
-architecture whitemagic_init_screen_arch of whitemagic_init_screen is
+architecture cleardisplay_init_data_arch of cleardisplay_init_data is
 
-   constant Size : integer := 1+17*8;
+   constant Size : integer := 1 + 7*10;
    type t_Data is array (0 to Size-1) of std_logic_vector(7 downto 0);
    constant s_lookup : t_Data := (
       X"12",
-      X"02", X"00", X"00", X"80", X"40", X"1f", X"1f", X"1f",  -- white background
-      
-      X"02", X"06", X"27", X"13", X"01", X"00", X"00", X"00",  -- black top line
-      X"02", X"05", X"28", X"15", X"13", X"00", X"00", X"00",  -- black centre
-      X"02", X"06", X"3B", X"13", X"01", X"00", X"00", X"00",  -- black bottom line
-      
-      X"02", X"01", X"2D", X"04", X"04", X"00", X"00", X"00",  -- top connector
-      X"02", X"02", X"2E", X"06", X"02", X"1f", X"1f", X"1f",  -- top connector infill
-      X"02", X"01", X"34", X"04", X"04", X"00", X"00", X"00",  -- bottom connector      
-      X"02", X"02", X"35", X"06", X"02", X"1f", X"1f", X"1f",  -- bottom connector infill
-
-      X"02", X"0A", X"32", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 1
-      X"02", X"12", X"32", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 2
-      X"02", X"0E", X"2D", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 3
-      X"02", X"14", X"28", X"04", X"04", X"FF", X"FF", X"FF",  -- white square 4
-      X"02", X"0D", X"25", X"04", X"02", X"00", X"00", X"00",  -- white square 5 top
-      X"02", X"0D", X"27", X"04", X"02", X"FF", X"FF", X"FF",  -- white square 5 bottom
-      
-      X"02", X"17", X"1C", X"04", X"04", X"00", X"00", X"FF",  -- blue square
-      X"02", X"12", X"20", X"04", X"04", X"FF", X"00", X"00",  -- red square
-      X"02", X"18", X"22", X"04", X"04", X"00", X"FF", X"00"   -- green square     
+ 
+      X"18", X"00", X"02", X"00", X"00", X"80", X"40", X"01", X"00", X"00", -- clear screen 1
+      X"18", X"10", X"02", X"00", X"00", X"80", X"40", X"00", X"01", X"00", -- clear screen 2
+      X"18", X"20", X"02", X"00", X"00", X"80", X"40", X"00", X"00", X"01", -- clear screen 3
+      X"18", X"30", X"02", X"00", X"00", X"80", X"40", X"01", X"01", X"00", -- clear screen 4
+      X"18", X"40", X"02", X"00", X"00", X"80", X"40", X"01", X"00", X"01", -- clear screen 5
+      X"18", X"50", X"02", X"00", X"00", X"80", X"40", X"00", X"01", X"01", -- clear screen 6
+      X"18", X"60", X"02", X"00", X"00", X"80", X"40", X"01", X"01", X"01"  -- clear screen 7
    );
 
 begin

@@ -2,13 +2,14 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
+-- to add: 
 entity FM6124 is
    port (
-      i_clkx2     : in std_logic;   -- max 2x the panel frequency
+      i_clkx2     : in std_logic;   -- 2x the panel frequency
       i_reset_n   : in std_logic;
       --
-      o_addr      : out std_logic_vector (13 downto 0);
-      o_read      : out std_logic;
+      o_addr      : out std_logic_vector (13 downto 0);  -- ram address where RGB values are read
+      o_read      : out std_logic;  -- indication that panel must now have read-access
       o_dsp_clk   : out std_logic;
       o_dsp_latch : out std_logic;
       o_dsp_oe_n  : out std_logic;
@@ -21,8 +22,8 @@ architecture FM6124_arch of FM6124 is
    signal s_clockside      : std_logic;
    signal s_column_count   : unsigned (6 downto 0);
    signal s_row_count      : unsigned (4 downto 0);
-   signal s_depth_count    : unsigned (15 downto 0);
-   signal s_depth_delay    : unsigned (7 downto 0);
+   signal s_refresh_delay    : unsigned (15 downto 0);
+   signal s_depth_bitmask    : unsigned (7 downto 0);
    signal s_pixel_addr     : unsigned (13 downto 0);
 
 begin
@@ -41,8 +42,8 @@ begin
          s_clockside       <= '0';
          s_column_count    <= to_unsigned(0, s_column_count'Length);
          s_row_count       <= to_unsigned(0, s_row_count'Length);
-         s_depth_count     <= to_unsigned(1, s_depth_count'Length);
-         s_depth_delay     <= "10000000";      
+         s_refresh_delay   <= to_unsigned(1, s_refresh_delay'Length);
+         s_depth_bitmask   <= "10000000";      
          s_pixel_addr      <= to_unsigned(0, s_pixel_addr'length);
 
       elsif rising_edge(i_clkx2) then
@@ -57,11 +58,15 @@ begin
          v_pixel_addr := s_pixel_addr;
          v_row_count  := s_row_count;
                   
-         if s_depth_count < 3 then
-            v_read := '1';
-         else
+         if s_refresh_delay < 3 then
+            -- we're about to start a display refresh
+            -- indicate that o_addr must now start reading ram.
+            v_read := '1'; 
+         end if;
+         
+         if s_refresh_delay > 0 then
             v_waiting := '1';          
-            s_depth_count <= s_depth_count - 1;            
+            s_refresh_delay <= s_refresh_delay - 1;            
          end if;        
          
          if s_clockside = '0' and v_waiting = '0' then
@@ -78,16 +83,20 @@ begin
                s_column_count <= s_column_count + 1;
             elsif (s_column_count = 66) then
                v_row_count := v_row_count + 1;
-               s_depth_count <= s_depth_delay * 67 - 66;
+               if (s_depth_bitmask = "00000001") then              
+                  s_refresh_delay <= to_unsigned(2, s_refresh_delay'Length);
+               else
+                  s_refresh_delay <= s_depth_bitmask * 67 - 66;
+               end if;
                s_column_count <= to_unsigned(0, s_column_count'Length);
                if (v_row_count = 31) then
-                  if (s_depth_delay = "00000001") then
+                  if (s_depth_bitmask = "00000001") then
                      -- restart entire refresh cycle
-                     s_depth_delay <= "10000000";
+                     s_depth_bitmask <= "10000000";
                      v_pixel_addr := to_unsigned(0, v_pixel_addr'Length);
                      v_dsp_vbl := '1';
                   else
-                     s_depth_delay <= '0' & s_depth_delay(7 downto 1);
+                     s_depth_bitmask <= '0' & s_depth_bitmask(7 downto 1);
                   end if;
                end if;
             end if;

@@ -171,7 +171,7 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    );
    end component;
 
-   component whitemagic_init_screen
+   component cleardisplay_init_data
    port (
       i_idx   : in  unsigned(15 downto 0);
       o_count : out unsigned(7 downto 0);
@@ -290,13 +290,15 @@ architecture ledpanel_controller_arch of ledpanel_controller is
    signal s_dsp_oe_n         : std_logic;
    signal s_dsp_addr         : std_logic_vector(4 downto 0);
    signal s_dsp_vbl          : std_logic;
+   signal s_dsp_inhibit_rgb  : std_logic;
+   signal s_panel_boot_delay : unsigned(25 downto 0);
 
    signal s_rmw_step         : integer;
    signal s_rmw_address      : unsigned(13 downto 0);
    signal s_rmw_bitmask      : std_logic_vector(7 downto 0);
    signal s_rmw_in_progress  : std_logic;
 
-   type T_FIFOSTATE is ( REQUEST, LUT, AVAILABLE );
+   type T_FIFOSTATE is ( WAIT_FOR_DATA, WAIT_LUT_LOOKUP, DATA_AVAILABLE );
    signal s_readfifo_state : T_FIFOSTATE;
    
 
@@ -370,7 +372,7 @@ begin
       o_test        => open
    );
 
-   init_data : whitemagic_init_screen
+   init_data : cleardisplay_init_data
    port map (
       i_idx   => s_init_data_idx,
       o_count => s_init_data_size,
@@ -464,6 +466,23 @@ begin
 
    o_spi_sdo <= i_spi_sdi;
 
+   p_panelreset: process(s_reset_n, i_clk60M)
+   begin
+      if s_reset_n = '0' then
+         s_panel_boot_delay <= to_unsigned(48000000, s_panel_boot_delay'Length);         
+         s_dsp_inhibit_rgb <= '1';
+      else         
+         if s_panel_boot_delay > 0 then
+            if rising_edge(i_clk60M) then
+               s_panel_boot_delay <= s_panel_boot_delay - 1;               
+            end if;
+         else
+            s_dsp_inhibit_rgb <= '0';
+         end if;                 
+      end if;
+      ot_test <= s_dsp_inhibit_rgb;
+   end process;
+
    p_sram: process(s_reset_n, i_clk60M)
    -- An memory write update is initiated by setting the:
    --   s_ram_wr_addr
@@ -498,7 +517,11 @@ begin
                o_sram_wr <= '1';
                o_sram_addr <= s_displayscreen & s_ram_rd_addr;
                io_sram_data <= (others => 'Z');
-               o_dsp_rgbs <= io_sram_data;
+               if s_dsp_inhibit_rgb = '1' then
+                  o_dsp_rgbs <= (others => '0');
+               else                             
+                  o_dsp_rgbs <= io_sram_data;
+               end if;
                s_rmw_step <= 0;
 
             else
@@ -540,19 +563,11 @@ begin
                   s_rmw_bitmask <= "10000000";
                   s_rmw_address <= s_ram_wr_addr;
                   s_rmw_step <= 0;
-               -- else
-                  -- s_rmw_in_progress <= '1';
-                  -- s_rmw_bitmask <= "10000000";
-                  -- s_rmw_address <= "11110000000000";
-                  -- s_ram_wr_color <= "111111110000000011110000";
-                  -- s_rmw_step <= 0;
                end if;
             end if;
          end if;
       end if;
    end process;
-
-   ot_test <= s_reset_n;   
 
    -- receive API date (byte), initially from internal storage (init_data)
    -- after that from the external serial source.
@@ -565,23 +580,23 @@ begin
    variable v_init_idx         : unsigned(15 downto 0);
    begin
       if s_reset_n = '0' then
-         s_rcv_dataclk      <= '0';
-         s_last_rcv_dataclk <= '0';
-         s_init_idx         <= to_unsigned(0, s_init_idx'length);
-         s_init_delay       <= to_unsigned(2, s_init_delay'length);
-         s_init_done        <= '0';
+         s_rcv_dataclk       <= '0';
+         s_last_rcv_dataclk  <= '0';
+         s_init_idx          <= to_unsigned(0, s_init_idx'length);
+         s_init_delay        <= to_unsigned(2, s_init_delay'length);
+         s_init_done         <= '0';
 
          s_ram_wr_clk      <= '0';
          s_ram_wr_mask     <= (others => '0');
          s_ram_wr_addr     <= (others => '0');
-         s_readfifo_state  <= REQUEST;
+         s_readfifo_state  <= WAIT_FOR_DATA;
 
          s_fifo_rindex     <= to_unsigned(0,FIFO_DEPTH);
          s_fifo_windex     <= to_unsigned(0,FIFO_DEPTH);
 
       elsif rising_edge(i_clk60M) then
 
-         -- receive serial data (initially 'receive' initialization data)
+         -- receive serial data (initially we 'receive' initialization data)
          if s_init_done = '1' then
             s_fifo_datain <= s_serial_datain;
             s_rcv_dataclk <= s_serial_dataclk;
@@ -615,14 +630,14 @@ begin
 
          -- read received data from fifo
          case s_readfifo_state is
-         when REQUEST =>
+         when WAIT_FOR_DATA =>
             if s_fifo_windex /= s_fifo_rindex then  -- we have something in the fifo?
                s_fifo_rindex <= s_fifo_rindex + 1;
                s_received_data <= s_fifo_dataout;
-               s_readfifo_state <= LUT;
+               s_readfifo_state <= WAIT_LUT_LOOKUP;
             end if;
-         when LUT => -- 1 cycle to do the color lut lookup
-            s_readfifo_state <= AVAILABLE;
+         when WAIT_LUT_LOOKUP => -- 1 cycle to do the color lut lookup
+            s_readfifo_state <= DATA_AVAILABLE;
          when others =>
          end case;
 
@@ -642,12 +657,12 @@ begin
                s_cmd_lut_need_more_data = '1' or
                s_cmd_screen_need_more_data = '1' 
             then
-               if s_readfifo_state = AVAILABLE then
+               if s_readfifo_state = DATA_AVAILABLE then
                   s_cmd_fill_data_rdy <= s_cmd_fill_need_more_data;
                   s_cmd_blit_data_rdy <= s_cmd_blit_need_more_data;
                   s_cmd_lut_data_rdy <= s_cmd_lut_need_more_data;
                   s_cmd_screen_data_rdy <= s_cmd_screen_need_more_data;
-                  s_readfifo_state <= REQUEST;
+                  s_readfifo_state <= WAIT_FOR_DATA;
                end if;
             end if;
 
@@ -678,12 +693,12 @@ begin
             end if;
 
          else
-            if s_readfifo_state = AVAILABLE then
+            if s_readfifo_state = DATA_AVAILABLE then
                s_cmd_fill_data_rdy <= '1';
                s_cmd_blit_data_rdy <= '1';
                s_cmd_lut_data_rdy <= '1';
                s_cmd_screen_data_rdy <= '1';
-               s_readfifo_state <= REQUEST;
+               s_readfifo_state <= WAIT_FOR_DATA;
             end if;
          end if;
       end if;
