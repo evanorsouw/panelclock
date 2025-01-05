@@ -276,7 +276,7 @@ public:
         }
     }
 
-    bool interact() { return _bootCompleted; } 
+    int interact() { return _bootCompleted ? 1 : 0; } 
 };
 
 #endif

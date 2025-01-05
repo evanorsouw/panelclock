@@ -8,7 +8,8 @@ ApplicationRunner::ApplicationRunner(
     LedPanel& panel, 
     BootAnimations& bootui, 
     Application& appui, 
-    ConfigurationUI& configui, 
+    ConfigurationUI& configui,
+    OTAUI& otaui, 
     System& system,
     Graphics& graphics)
     : _appctx(appdata)
@@ -16,6 +17,7 @@ ApplicationRunner::ApplicationRunner(
     , _bootui(bootui)
     , _appui(appui)
     , _configui(configui)
+    , _otaui(otaui)
     , _system(system)
     , _graphics(graphics)
 {
@@ -63,6 +65,13 @@ void ApplicationRunner::displayTask()
 {
     uint64_t timer;
 
+    auto elapsed = _appctx.elapsed(_lastdisplaytime);
+    if (elapsed < 40)
+    {
+        vTaskDelay((40 - elapsed) / portTICK_PERIOD_MS);
+    }
+    _appctx.starttimer(_lastdisplaytime);
+
     Bitmap *screen;
     xQueueReceive(_hDisplayQueue, &screen, 1000);
     _appctx.starttimer(timer);
@@ -89,6 +98,7 @@ void ApplicationRunner::startMode(UIMode mode, TransitionPhase phase)
         case UIMode::Boot: _bootui.init(); break;
         case UIMode::DateTime: _appui.init(); break;
         case UIMode::Config: _configui.init(); break;            
+        case UIMode::OTA: _otaui.init(); break;            
     }
 }
 
@@ -117,14 +127,29 @@ void ApplicationRunner::stepGUI()
         break;
     case UIMode::DateTime:
         _appui.render(_graphics);
-        if (interact && _appui.interact())
+        if (interact)
         {
-            startMode(UIMode::Config, TransitionPhase::Leaving);
+            switch (_appui.interact())
+            {
+                case 1:
+                    startMode(UIMode::Config, TransitionPhase::Leaving);
+                    break;
+                case 2:
+                    startMode(UIMode::OTA, TransitionPhase::Leaving);
+                    break;
+            }
         }
         break;
     case UIMode::Config:
         _configui.render(_graphics);
         if (interact && _configui.interact())
+        {
+            startMode(UIMode::DateTime, TransitionPhase::Leaving);
+        }
+        break;
+    case UIMode::OTA:
+        _otaui.render(_graphics);
+        if (interact && _otaui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);
         }

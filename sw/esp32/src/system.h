@@ -4,6 +4,7 @@
 
 #include "appsettings.h"
 #include "ds3231.h"
+#include "events.h"
 #include "wificlient.h"
 #include "translator.h"
 #include "timeinfo.h"
@@ -23,14 +24,15 @@ public:
     virtual ~System();
 
     void scanAPs();
+    void disconnectWifi();
     void connectWifi();
     int nAPs() const { return _wifi->nAPs(); }
     const char *APSID(int i) const { return _wifi->APSID(i); }
 
     Event *wifiConnectedEvent() { return _wifiConnectedEvent; }
-    bool wifiConnecting() const { return _wifi->isConnecting(); }
-    bool wifiConnected() const { return _wifi->isConnected(); }
-    bool wifiScanning() const { return _wifi->isScanning(); }
+    bool wifiConnecting() const { return _wifi && _wifi->isConnecting(); }
+    bool wifiConnected() const { return _wifi && _wifi->isConnected(); }
+    bool wifiScanning() const { return _wifi && _wifi->isScanning(); }
 
     bool waitForInternet(int timeout = 0) const { return _wifi->waitForConnection(timeout); }
     const char *IPAddress() const { return _wifi->ip(); }

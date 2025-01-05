@@ -73,7 +73,11 @@ public:
     void set(int x, int y, const Color color, uint8_t alpha);
     void rect(float x, float y, float dx, float dy, Color color, Mode mode = Mode::Set);
     void line(float x1, float y1, float x2, float y2, float thickness, Color color);    
-    float text(Font *font, float x, float y, const char *txt, Color color, Mode mode = Mode::Set);
+    float text(Font *font, float x, float y, const char *txt, Color color, Mode mode = Mode::Set) 
+    { 
+        return text(font, x, y, txt, 0, color, mode); 
+    }
+    float text(Font *font, float x, float y, const char *txt, int n, Color color, Mode mode = Mode::Set);
     float text(Font *font, float x, float y, char c, Color color, Mode mode = Mode::Set);
     void triangle(float x1, float y1, float x2, float y2, float x3, float y3, Color color);
 
@@ -86,8 +90,8 @@ private:
     void clearRasterizedMask(int xl, int yt, int xr, int yb);
     void mergeRasterizedMask(const Color color, irect area);
 
-    float textTTF(TrueTypeFont *font, float x, float y, const char *txt, Color color, Mode mode);
-    float textWMF(BitmapFont *font, float x, float y, const char *txt, Color color, Mode mode);
+    float textTTF(TrueTypeFont *font, float x, float y, const char *txt, int n, Color color, Mode mode);
+    float textWMF(BitmapFont *font, float x, float y, const char *txt, int n, Color color, Mode mode);
 
     void SWAP(float &a, float &b) { float tmp=a; a=b; b=tmp; }
     float MIN(float a, float b) { return a < b ? a : b; }

@@ -68,7 +68,7 @@ int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
     config.user_data = &handler;
 
     // play the ssl game but don't check certificates because there is
-    // no infrastructure to periodically update root certificates.
+    // no guaranteed infrastructure to periodically update root certificates.
     config.transport_type = HTTP_TRANSPORT_OVER_SSL;
     config.cert_pem = nullptr;
 

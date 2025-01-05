@@ -78,6 +78,7 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
 
 WifiClient::~WifiClient()
 {
+    _mode = WifiMode::Init;
     esp_wifi_stop();
     esp_wifi_deinit();
     esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, _handlerWifi);
@@ -143,7 +144,6 @@ void WifiClient::connect(const char *sid, const char *password)
 
 void WifiClient::initializeWifi()
 {
-
     esp_log_level_set("wifi", ESP_LOG_WARN);
     ESP_ERROR_CHECK(esp_netif_init());
 

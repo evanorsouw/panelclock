@@ -134,6 +134,30 @@ SFT_Font *TrueTypeFont::loadFont(const char *fontname)
     return font;
 }
 
+int TrueTypeFont::splittext(const char *txt, float maxwidth) const
+{
+    auto dx = 0;
+    auto codepoint = 0;
+    auto i = 0;
+    while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
+    {
+        SFT_Glyph glyph;
+        sft_lookup(&_sft, codepoint, &glyph);
+        if (glyph == 0)
+            continue;
+
+        SFT_GMetrics mtx = {0};
+        if (sft_gmetrics(&_sft, glyph, &mtx) == -1)
+            continue;
+
+        if (dx + mtx.advanceWidth > maxwidth)
+            break;
+        dx += mtx.advanceWidth;
+    }
+    return i;
+}
+
+
 textinfo TrueTypeFont::textsize(const char *txt) const
 {
     textinfo size(0, _lmetrics.ascender - _lmetrics.descender);

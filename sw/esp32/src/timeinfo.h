@@ -7,11 +7,13 @@
 
 class  timeinfo
 {
+public:
+    static const char *MonthsCompact[12];
+
 private:
     const char *_weekdaysFull[7] = { ENG_MONDAY, ENG_TUESDAY, ENG_WEDNESDAY, ENG_THURSDAY, ENG_FRIDAY, ENG_SATURDAY, ENG_SUNDAY };
     const char *_weekdaysCompact[7] = { ENG_MON, ENG_TUE, ENG_WED, ENG_THU, ENG_FRI, ENG_SAT, ENG_SUN };
     const char *_monthsFull[12] = { ENG_JANUARY, ENG_FEBRUARY, ENG_MARCH, ENG_APRIL, ENG_MAY_LONG, ENG_JUNE, ENG_JULY, ENG_AUGUST, ENG_SEPTEMBER, ENG_OCTOBER, ENG_NOVEMBER, ENG_DECEMBER };
-    const char *_monthsCompact[12] = { ENG_JAN, ENG_FEB, ENG_MAR, ENG_APR, ENG_MAY_SHORT, ENG_JUN, ENG_JUL, ENG_AUG, ENG_SEP, ENG_OCT, ENG_NOV, ENG_DEC };
     static const int _daysInMonth[12];
     struct tm _tm;
     int _millies;
@@ -45,7 +47,7 @@ public:
     static int daysInMonth(int month, bool leapyear);
 
     const char *dayOfWeek(bool full=true) const { return full ? _weekdaysFull[wday()] : _weekdaysCompact[wday()]; }    
-    const char *monthName(bool full=true) const { return full ? _monthsFull[mon()] : _monthsCompact[mon()] ; }    
+    const char *monthName(bool full=true) const { return full ? _monthsFull[mon()] : MonthsCompact[mon()] ; }    
 
     const struct tm *tm() const { return &_tm; } 
 

@@ -24,7 +24,19 @@ void System::scanAPs()
 
 void System::connectWifi()
 {
-    _wifi->connect(_settings->WifiSid().c_str(), _settings->WifiPassword().c_str());
+    if (!_wifi)
+    {
+        startWifi();
+    }
+    else
+    {
+        _wifi->connect(_settings->WifiSid().c_str(), _settings->WifiPassword().c_str());
+    }
+}
+
+void System::disconnectWifi()
+{
+    stopWifi();
 }
 
 timeinfo System::now() const

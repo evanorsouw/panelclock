@@ -46,6 +46,7 @@ public:
     static BitmapFont *getFont(const char *font);
     ~BitmapFont() override;
 
+    int splittext(const char *txt, float maxwidth) const override;
     textinfo textsize(const char *txt) const override;
     textinfo charsize(int codepoint) const override;
 

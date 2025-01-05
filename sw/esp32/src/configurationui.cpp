@@ -5,6 +5,7 @@
 #include "environment_openweather.h"
 #include "environmentselector.h"
 #include "timeinfo.h"
+#include "version.h"
 
 std::vector<configchoice> ConfigurationUI::_languageChoices = { 
     configchoice("nl", "nederlands"), 
@@ -121,6 +122,7 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_FLIP, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
+    addConfig(ENG_VERSION, [this](configline& c){ strcpy(c.value, version()); }); 
     addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });
@@ -325,7 +327,7 @@ void ConfigurationUI::updateScrollState(ScrollState &scrollstate, float &scrollo
     }
 }
 
-bool ConfigurationUI::interact()
+int ConfigurationUI::interact()
 {
     {
         // iteratively update the dynamic value for each configline
@@ -378,7 +380,7 @@ bool ConfigurationUI::interact()
         _system.settings().saveSettings();
         _system.connectWifi();
     }
-    return exit;
+    return exit ? 1 : 0;
 }
 
 void ConfigurationUI::addConfig(const char *label,

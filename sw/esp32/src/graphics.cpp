@@ -233,11 +233,11 @@ void Graphics::line(float x1, float y1, float x2, float y2, float thickness, Col
     mergeRasterizedMask(color, r1.join(r2));
 }
 
-float Graphics::text(Font *font, float x, float y, const char *txt, Color color, Mode mode)
+float Graphics::text(Font *font, float x, float y, const char *txt, int n, Color color, Mode mode)
 {    
     if (font->getFontType() == Font::FontType::TTF)
-        return textTTF((TrueTypeFont*)font, x, y, txt, color, mode);
-    return textWMF((BitmapFont*)font, x, y, txt, color, mode);
+        return textTTF((TrueTypeFont*)font, x, y, txt, n, color, mode);
+    return textWMF((BitmapFont*)font, x, y, txt, n, color, mode);
 }
 
 float Graphics::text(Font *font, float x, float y, char c, Color color, Mode mode)
@@ -246,7 +246,7 @@ float Graphics::text(Font *font, float x, float y, char c, Color color, Mode mod
     return text(font, x, y, buf, color, mode);
 }
 
-float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, Color color, Mode mode)
+float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, int n, Color color, Mode mode)
 {
     SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
     auto sft = font->getSFT();
@@ -294,11 +294,14 @@ float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, C
             }
         }
         x += mtx.advanceWidth;
+
+        if (n > 0 && n-- == 1)
+            break;
     }
     return x;
 }
 
-float Graphics::textWMF(BitmapFont *font, float x, float y, const char *txt, Color color, Mode mode)
+float Graphics::textWMF(BitmapFont *font, float x, float y, const char *txt, int n, Color color, Mode mode)
 {
     int codepoint;
     int idx = 0;
@@ -337,8 +340,10 @@ float Graphics::textWMF(BitmapFont *font, float x, float y, const char *txt, Col
             }
         }
         x += glyph->width + font->tracking();
-    }
 
+        if (n > 0 && n-- == 1)
+            break;
+    }
     return x;
 }
 

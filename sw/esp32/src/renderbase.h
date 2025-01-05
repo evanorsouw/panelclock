@@ -38,7 +38,7 @@ public:
 
     virtual void init() {}
     virtual void render(Graphics &_graphics) {}
-    virtual bool interact() { return false; }
+    virtual int interact() { return 0; }
 };
 
 #endif

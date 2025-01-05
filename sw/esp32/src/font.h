@@ -30,6 +30,8 @@ public:
     virtual ~Font() {}
     FontType getFontType() const { return _type; }
 
+    virtual int splittext(const char *txt, float maxwidth) const = 0;
+    virtual textinfo textsize(const std::string &txt) const { return textsize(txt.c_str()); }
     virtual textinfo textsize(const char *txt) const = 0;
     virtual textinfo charsize(int codepoint) const = 0;
 

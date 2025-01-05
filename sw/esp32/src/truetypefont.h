@@ -37,6 +37,7 @@ public:
     static TrueTypeFont *getFont(const char *fontname, float dx, float dy);
     ~TrueTypeFont() override;
 
+    int splittext(const char *txt, float maxwidth) const override;
     textinfo textsize(const char *txt) const override;
     textinfo charsize(int codepoint) const override;
 

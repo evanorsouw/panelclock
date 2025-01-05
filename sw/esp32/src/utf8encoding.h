@@ -22,6 +22,8 @@ public:
         if ((s[idx] & 0x80) == 0x00)
         {   // 1 byte code
             codepoint = s[idx++];
+            if (codepoint == 0)
+                idx--;
         }
         else
         {   

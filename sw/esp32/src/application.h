@@ -46,7 +46,7 @@ public:
 
     void init();
     void render(Graphics &graphics);
-    bool interact();
+    int interact();
     
 private:
     void drawClock(Graphics& graphics, float x, float y, float diameter);

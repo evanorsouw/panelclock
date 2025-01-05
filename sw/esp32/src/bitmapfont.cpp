@@ -74,6 +74,30 @@ BitmapFont *BitmapFont::getFont(const char *fontname)
     return font;
 }
 
+int BitmapFont::splittext(const char *txt, float maxwidth) const
+{
+    auto dx = 0.0f;
+    auto codepoint = 0;
+    auto i = 0;
+    auto ilast = 0;
+    while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
+    {
+        auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)codepoint; });
+        if (it != _glyphs.end())
+        {
+            auto nextdx = dx;
+            if (nextdx > 0)
+                nextdx += _info->tracking;
+            nextdx += it->second->width;
+            if (nextdx > maxwidth)
+                break;
+            dx = nextdx;
+        }
+        ilast = i;
+    }
+    return ilast;
+}
+
 textinfo BitmapFont::textsize(const char *txt) const
 {
     textinfo size(0, height());

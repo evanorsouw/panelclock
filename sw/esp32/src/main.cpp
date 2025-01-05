@@ -105,14 +105,13 @@ void app_main()
     auto appui = new Application(*appdata, *environment, *system, *userinput);
     auto bootui = new BootAnimations(*appdata, *environment, *system, *userinput);
     auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
-    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *system, *graphics);
+    auto otaui = new OTAUI(*appdata, *environment, *system, *userinput);
+    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *otaui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc, *settings);
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 4000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
-
-
 
     printf("application initialized\n");
     Diagnostic::printmeminfo();
@@ -137,6 +136,11 @@ void app_main()
         if (appdata->timeoutAndRestart(timetimeout, 12*60*1000))    // update from RTC every 12H
         {
             timeupdater->update(false); // ignore RTC when NTP is enabled
+        }
+        auto elapsedms = system->now().msticks() - environment->lastUpdate().msticks();
+        if (elapsedms > 10 * 60 * 1000)
+        {
+            environment->triggerUpdate();
         }
     }
 }

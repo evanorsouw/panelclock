@@ -2,6 +2,7 @@
 #include "timeinfo.h"
 
 const int timeinfo::_daysInMonth[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+const char *timeinfo::MonthsCompact[12] = { ENG_JAN, ENG_FEB, ENG_MAR, ENG_APR, ENG_MAY_SHORT, ENG_JUN, ENG_JUL, ENG_AUG, ENG_SEP, ENG_OCT, ENG_NOV, ENG_DEC };
 
 timeinfo::timeinfo() 
 {

@@ -64,7 +64,7 @@ void Application::render(Graphics& graphics)
     }
 }
 
-bool Application::interact()
+int Application::interact()
 {
     if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 0))
     {
@@ -89,9 +89,13 @@ bool Application::interact()
     else if (_userinput.hasKeyDown(UserInput::KEY_SET, 1000))
     {
         _userinput.flush();
-        return true;    // enter configuration menu
+        return 1;    // enter configuration menu
     }
-    return false;   // stay in normal clock-mode
+    else if (_userinput.hasKeyDown(UserInput::KEY_UP, 5000) && _userinput.hasKeyDown(UserInput::KEY_DOWN, 5000))
+    {
+        return 2;
+    }
+    return 0;   // stay in normal clock-mode
 }
 
 void Application::drawClock(Graphics& graphics, float x, float y, float diameter)

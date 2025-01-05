@@ -10,13 +10,14 @@
 #include "bitmap.h"
 #include "bootanimations.h"
 #include "configurationui.h"
+#include "otaui.h"
 #include "ledpanel.h"
 #include "system.h"
 
 class ApplicationRunner
 {
 private:
-    enum class UIMode { Boot, DateTime, Config } ;
+    enum class UIMode { Boot, DateTime, Config, OTA } ;
     enum class TransitionPhase { Leaving, Entering, Stable } ;
 
 private:
@@ -25,6 +26,7 @@ private:
     BootAnimations& _bootui;
     Application& _appui;
     ConfigurationUI& _configui;
+    OTAUI& _otaui;
     System& _system;
     Graphics &_graphics;
     QueueHandle_t _hRenderQueue;
@@ -34,6 +36,7 @@ private:
     int _fpsInterval;
     uint64_t _totalrendertime;
     uint64_t _totaldisplaytime;
+    uint64_t _lastdisplaytime;
     int _rendercount;
     UIMode _mode;
     UIMode _nextMode;
@@ -47,6 +50,7 @@ public:
         BootAnimations& bootui, 
         Application& appui, 
         ConfigurationUI& configui, 
+        OTAUI& otaui, 
         System& system,
         Graphics& graphics);
 

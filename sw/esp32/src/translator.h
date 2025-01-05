@@ -21,6 +21,7 @@
 #define ENG_NTP_SERVER "NTP server"
 #define ENG_NTP_INTERVAL "NTP interval"
 
+#define ENG_VERSION "version"
 #define ENG_DST "DST"
 #define ENG_YEAR "year"
 #define ENG_DATE "date"

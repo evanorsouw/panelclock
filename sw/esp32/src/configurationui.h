@@ -83,7 +83,7 @@ public:
     ConfigurationUI(ApplicationContext &appdata, EnvironmentSelector &env, System &sys, UserInput &userinput);
 
     void render(Graphics& graphics);
-    bool interact();
+    int interact();
     void init();
 
 private:
