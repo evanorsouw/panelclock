@@ -28,7 +28,6 @@ public:
     const char *name() const { return _name.c_str(); }
     void set() 
     { 
-        printf("event='%s' set\n", name());
         xEventGroupSetBits(_eventGroup, _eventBit); 
     }
     EventBits_t bit() const { return _eventBit; }
@@ -70,22 +69,6 @@ public:
     {
         auto ticks = delayInMs == 0 ? portMAX_DELAY : delayInMs / portTICK_PERIOD_MS;
         auto bits = xEventGroupWaitBits(_eventGroup, _allocatedBits, false, false, ticks);
-        
-        if (bits)
-        {
-            printf("events=[");
-            auto next = false;
-            for (auto event : _events)
-            {
-                if (event->bit() & bits)
-                {
-                    if (next) printf(",");
-                    printf("%s", event->name());
-                    next = true;
-                }
-            }
-            printf("] triggered\n");
-        }
         return bits;
     }
 };

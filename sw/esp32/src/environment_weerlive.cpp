@@ -120,6 +120,21 @@ static struct {
     { "OZO", 202.5 }
 };
 
+EnvironmentWeerlive::EnvironmentWeerlive(System *system, Settings &settings, Event *event)
+    : EnvironmentBase(name(), event)
+{
+    _system = system;
+    _accesskey = settings.get(AppSettings::KeyWeerliveKey);
+    _location = settings.get(AppSettings::KeyWeerliveLocation);
+    _parsedValues.clear();
+    _updating = false;
+    _lastupdate = system->now();
+    _hTimer = xTimerCreate("weerlive", _updateIntervalTicks, pdTRUE, this, 
+        [](TimerHandle_t timer){ 
+            ((EnvironmentWeerlive *) pvTimerGetTimerID(timer))->triggerUpdate();
+        });
+}
+
 void EnvironmentWeerlive::update()
 {
     if (_updating)
@@ -164,6 +179,7 @@ void EnvironmentWeerlive::update()
         }
         _values = _parsedValues;        
         _updating = false;
+        xTimerReset(_hTimer, _updateIntervalTicks);
     }
 }
 

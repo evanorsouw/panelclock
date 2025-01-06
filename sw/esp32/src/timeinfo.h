@@ -5,6 +5,8 @@
 #include <time.h>
 #include "translator.h"
 
+#define TZ_CUSTOM "custom"
+
 class  timeinfo
 {
 public:

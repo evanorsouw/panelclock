@@ -67,6 +67,7 @@ public:
     static Color skyblue;
     static Color pastelred;
     static Color darkred;
+    static Color darkgreen;
     static Color darksalmon;
     static Color lightcoral;
     static Color maya;

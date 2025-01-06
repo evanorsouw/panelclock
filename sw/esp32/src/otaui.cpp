@@ -8,19 +8,20 @@
 #include "otaui.h"
 #include "diagnostic.h"
 
-#define CHOICE_NEW "new"
-#define CHOICE_OLD "old"
-#define CHOICE_BACK "back"
-#define CHOICE_RESTART "restart"
+#define CHOICE_GO "GO"
+#define CHOICE_EXIT "EXIT"
+#define CHOICE_RESTART "RESTART"
+#define CHOICE_CANCEL "CANCEL"
 
 void OTAUI::init()
 {
     _yTop = 0;
     _lines.clear();
     _OTARunning = false;
+    _cancel = false;
     esp_log_level_set("*", ESP_LOG_DEBUG);
-    log(linetype::info, "OTA update");
-    choices(std::vector<std::string>{ CHOICE_NEW, CHOICE_OLD, CHOICE_BACK });
+    log(linetype::info, "Firmware update");
+    choices({ CHOICE_GO, CHOICE_EXIT });
 }
 
 void OTAUI::render(Graphics& graphics)
@@ -45,7 +46,8 @@ void OTAUI::render(Graphics& graphics)
                 auto size = font->textsize(info.line[i].c_str());
                 if (info.choice == i)
                 {
-                    graphics.rect(x, yt, size.dx + 2, size.dy, Color::darkgray);
+                    graphics.rect(x+1, yt, size.dx, size.dy + font->descend(), Color::darkgreen);
+                    graphics.rect(x, yt + 1, size.dx + 2, size.dy - 2 + font->descend(), Color::darkgreen);
                     graphics.text(font, x + 1, yb + font->descend(), info.line[i].c_str(), info.color());
                 }
                 else
@@ -104,10 +106,7 @@ void OTAUI::render(Graphics& graphics)
 
 int OTAUI::interact() 
 { 
-    if (_OTARunning)
-        return 0;
-
-    if (_userinput.howLongIsKeyDown(UserInput::KEY_SET) > 1500)
+    if (!_OTARunning && _userinput.howLongIsKeyDown(UserInput::KEY_SET) > 1500)
         return 1;   // abort
 
     if (_lines.back().type != linetype::choices)
@@ -118,7 +117,7 @@ int OTAUI::interact()
     switch (press.key)
     {
     case UserInput::KEY_SET:
-        if (info.line[info.choice] == CHOICE_NEW)
+        if (info.line[info.choice] == CHOICE_GO)
         {
             xTaskCreate([](void*arg) { 
                 auto ota = (OTAUI*)arg;
@@ -128,9 +127,13 @@ int OTAUI::interact()
                 vTaskDelete(nullptr); 
             }, "ota", 10000, this, 1, nullptr);
         }
-        else if (info.line[info.choice] == CHOICE_BACK)
+        else if (info.line[info.choice] == CHOICE_EXIT)
         {
             return 1;
+        }
+        else if (info.line[info.choice] == CHOICE_CANCEL)
+        {
+            _cancel = true;   
         }
         else if (info.line[info.choice] == CHOICE_RESTART)
         {
@@ -177,13 +180,20 @@ void OTAUI::updateOverTheAir()
     }
 
     log(linetype::info, "download");
-    for (auto kb = 1; ; kb++)
+    choices({ CHOICE_CANCEL });
+    for (;;)
     {
         ret = esp_https_ota_perform(ota_handle);
-        if (ret == ESP_ERR_HTTPS_OTA_IN_PROGRESS) 
+        if (_cancel)
         {
-            removeLogs(1);
-            log(linetype::info, "download %.3fMB", kb /1024.0f);
+            break;
+        }
+        else if (ret == ESP_ERR_HTTPS_OTA_IN_PROGRESS) 
+        {
+            removeLogs(2);
+            auto loaded = esp_https_ota_get_image_len_read(ota_handle);
+            log(linetype::info, "download %.3fMB", loaded / 1024.0f / 1024.0f);
+            choices({ CHOICE_CANCEL });
             continue;  // Keep downloading and flashing the firmware
         } 
         else if (ret == ESP_OK) 
@@ -200,19 +210,33 @@ void OTAUI::updateOverTheAir()
         }
     }
 
-    ret = esp_https_ota_finish(ota_handle);
-    if (ret == ESP_OK) 
+    if (_cancel)
     {
-        log(linetype::info, "set boot partition");
-        const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-        esp_ota_set_boot_partition(update_partition);
-        choices(std::vector<std::string> {CHOICE_RESTART});
-    } 
-    else 
-    {
-        log(linetype::info, "update failed;");
-        log(linetype::error, " %d (%s)", ret, esp_err_to_name(ret));
+        log(linetype::error, "update cancelled");
     }
+    else
+    {
+        ret = esp_https_ota_finish(ota_handle);
+        if (ret == ESP_OK) 
+        {
+            log(linetype::info, "set boot partition");
+            const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+            esp_ota_set_boot_partition(update_partition);
+        } 
+        else 
+        {
+            log(linetype::info, "update failed;");
+            log(linetype::error, " %d (%s)", ret, esp_err_to_name(ret));
+        }
+    }
+    choices({ CHOICE_RESTART });
+}
+
+void OTAUI::restart()
+{
+    log(linetype::info, "restarting");
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    esp_restart();
 }
 
 void OTAUI::removeLogs(int n)
@@ -237,14 +261,7 @@ void OTAUI::log(linetype type, const char *fmt, ...)
     _lines.push_back(lineinfo(std::vector<std::string>{ buf }, type));
 }
 
-void OTAUI::choices(std::vector<std::string> list)
+void OTAUI::choices(std::initializer_list<std::string> list)
 {
     _lines.push_back(lineinfo(list, linetype::choices));
-}
-
-void OTAUI::restart()
-{
-    log(linetype::info, "restarting");
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    esp_restart();
 }

@@ -1,9 +1,9 @@
 
-# include <algorithm>
-# include <cmath>
-# include <unistd.h>
-# include <fcntl.h>
-# include <sys/stat.h>
+#include <algorithm>
+#include <cmath>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #include "bitmapfont.h"
 #include "esp_heap_caps.h"

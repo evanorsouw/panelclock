@@ -20,7 +20,7 @@ std::vector<configchoice> ConfigurationUI::_tzChoices = {
    configchoice("IST-1GMT0,M10.5.0, M3.5.0/1", "Dublin"),
    configchoice("CET-1CEST,M3.5.0, M10.5.0/3", "Amsterdam"),
    configchoice("EET-2EEST,M3.5.0/3, M10.5.0/4", "Athens"),   
-   configchoice(">>>", "Custom"),
+   configchoice(TZ_CUSTOM, "Custom"),
 };
 std::vector<configchoice> ConfigurationUI::_bootscreenChoices = { 
     configchoice("0", ENG_NO_BOOTSCREEN), 
@@ -46,9 +46,13 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     _font = appdata.fontSettings();    
     _margin = 1.0f;
     
-    addConfig(ENG_DST, 
+    addConfig(ENG_TZ, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTZ, _tzChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTZ, _tzChoices); });
+    addConfig(ENG_TZ_CUSTOM, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%s", _system.settings().TZCustom().c_str()); },  
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyTZCustom); },
+        [this](configline& c){ return _system.settings().TZ() == TZ_CUSTOM; });        
     addConfig(ENG_YEAR, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
         [this](configline& c, bool init){ return updateYear(c, init); });
@@ -58,6 +62,10 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_TIME_MODE, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTimeMode, _timeModeChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTimeMode, _timeModeChoices); });
+    addConfig(ENG_TIME, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
+        nullptr,
+        [this](configline& c){ return _system.settings().TimeMode() == 0; });        
     addConfig(ENG_TIME, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
         [this](configline& c, bool init){ return updateTime(c, init); },
@@ -279,7 +287,7 @@ void ConfigurationUI::render(Graphics &graphics)
         graduallyUpdateVariable(_rollXOffset, 0, 2);
         graduallyUpdateVariable(config.xValueScrollOffset, targetXScrollOffset, 2);
     }
-    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - graphics.dy() + _font->height(), _selectedLine * _font->height(), 0.6f);
+    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - graphics.dy() + _font->height(), _selectedLine * _font->height(), 1.0f);
     graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 1.0f);
 }
 

@@ -135,6 +135,21 @@ static struct {
     }
 };
 
+EnvironmentOpenWeather::EnvironmentOpenWeather(System *system, Settings &settings, Event *updateEvent)
+    : EnvironmentBase(name(), updateEvent)
+{
+    _system = system;
+    _accesskey = settings.get(AppSettings::KeyOpenWeatherKey);
+    _location = settings.get(AppSettings::KeyOpenWeatherLocation);
+    _parsedValues.clear();
+    _updating = false;
+    _lastupdate = system->now();
+    _hTimer = xTimerCreate("openweather", _updateIntervalTicks, pdTRUE, this, 
+        [](TimerHandle_t timer){ 
+            ((EnvironmentOpenWeather*) pvTimerGetTimerID(timer))->triggerUpdate();
+        });
+}
+
 void EnvironmentOpenWeather::update()
 {
     if (_updating)
@@ -195,6 +210,7 @@ void EnvironmentOpenWeather::update()
         }
         _values = _parsedValues;        
         _updating = false;
+        xTimerReset(_hTimer, _updateIntervalTicks);
     }
 }
 

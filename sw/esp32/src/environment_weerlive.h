@@ -19,21 +19,14 @@ private:
     EnvironmentValues _values;
     bool _updating;
     timeinfo _lastupdate;
+    TimerHandle_t _hTimer;
+    const int _updateIntervalTicks = pdMS_TO_TICKS(10*60*1000); // every 10 minutes
 
 public:
     /// @param accesskey the accesskey to their API, request one at their site.
     /// @param location the location name you want the info for. 
     /// E.g. "Amsterdam" or longitude/lattitude longitude e.g. "52.091,5.112"
-    EnvironmentWeerlive(System *system, Settings &settings, Event *event)
-        : EnvironmentBase(name(), event)
-    {
-        _system = system;
-        _accesskey = settings.get(AppSettings::KeyWeerliveKey);
-        _location = settings.get(AppSettings::KeyWeerliveLocation);
-        _parsedValues.clear();
-        _updating = false;
-        _lastupdate = system->now();
-    }
+    EnvironmentWeerlive(System *system, Settings &settings, Event *event);
 
     static const char *name() { return "weerlive"; }
 

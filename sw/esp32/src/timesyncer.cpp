@@ -5,6 +5,7 @@
 #include <esp_sntp.h>
 
 #include "settings.h"
+#include "timeinfo.h"
 #include "timesyncer.h"
 
 TimeSyncer* TimeSyncer::_theone;
@@ -16,8 +17,10 @@ TimeSyncer::TimeSyncer(DS3231 &rtc, AppSettings &settings)
     _theone = this;
     settings.onChanged([this](Setting* setting) { 
         auto update = 
+            setting->name() == AppSettings::KeyTimeMode || 
             setting->name() == AppSettings::KeyNTPServer || 
             setting->name() == AppSettings::KeyTZ || 
+            setting->name() == AppSettings::KeyTZCustom || 
             setting->name() == AppSettings::KeyNTPInterval;
         if (update)
         {
@@ -34,7 +37,12 @@ TimeSyncer::~TimeSyncer()
 
 void TimeSyncer::initialize()
 {
-    setenv("TZ", _settings.TZ().c_str(), 1);
+    auto tz = _settings.TZ();
+    if (tz == TZ_CUSTOM)
+    {
+        tz = _settings.TZCustom();
+    } 
+    setenv("TZ", tz.c_str(), 1);
     tzset();
 
     if (_settings.TimeMode() == 0)

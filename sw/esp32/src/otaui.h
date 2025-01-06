@@ -51,6 +51,7 @@ private:
     bool _OTARunning;
     std::mutex _loglock;
     float _yTop;
+    bool _cancel;
 
 public:
     OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
@@ -63,10 +64,10 @@ public:
 
 private:
     void updateOverTheAir();
+    void restart();
     void removeLogs(int n);
     void log(linetype type, const char *fmt, ...);
-    void choices(std::vector<std::string> list);
-    void restart();
+    void choices(std::initializer_list<std::string> list);
 };
 
 #endif

@@ -22,7 +22,8 @@
 #define ENG_NTP_INTERVAL "NTP interval"
 
 #define ENG_VERSION "version"
-#define ENG_DST "DST"
+#define ENG_TZ "TZ"
+#define ENG_TZ_CUSTOM "timezone"
 #define ENG_YEAR "year"
 #define ENG_DATE "date"
 #define ENG_TIME_MODE "timemode"

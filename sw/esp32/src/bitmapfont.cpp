@@ -134,7 +134,7 @@ BitmapFont *BitmapFont::loadFont(const char *fontname, void *filedata, int files
     
     if (info->version != 1)
     {
-        printf(" - version='%d' not supported\n", info->version);
+        printf(" - version='%d' not supported", info->version);
         return nullptr;
     }
     printf(" glyphcount='%d'", info->glyphcount);
@@ -163,7 +163,7 @@ BitmapFont *BitmapFont::loadFont(const char *fontname, void *filedata, int files
     font->_maxHeight = maxHeight;
     font->_glyphs = std::move(glyphs);
 
-    printf(" (size=%d, @%p)\n", filesize, filedata);
+    printf(" (size=%d, @%p)", filesize, filedata);
 
     return font;
 }

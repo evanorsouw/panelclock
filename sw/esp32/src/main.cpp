@@ -125,22 +125,21 @@ void app_main()
     {
         events->wait(60000);
 
+        // establised wifi forces weather update.
         if (system->wifiConnectedEvent()->wasSet() && system->wifiConnected())
         {
             environment->triggerUpdate();
         }
+
         if (environment->triggerUpdateEvent()->wasSet())
         {
             environment->update();
         }
-        if (appdata->timeoutAndRestart(timetimeout, 12*60*1000))    // update from RTC every 12H
+
+        // update from RTC every 12H
+        if (appdata->timeoutAndRestart(timetimeout, 12*60*1000))
         {
             timeupdater->update(false); // ignore RTC when NTP is enabled
-        }
-        auto elapsedms = system->now().msticks() - environment->lastUpdate().msticks();
-        if (elapsedms > 10 * 60 * 1000)
-        {
-            environment->triggerUpdate();
         }
     }
 }

@@ -4,7 +4,7 @@
 
 #include <cmath>
 #include <map>
-#
+
 #include "bitmap.h"
 #include "color.h"
 #include "font.h"
