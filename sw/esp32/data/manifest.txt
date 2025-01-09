@@ -1,0 +1,7 @@
+firmware=1.0.1189
+ArialRoundBold.ttf
+ArialRoundRegular.ttf
+fixedfont-condensed.wmf
+fixedfont.wmf
+ice40hx4k.bin
+panelicons.ttf

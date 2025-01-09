@@ -158,13 +158,13 @@ X    X
 
 code: 49
 bitmap:
- X
-XX
- X
- X
- X
- X
- X
+   X
+  XX
+ x X
+   X
+   X
+   X
+-xxxxx
 
 code: 50
 bitmap:

@@ -17,26 +17,14 @@ private:
     EventBits_t _eventBit;
     std::string _name;
 
-    Event(EventGroupHandle_t eventGroup, EventBits_t bit, const char *name)
-    {
-        _eventGroup = eventGroup;
-        _eventBit = bit;
-        _name = name;
-    }
+    Event(EventGroupHandle_t eventGroup, EventBits_t bit, const char *name);
 
 public:
     const char *name() const { return _name.c_str(); }
-    void set() 
-    { 
-        xEventGroupSetBits(_eventGroup, _eventBit); 
-    }
     EventBits_t bit() const { return _eventBit; }
-    bool wasSet() { return wait(0); }
-    bool wait(int timeoutMs)
-    {
-        auto ticks = timeoutMs / portTICK_PERIOD_MS;
-        return xEventGroupWaitBits(_eventGroup, _eventBit, true, false, ticks) == _eventBit;
-    }
+    void set();
+    bool wasSet();
+    bool wait(int timeoutMs);
 };
 
 class Events
@@ -48,29 +36,10 @@ private:
     std::vector<Event *> _events;
 
 public:
-    Events()
-    {
-        _eventGroup = xEventGroupCreate();
-        _nextBit = 1;
-        _allocatedBits = 0;
-    }
+    Events();
 
-    Event *allocate(const char *name)
-    {
-        auto bit = _nextBit;
-        _allocatedBits |= bit;
-        _nextBit <<= 1;
-        auto event = new Event(_eventGroup, bit, name);
-        _events.push_back(event);
-        return event;
-    }
-
-    EventBits_t wait(uint32_t delayInMs=0)
-    {
-        auto ticks = delayInMs == 0 ? portMAX_DELAY : delayInMs / portTICK_PERIOD_MS;
-        auto bits = xEventGroupWaitBits(_eventGroup, _allocatedBits, false, false, ticks);
-        return bits;
-    }
+    Event *allocate(const char *name);
+    EventBits_t wait(uint32_t delayInMs=0);
 };
 
 #endif

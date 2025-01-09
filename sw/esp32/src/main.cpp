@@ -84,7 +84,7 @@ void app_main()
     auto events = new Events();
 
     auto spi = new SpiWrapper(SPI2_HOST, FPGA_SPI_CLK, FPGA_SPI_MOSI, FPGA_SPI_MISO, 5400000, false);
-    FpgaConfigurator FpgaConfig(spi, "/spiffs/toplevel_bitmap.bin", FPGA_RESET);
+    FpgaConfigurator FpgaConfig(spi, "/spiffs/ice40hx4k.bin", FPGA_RESET);
     FpgaConfig.configure();
 
     auto settings = new AppSettings();    
@@ -107,7 +107,7 @@ void app_main()
     auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
     auto otaui = new OTAUI(*appdata, *environment, *system, *userinput);
     auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *otaui, *system, *graphics);
-    auto timeupdater = new TimeSyncer(*rtc, *settings);
+    auto timeupdater = new TimeSyncer(*rtc, *settings, events->allocate("timesync"));
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 4000, apprunner, 1, nullptr);
@@ -118,26 +118,23 @@ void app_main()
 
     timeupdater->update(true);     // force immediate update from RTC
 
-    uint64_t timetimeout = 0;
-
     // use main thread for running periodic tasks.
     for (;;)
     {
-        events->wait(60000);
+        events->wait();
 
-        // establised wifi forces weather update.
+        // established wifi forces weather update.
         if (system->wifiConnectedEvent()->wasSet() && system->wifiConnected())
         {
             environment->triggerUpdate();
+            timeupdater->triggerUpdate();
         }
 
         if (environment->triggerUpdateEvent()->wasSet())
         {
             environment->update();
         }
-
-        // update from RTC every 12H
-        if (appdata->timeoutAndRestart(timetimeout, 12*60*1000))
+        if (timeupdater->triggerUpdateEvent()->wasSet())
         {
             timeupdater->update(false); // ignore RTC when NTP is enabled
         }

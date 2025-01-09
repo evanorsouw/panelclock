@@ -46,6 +46,7 @@ public:
     void dst(bool dstActive) { _tm.tm_isdst = dstActive ? 1 : 0; }
 
     void addMinutes(int n) { set(n*60); }
+    void addSeconds(int n) { set(n); }
     static int daysInMonth(int month, bool leapyear);
 
     const char *dayOfWeek(bool full=true) const { return full ? _weekdaysFull[wday()] : _weekdaysCompact[wday()]; }    

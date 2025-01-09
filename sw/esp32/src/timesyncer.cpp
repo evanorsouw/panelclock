@@ -10,9 +10,10 @@
 
 TimeSyncer* TimeSyncer::_theone;
 
-TimeSyncer::TimeSyncer(DS3231 &rtc, AppSettings &settings) 
+TimeSyncer::TimeSyncer(DS3231 &rtc, AppSettings &settings, Event *updateEvent) 
     : _rtc(rtc)
     , _settings(settings)
+    , _updateEvent(updateEvent)
 {
     _theone = this;
     settings.onChanged([this](Setting* setting) { 
@@ -28,6 +29,11 @@ TimeSyncer::TimeSyncer(DS3231 &rtc, AppSettings &settings)
         }
     });
     initialize();
+
+    _hTimer = xTimerCreate("weerlive", _updateIntervalTicks, pdTRUE, this, 
+        [](TimerHandle_t timer){ 
+            ((TimeSyncer *) pvTimerGetTimerID(timer))->triggerUpdate();
+        });
 }
 
 TimeSyncer::~TimeSyncer()
@@ -72,8 +78,10 @@ void TimeSyncer::initialize()
 void TimeSyncer::update(bool forceRTCUpdate)
 {
     if (!forceRTCUpdate && _settings.TimeMode() == 0)
+    {
+        printf("timesyncer: update not needed, automatic mode\n");
         return; // using NTP
-
+    }
     struct tm now;   
     readUTCFromRTC(&now);
 

@@ -93,7 +93,8 @@ int Application::interact()
     }
     else if (_userinput.hasKeyDown(UserInput::KEY_UP, 5000) && _userinput.hasKeyDown(UserInput::KEY_DOWN, 5000))
     {
-        return 2;
+        if (_system.wifiConnected())
+            return 2;
     }
     return 0;   // stay in normal clock-mode
 }

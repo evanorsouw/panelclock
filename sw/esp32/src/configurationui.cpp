@@ -46,6 +46,7 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     _font = appdata.fontSettings();    
     _margin = 1.0f;
     
+    addConfig(ENG_VERSION, [this](configline& c){ strcpy(c.value, Version::application().version()); }); 
     addConfig(ENG_TZ, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTZ, _tzChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTZ, _tzChoices); });
@@ -53,12 +54,6 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%s", _system.settings().TZCustom().c_str()); },  
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyTZCustom); },
         [this](configline& c){ return _system.settings().TZ() == TZ_CUSTOM; });        
-    addConfig(ENG_YEAR, 
-        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
-        [this](configline& c, bool init){ return updateYear(c, init); });
-    addConfig(ENG_DATE, 
-        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false)).c_str()); }, 
-        [this](configline& c, bool init){ return updateDate(c, init); });
     addConfig(ENG_TIME_MODE, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTimeMode, _timeModeChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTimeMode, _timeModeChoices); });
@@ -70,6 +65,22 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d:%02d:%02d", _system.now().hour(), _system.now().min(), _system.now().sec()); },  
         [this](configline& c, bool init){ return updateTime(c, init); },
         [this](configline& c){ return _system.settings().TimeMode() == 1; });        
+    addConfig(ENG_DATE, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false)).c_str()); }, 
+        [this](configline& c, bool init){ return updateDate(c, init); },
+        [this](configline& c){ return _system.settings().TimeMode() == 1; });        
+    addConfig(ENG_DATE, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%02d %s", _system.now().mday(), translate(_system.now().monthName(false)).c_str()); }, 
+        nullptr,
+        [this](configline& c){ return _system.settings().TimeMode() == 0; });        
+    addConfig(ENG_YEAR, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
+        [this](configline& c, bool init){ return updateYear(c, init); },
+        [this](configline& c){ return _system.settings().TimeMode() == 1; });        
+    addConfig(ENG_YEAR, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%04d", _system.now().year()); }, 
+        nullptr,
+        [this](configline& c){ return _system.settings().TimeMode() == 0; });        
     addConfig(ENG_NTP_SERVER, 
         [this](configline& c){ snprintf(c.value, sizeof(c.value), "%s", _system.settings().NTPServer().c_str()); },  
         [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeyNTPServer); },
@@ -130,7 +141,6 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_FLIP, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
-    addConfig(ENG_VERSION, [this](configline& c){ strcpy(c.value, version()); }); 
     addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });
@@ -287,7 +297,20 @@ void ConfigurationUI::render(Graphics &graphics)
         graduallyUpdateVariable(_rollXOffset, 0, 2);
         graduallyUpdateVariable(config.xValueScrollOffset, targetXScrollOffset, 2);
     }
-    graduallyUpdateVariable(_configYBase, _selectedLine * _font->height() - graphics.dy() + _font->height(), _selectedLine * _font->height(), 1.0f);
+
+    auto targetHi = _selectedLine * _font->height();
+    auto targetLo = targetHi - graphics.dy() + _font->height();
+    auto allPreSelectedLinesAreReadonly = true;
+    for (auto i = 0; i < _selectedLine; i++)
+    {
+        allPreSelectedLinesAreReadonly &= getConfig(i).updater == nullptr;
+    }
+    if (allPreSelectedLinesAreReadonly)
+    {
+        targetLo = 0.0;
+        targetHi = 0.0;
+    }
+    graduallyUpdateVariable(_configYBase, targetLo, targetHi, 1.0f);
     graduallyUpdateVariable(_selectionYBase, _selectedLine * _font->height(), 1.0f);
 }
 
@@ -435,7 +458,8 @@ int ConfigurationUI::nConfigs()
 
 void ConfigurationUI::selectConfig(int i)
 {
-    auto n= nConfigs();
+    auto n = nConfigs();
+
     if (i < _selectedLine)
     {
         while (!getConfig(i).updater && i > 0 && i < n)

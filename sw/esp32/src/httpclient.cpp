@@ -56,7 +56,7 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
+int HTTPClient::get(const char *url, std::function<void(uint8_t*,size_t)> handler)
 {
     Diagnostic::printmeminfo();
 
@@ -89,10 +89,10 @@ int HTTPClient::get(const char *url, std::function<void(uint8_t*,int)> handler)
     return status;
 }
 
-int HTTPClient::get(const char *url, uint8_t *buf, int bufLen)
+int HTTPClient::get(const char *url, uint8_t *buf, size_t bufLen)
 {
     int receivedSofar = 0;
-    std::function<void(void *,int)> handler = [&](void *receivedData, int receivedLen) 
+    std::function<void(void *,size_t)> handler = [&](void *receivedData, size_t receivedLen) 
     {
          auto tocopy = std::min(bufLen - receivedSofar, receivedLen);
          std::memcpy(buf + receivedSofar, receivedData, tocopy);
