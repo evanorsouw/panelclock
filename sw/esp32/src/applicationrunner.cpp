@@ -6,7 +6,6 @@
 ApplicationRunner::ApplicationRunner(
     ApplicationContext& appdata, 
     LedPanel& panel, 
-    BootAnimations& bootui, 
     Application& appui, 
     ConfigurationUI& configui,
     OTAUI& otaui, 
@@ -14,7 +13,6 @@ ApplicationRunner::ApplicationRunner(
     Graphics& graphics)
     : _appctx(appdata)
     , _panel(panel)
-    , _bootui(bootui)
     , _appui(appui)
     , _configui(configui)
     , _otaui(otaui)
@@ -29,10 +27,7 @@ ApplicationRunner::ApplicationRunner(
 
     _iShowScreen = 0;
 
-    if (system.settings().Bootscreen())
-        startMode(UIMode::Boot, TransitionPhase::Stable);
-    else
-        startMode(UIMode::DateTime, TransitionPhase::Entering);
+    startMode(UIMode::DateTime, TransitionPhase::Entering);
 
     // 2 screen bitmaps, 1 being copied, the other for rendering the next one
     _hRenderQueue = xQueueCreate(2, sizeof(Bitmap *));
@@ -95,7 +90,6 @@ void ApplicationRunner::startMode(UIMode mode, TransitionPhase phase)
     
     switch (mode)
     {
-        case UIMode::Boot: _bootui.init(); break;
         case UIMode::DateTime: _appui.init(); break;
         case UIMode::Config: _configui.init(); break;            
         case UIMode::OTA: _otaui.init(); break;            
@@ -118,13 +112,6 @@ void ApplicationRunner::stepGUI()
     }
     switch (_mode)
     {
-    case UIMode::Boot:
-        _bootui.render(_graphics);
-        if (interact && _bootui.interact())
-        {
-            startMode(UIMode::DateTime, TransitionPhase::Entering);
-        }
-        break;
     case UIMode::DateTime:
         _appui.render(_graphics);
         if (interact)

@@ -21,7 +21,6 @@ public:
     inline static const char *KeyOpenWeatherLocation = "openweatherloc";
     inline static const char *KeyTZ = "tz";
     inline static const char *KeyTZCustom = "tzcustom";
-    inline static const char *KeyBootscreen  = "boot";
     inline static const char *KeySmoothSecondHand  = "secondhand";
     inline static const char *KeyFlipDisplay  = "flipdisplay";
 
@@ -47,7 +46,6 @@ public:
         add(KeyOpenWeatherLocation, "Amsterdam");
         add(KeyTZ, "UTC");
         add(KeyTZCustom, "__tz__");
-        add(KeyBootscreen, true);
         add(KeySmoothSecondHand, true);
         add(KeyFlipDisplay, true);
     }
@@ -93,9 +91,6 @@ public:
 
     const std::string &TZCustom() const { return get(KeyTZCustom)->asstring(); }
     void TZCustom(const char *tz) const { return get(KeyTZCustom)->set(tz); }
-
-    bool Bootscreen() const { return get(KeyBootscreen)->asbool(); }
-    void Bootscreen(bool show) const { return get(KeyBootscreen)->set(show); }
 
     int SmoothSecondHand() const { return get(KeySmoothSecondHand)->asbool(); }
     void SmoothSecondHand(bool smooth) const { return get(KeySmoothSecondHand)->set(smooth); }

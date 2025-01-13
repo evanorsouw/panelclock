@@ -132,9 +132,6 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
         [this](configline& c){ _environment.triggerUpdate(); });
     addConfig(ENG_WEATHER, 
         [this](configline& c){ generateWeatherLine(c); });
-    addConfig(ENG_BOOT, 
-        [this](configline& c){ generateSettingLine(c, AppSettings::KeyBootscreen, _bootscreenChoices); }, 
-        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyBootscreen, _bootscreenChoices); });
     addConfig(ENG_SEC, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });

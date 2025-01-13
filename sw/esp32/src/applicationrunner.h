@@ -8,7 +8,6 @@
 
 #include "application.h"
 #include "bitmap.h"
-#include "bootanimations.h"
 #include "configurationui.h"
 #include "otaui.h"
 #include "ledpanel.h"
@@ -17,13 +16,12 @@
 class ApplicationRunner
 {
 private:
-    enum class UIMode { Boot, DateTime, Config, OTA } ;
+    enum class UIMode { DateTime, Config, OTA } ;
     enum class TransitionPhase { Leaving, Entering, Stable } ;
 
 private:
     ApplicationContext &_appctx;
     LedPanel& _panel;
-    BootAnimations& _bootui;
     Application& _appui;
     ConfigurationUI& _configui;
     OTAUI& _otaui;
@@ -47,7 +45,6 @@ public:
     ApplicationRunner(
         ApplicationContext& appdata, 
         LedPanel& panel, 
-        BootAnimations& bootui, 
         Application& appui, 
         ConfigurationUI& configui, 
         OTAUI& otaui, 

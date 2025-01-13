@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <math.h>
 #include <cstdlib>
@@ -19,7 +18,6 @@
 #include "applicationrunner.h"
 #include "appsettings.h"
 #include "bitmap.h"
-#include "bootanimations.h"
 #include "color.h"
 #include "ds3231.h"
 #include "environment_weerlive.h"
@@ -103,10 +101,9 @@ void app_main()
     auto appdata = new ApplicationContext(*settings);
 
     auto appui = new Application(*appdata, *environment, *system, *userinput);
-    auto bootui = new BootAnimations(*appdata, *environment, *system, *userinput);
     auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
     auto otaui = new OTAUI(*appdata, *environment, *system, *userinput);
-    auto apprunner = new ApplicationRunner(*appdata, *panel, *bootui, *appui, *configui, *otaui, *system, *graphics);
+    auto apprunner = new ApplicationRunner(*appdata, *panel, *appui, *configui, *otaui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc, *settings, events->allocate("timesync"));
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);

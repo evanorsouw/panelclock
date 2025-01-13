@@ -203,6 +203,7 @@ void OTAUI::updateOverTheAir()
 
     if (_cancel)
     {
+        esp_https_ota_abort(ota_handle);
         error("update cancelled");
         choices({CHOICE_EXIT});
     }
