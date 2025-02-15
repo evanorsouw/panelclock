@@ -34,6 +34,10 @@ std::vector<configchoice> ConfigurationUI::_flipDisplayChoices = {
     configchoice("0", ENG_USBDOWN), 
     configchoice("1", ENG_USBUP) 
 };
+std::vector<configchoice> ConfigurationUI::_flipKeysChoices = { 
+    configchoice("0", ENG_KEYS_NORMAL), 
+    configchoice("1", ENG_KEYS_REVERSED)
+};
 std::vector<configchoice> ConfigurationUI::_timeModeChoices = { 
     configchoice("0", ENG_AUTOMATIC), 
     configchoice("1", ENG_MANUAL) 
@@ -135,9 +139,12 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_SEC, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });
-    addConfig(ENG_FLIP, 
+    addConfig(ENG_FLIP_USB, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
+    addConfig(ENG_FLIP_KEYS, 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipKeys, _flipKeysChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipKeys, _flipKeysChoices); });
     addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitConfig = true; return false; });

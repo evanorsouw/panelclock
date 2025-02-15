@@ -100,7 +100,7 @@ void UserInputKeys::monitorIO(_keyinfo &info)
 
 int UserInputKeys::flipKey(int key) const
 {
-    if (_system.settings().FlipDisplay())
+    if (_system.settings().FlipDisplay() ^ _system.settings().FlipKeys())
     {
         switch (key)
         {

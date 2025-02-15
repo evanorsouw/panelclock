@@ -23,6 +23,7 @@ public:
     inline static const char *KeyTZCustom = "tzcustom";
     inline static const char *KeySmoothSecondHand  = "secondhand";
     inline static const char *KeyFlipDisplay  = "flipdisplay";
+    inline static const char *KeyFlipKeys  = "flipkeys";
 
     AppSettings()
     {        
@@ -48,6 +49,7 @@ public:
         add(KeyTZCustom, "__tz__");
         add(KeySmoothSecondHand, true);
         add(KeyFlipDisplay, true);
+        add(KeyFlipKeys, false);
     }
 
     bool OnePanel() const { return get(KeyOnePanel)->asbool(); }
@@ -97,6 +99,9 @@ public:
 
     bool FlipDisplay() const { return get(KeyFlipDisplay)->asbool(); }
     void FlipDisplay(bool flip) const { return get(KeyFlipDisplay)->set(flip); }
+
+    bool FlipKeys() const { return get(KeyFlipKeys)->asbool(); }
+    void FlipKeys(bool flip) const { return get(KeyFlipKeys)->set(flip); }
 };
 
 #endif

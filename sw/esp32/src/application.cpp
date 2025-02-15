@@ -68,7 +68,7 @@ int Application::interact()
 {
     if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 0))
     {
-        if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 5000))
+        if (_userinput.hasKeyDown(UserInput::KEY_BOOT, 3000))
         {
             auto &settings = _system.settings();
             auto resetsettings = _userinput.hasKeyDown(UserInput::KEY_SET, 0);
@@ -91,7 +91,7 @@ int Application::interact()
         _userinput.flush();
         return 1;    // enter configuration menu
     }
-    else if (_userinput.hasKeyDown(UserInput::KEY_UP, 5000) && _userinput.hasKeyDown(UserInput::KEY_DOWN, 5000))
+    else if (_userinput.hasKeyDown(UserInput::KEY_UP, 3000) && _userinput.hasKeyDown(UserInput::KEY_DOWN, 3000))
     {
         if (_system.wifiConnected())
             return 2;

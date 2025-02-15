@@ -60,6 +60,7 @@ private:
     static std::vector<configchoice> _bootscreenChoices;
     static std::vector<configchoice> _secondhandChoices;
     static std::vector<configchoice> _flipDisplayChoices;
+    static std::vector<configchoice> _flipKeysChoices;
     static std::vector<configchoice> _timeModeChoices;
     static std::vector<configchoice> _weatherChoices;
 
