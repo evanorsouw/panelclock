@@ -41,7 +41,6 @@
 #define ENG_BOOT "boot"
 #define ENG_SEC "sec"
 #define ENG_FLIP_USB "flip display"
-#define ENG_FLIP_KEYS "flip keys"
 #define ENG_EXIT "exit"
 
 #define ENG_MONDAY "monday"

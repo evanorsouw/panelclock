@@ -100,21 +100,31 @@ int BitmapFont::splittext(const char *txt, float maxwidth) const
 
 textinfo BitmapFont::textsize(const char *txt) const
 {
-    textinfo size(0, height());
-
     auto codepoint = 0;
     auto i = 0;
+    auto maxwidth = 0.0f;
+    auto width = 0.0f;
+    auto lines = 1;
     while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
     {
-        auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)codepoint; });
-        if (it != _glyphs.end())
+        if (codepoint == '\n')
         {
-            size.dx += it->second->width;
-            if (size.dx > 0)
-                size.dx += _info->tracking;
+            lines++;
+            maxwidth = std::max(maxwidth, width);
+            width = 0.0f;
+        }
+        else
+        {
+            auto it = std::find_if(_glyphs.begin(), _glyphs.end(), [=](std::pair<uint16_t, glyphInfo*> kv) { return kv.first == (uint16_t)codepoint; });
+            if (it != _glyphs.end())
+            {
+                width += it->second->width;
+                if (width > 0)
+                    width += _info->tracking;
+            }
         }
     }
-    return size;
+    return textinfo(std::max(maxwidth, width), lines * height());
 }
 
 textinfo BitmapFont::charsize(int codepoint) const

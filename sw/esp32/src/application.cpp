@@ -79,8 +79,7 @@ int Application::interact()
             }
             else
             {
-                settings.OnePanel(!settings.OnePanel());
-                printf("changed panel size\n");
+                return 3;
             }
             settings.saveSettings();
             esp_restart();

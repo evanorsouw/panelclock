@@ -47,7 +47,7 @@ uint64_t UserInputKeys::howLongIsKeyDown(int key) const
     return elapsed;
 }
 
-KeyPress UserInputKeys::getKey() 
+KeyPress UserInputKeys::getKeyPress() 
 {
     std::lock_guard lock(_mutex);
     if (pendingKeys() == 0)

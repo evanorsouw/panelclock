@@ -38,8 +38,8 @@ public:
     virtual bool hasKeyDown(int key, int ms) = 0;
 
     /// @brief get a key from the queue.
-    /// @return integer value of the key or 0 if no keypress was recorded.
-    virtual KeyPress getKey() = 0;
+    /// @return object indicating a key was pushed and for how long.
+    virtual KeyPress getKeyPress() = 0;
 };
 
 #endif

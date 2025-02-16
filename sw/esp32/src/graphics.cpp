@@ -7,7 +7,6 @@
 
 #include "bitmapfont.h"
 #include "esp_heap_caps.h"
-#include "esp_system.h"
 #include "graphics.h"
 #include "truetypefont.h"
 #include "utf8encoding.h"
@@ -251,10 +250,18 @@ float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, i
     SFT_Image txtMask { .pixels = _rasterizeMask->getptr(0,0) };
     auto sft = font->getSFT();
 
+    auto lx = x;
     int codepoint;
     int idx = 0;
     while((codepoint = UTF8Encoding::nextCodepoint(txt, idx)) != 0)
     {
+        if (codepoint == '\n')
+        {
+            x = lx;
+            y += font->height();
+            continue;
+        }
+
         SFT_Glyph glyph;
         sft_lookup(&sft, codepoint, &glyph);
         if (glyph == 0)
@@ -303,10 +310,17 @@ float Graphics::textTTF(TrueTypeFont *font, float x, float y, const char *txt, i
 
 float Graphics::textWMF(BitmapFont *font, float x, float y, const char *txt, int n, Color color, Mode mode)
 {
+    auto lx = x;
     int codepoint;
     int idx = 0;
     while((codepoint = UTF8Encoding::nextCodepoint(txt, idx)) != 0)
     {
+        if (codepoint == '\n')
+        {
+            x = lx;
+            y += font->height();
+            continue;
+        }
         auto glyph = font->getGlyph(codepoint);
         if (glyph == nullptr)
             continue;

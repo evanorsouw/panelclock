@@ -37,7 +37,7 @@ public:
     void graduallyUpdateVariable(float &current, float targetLo, float targetHi, float speed);
 
     virtual void init() {}
-    virtual void render(Graphics &_graphics) {}
+    virtual void render(Graphics &_graphics) {}    
     virtual int interact() { return 0; }
 };
 

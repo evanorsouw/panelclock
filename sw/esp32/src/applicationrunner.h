@@ -11,12 +11,13 @@
 #include "configurationui.h"
 #include "otaui.h"
 #include "ledpanel.h"
+#include "setupui.h"
 #include "system.h"
 
 class ApplicationRunner
 {
 private:
-    enum class UIMode { DateTime, Config, OTA } ;
+    enum class UIMode { DateTime, Config, OTA, Setup } ;
     enum class TransitionPhase { Leaving, Entering, Stable } ;
 
 private:
@@ -25,6 +26,7 @@ private:
     Application& _appui;
     ConfigurationUI& _configui;
     OTAUI& _otaui;
+    SetupUI& _setupui;
     System& _system;
     Graphics &_graphics;
     QueueHandle_t _hRenderQueue;
@@ -48,6 +50,7 @@ public:
         Application& appui, 
         ConfigurationUI& configui, 
         OTAUI& otaui, 
+        SetupUI& setupui, 
         System& system,
         Graphics& graphics);
 

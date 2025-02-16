@@ -160,24 +160,34 @@ int TrueTypeFont::splittext(const char *txt, float maxwidth) const
 
 textinfo TrueTypeFont::textsize(const char *txt) const
 {
-    textinfo size(0, _lmetrics.ascender - _lmetrics.descender);
-
     auto codepoint = 0;
     auto i = 0;
+    auto maxwidth = 0.0f;
+    auto width = 0.0f;
+    auto lines = 1;
     while ((codepoint = UTF8Encoding::nextCodepoint(txt, i)) != 0)
     {
-        SFT_Glyph glyph;
-        sft_lookup(&_sft, codepoint, &glyph);
-        if (glyph == 0)
-            continue;
+        if (codepoint == '\n')
+        {
+            lines++;
+            maxwidth = std::max(maxwidth, width);
+            width = 0.0f;
+        }
+        else
+        {
+            SFT_Glyph glyph;
+            sft_lookup(&_sft, codepoint, &glyph);
+            if (glyph == 0)
+                continue;
 
-        SFT_GMetrics mtx = {0};
-        if (sft_gmetrics(&_sft, glyph, &mtx) == -1)
-            continue;
+            SFT_GMetrics mtx = {0};
+            if (sft_gmetrics(&_sft, glyph, &mtx) == -1)
+                continue;
 
-        size.dx += mtx.advanceWidth;
+            width += mtx.advanceWidth;
+        }
     }
-    return size;
+    return textinfo(std::max(maxwidth, width), lines * (_lmetrics.ascender - _lmetrics.descender));
 }
 
 textinfo TrueTypeFont::charsize(int codepoint) const

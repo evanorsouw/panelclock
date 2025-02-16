@@ -25,6 +25,7 @@
 #include "fpgaconfigurator.h"
 #include "graphics.h"
 #include "ledpanel.h"
+#include "setupui.h"
 #include "timesyncer.h"
 #include "userinput_keys.h"
 #include "wificlient.h"
@@ -86,7 +87,8 @@ void app_main()
     FpgaConfig.configure();
 
     auto settings = new AppSettings();    
-    auto panel = new LedPanel(settings->OnePanel() ? 64 : 128, 64, *spi, settings->get(settings->KeyFlipDisplay));
+    auto panel = new LedPanel(128, 64, *spi);
+    panel->setMode(settings->PanelOrientation() & 2, settings->PanelSides());
 
     auto graphics = new Graphics(panel->dx(), panel->dy());
     auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA);
@@ -103,7 +105,8 @@ void app_main()
     auto appui = new Application(*appdata, *environment, *system, *userinput);
     auto configui = new ConfigurationUI(*appdata, *environment, *system, *userinput);
     auto otaui = new OTAUI(*appdata, *environment, *system, *userinput);
-    auto apprunner = new ApplicationRunner(*appdata, *panel, *appui, *configui, *otaui, *system, *graphics);
+    auto setupui = new SetupUI(*appdata, *environment, *system, *userinput, *panel);
+    auto apprunner = new ApplicationRunner(*appdata, *panel, *appui, *configui, *otaui, *setupui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc, *settings, events->allocate("timesync"));
 
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);

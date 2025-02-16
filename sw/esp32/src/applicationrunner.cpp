@@ -9,6 +9,7 @@ ApplicationRunner::ApplicationRunner(
     Application& appui, 
     ConfigurationUI& configui,
     OTAUI& otaui, 
+    SetupUI& setupui, 
     System& system,
     Graphics& graphics)
     : _appctx(appdata)
@@ -16,6 +17,7 @@ ApplicationRunner::ApplicationRunner(
     , _appui(appui)
     , _configui(configui)
     , _otaui(otaui)
+    , _setupui(setupui)
     , _system(system)
     , _graphics(graphics)
 {
@@ -93,6 +95,7 @@ void ApplicationRunner::startMode(UIMode mode, TransitionPhase phase)
         case UIMode::DateTime: _appui.init(); break;
         case UIMode::Config: _configui.init(); break;            
         case UIMode::OTA: _otaui.init(); break;            
+        case UIMode::Setup: _setupui.init(); break;            
     }
 }
 
@@ -124,6 +127,9 @@ void ApplicationRunner::stepGUI()
                 case 2:
                     startMode(UIMode::OTA, TransitionPhase::Leaving);
                     break;
+                case 3:
+                    startMode(UIMode::Setup, TransitionPhase::Leaving);
+                    break;
             }
         }
         break;
@@ -137,6 +143,13 @@ void ApplicationRunner::stepGUI()
     case UIMode::OTA:
         _otaui.render(_graphics);
         if (interact && _otaui.interact())
+        {
+            startMode(UIMode::DateTime, TransitionPhase::Leaving);
+        }
+        break;
+    case UIMode::Setup:
+        _setupui.render(_graphics);
+        if (interact && _setupui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);
         }

@@ -36,7 +36,7 @@ void OTAUI::init()
 
 int OTAUI::interact() 
 {
-    auto press = _userinput.getKey();
+    auto press = _userinput.getKeyPress();
 
     if (_state == state::readmanifest || _state == state::restarting)
         return 0;

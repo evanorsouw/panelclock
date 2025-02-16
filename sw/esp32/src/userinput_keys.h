@@ -40,7 +40,7 @@ public:
 
     int pendingKeys() const;
     void flush();
-    KeyPress getKey();
+    KeyPress getKeyPress();
     bool hasKeyDown(int key, int ms);
     uint64_t howLongIsKeyDown(int key) const;
 
