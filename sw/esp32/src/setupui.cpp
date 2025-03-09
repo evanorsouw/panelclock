@@ -8,61 +8,77 @@ void SetupUI::init()
 
 void SetupUI::render(Graphics &graphics)
 {
-    auto white = _resettimer != 0 ? Color::darkgray : Color::white;
-    auto red = _resettimer != 0 ? Color::darkred : Color::red;
-    auto font1 = _appctx.fonttimeLarge();
+    auto settings = _system.settings();
 
-    if (_system.settings().PanelCount() == 1)
+    switch (settings.PanelMode())
     {
-        graphics.rect(0, 0, 64, 64, Color(0x151010));
-        graphics.line(66, 2, 126, 62, 2, red);
-        graphics.line(126, 2, 66, 62, 2, red);
-        drawCentrePanel(graphics, font1, 0, 0, "one\npanel", white);
-        drawButtons(graphics, 54, 46, white);
+    case 0:
+        draw1Panel(graphics);
+        break;
+    case 1:
+        draw2PanelLandscape(graphics);
+        break;
+    case 2:
+        draw2PanelPortrait(graphics);
+        break;
+    }
+
+    auto d = _resettimer 
+        ? std::min(1.0f, elapsed(_resettimer) / 500.0f) * 32
+        : phase(1000, true);
+    if (d < 32)
+    {
+        drawBorder(graphics, d);
+    }
+    else if (!_resetStarted)
+    {
+        _resetStarted = true;
+        graphics.rect(0,0,graphics.dx(), graphics.dy(), Color::black);
     }
     else
     {
-        graphics.rect(0, 0, 128, 64, Color(0x151010));
-        drawCentrePanel(graphics, font1, 0, 0, "left", white);
-        drawCentrePanel(graphics, font1, 64, 0, "right", white);
-        drawButtons(graphics, 118, 46, white);
-    }
-    drawButtons(graphics, 2, 10, white);
-
-    if (_resettimer)
-    {
-        auto font = _appctx.fontSettings();
-        graphics.text(font, 10, font->height(), "configuration\nsaved\nresetting...", Color::white);
-
-        printf("timer=%llu, elapsed=%d\n", _resettimer, elapsed(_resettimer));
-
-        if (elapsed(_resettimer) > 2000)
-        {
-            esp_restart();
-        }
+        esp_restart();
     }
 }
 
-void SetupUI::drawButtons(Graphics &graphics, float x, float y, Color color)
+void SetupUI::draw1Panel(Graphics &graphics)
 {
-    auto font = _appctx.fontIconsM();
-
-    auto bup = _userinput.howLongIsKeyDown(UserInput::KEY_UP) > 0;
-    auto bset = _userinput.howLongIsKeyDown(UserInput::KEY_SET) > 0;
-    auto bdown = _userinput.howLongIsKeyDown(UserInput::KEY_DOWN) > 0;
-
-    graphics.text(font, x, y, bup ? '0' : '2' , color);
-    graphics.text(font, x, y+8, bset ? '0' : '2' , color);
-    graphics.text(font, x, y+16, bdown ? '0' : '2' , color);
+    auto txt = "One\nPanel";
+    auto font = _appctx.fonttimeLarge();
+    auto size = font->textsize(txt);    
+    graphics.text(font, (64 - size.dx) / 2, (64 - size.dy) / 2 + font->ascend(), txt, Color::white);
+    graphics.rect(0,64,64,64,Color(10,0,0));
 }
 
-void SetupUI::drawCentrePanel(Graphics &graphics, Font *font, float x, float y, const char *txt, Color color)
+void SetupUI::draw2PanelLandscape(Graphics &graphics)
 {
+    auto txt = "Two Panel\nLandscape";
+    auto font = _appctx.fonttimeLarge();
     auto size = font->textsize(txt);
-    graphics.text(font, 
-        x + (64 - size.dx) / 2,  
-        y + (64 - size.dy) / 2 + font->ascend(), 
-        txt, color);
+    graphics.text(font, (128 - size.dx) / 2, (64 - size.dy) / 2 + font->ascend(), txt, Color::white);
+}
+
+void SetupUI::draw2PanelPortrait(Graphics &graphics)
+{
+    auto txt = "Two\nPanel\nPortrait";
+    auto font = _appctx.fonttimeLarge();
+    auto size = font->textsize(txt);
+    graphics.text(font, (64 - size.dx) / 2, (128 - size.dy) / 2 + font->ascend(), txt, Color::white);
+}
+
+void SetupUI::drawBorder(Graphics &graphics, float d)
+{
+    auto a = 0.5f + d;
+    auto b = graphics.dx() - 0.5f - d;
+    auto c = graphics.dy() - 0.5f - d;
+    graphics.line(a, a, b, a, 1, Color::white);
+    graphics.line(a, a, a, c, 1, Color::white);
+    graphics.line(b, c, b, a, 1, Color::white);
+    graphics.line(b, c, a, c, 1, Color::white);
+    graphics.rect(0, 0, graphics.dx(), d, Color::black);
+    graphics.rect(0, graphics.dy() - d, graphics.dx(), d, Color::black);
+    graphics.rect(0, 0, d, graphics.dy(), Color::black);
+    graphics.rect(graphics.dx() - d, 0, d, graphics.dy(), Color::black);
 }
 
 int SetupUI::interact()
@@ -70,35 +86,29 @@ int SetupUI::interact()
     if (_resettimer != 0)
         return 0;
         
-    auto press = _userinput.getKeyPress();
-    if (press.presstime > 250)
-        return 0;
-
     auto &settings = _system.settings();
-    switch (press.key)
+    switch (_userinput.getKeyPress().key)
     {
     case UserInput::KEY_UP:
-        settings.PanelCount(settings.PanelCount() == 1 ? 2 : 1);
+        settings.PanelMode((settings.PanelMode() + 1) % 3);
         break;
     case UserInput::KEY_DOWN:
-        if (settings.PanelSides() == 1)
+        settings.PanelSides(!settings.PanelSides());
+        if (!settings.PanelSides())
         {
-            settings.PanelSides(0);
-            settings.PanelOrientation(settings.PanelOrientation() == 0 ? 2 : 0);
-        }
-        else
-        {
-            settings.PanelSides(1);
+            settings.Panel1Flipped(!settings.Panel1Flipped());
+            if (!settings.Panel1Flipped())
+            {
+                settings.Panel2Flipped(!settings.Panel2Flipped());
+            }
         }
         break;
     case UserInput::KEY_SET:   
-        settings.FlipKeys(!settings.FlipKeys());
-        break;
-    case UserInput::KEY_BOOT:
         settings.saveSettings();
         starttimer(_resettimer);
+        _resetStarted = false;
         break;
     }
-    _ledPanel.setMode(settings.PanelOrientation() == 2, settings.PanelSides()==1);
     return 0;
 }
+

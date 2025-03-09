@@ -35,38 +35,50 @@ private:
     Bitmap *_rasterizeMask;
     int _dx;
     int _dy;
+    int _ptrx;
+    int _ptry;
+    uint8_t *_ptr;
     int _sx;    // start including
     int _sy;    // start including
     int _ex;    // end excluding
     int _ey;    // end excluding
-    uint8_t *_ptr;
     int _stride;
 
 private:
     Graphics() {}
-    void init(int x, int y, int dx, int dy, bool origin, bool clip);
+    Graphics(const Graphics &rhs) = default;
+    void init(int x, int y, int dx, int dy, bool clip);
 
 public:
-    Graphics(int dx, int dy, bool origin=true);
+    Graphics(int dx, int dy);
 
-    int dx() const { return _ex - _sx; }
-    int dy() const { return _ey - _sy; }
+    int dx() const { return _dx; }
+    int dy() const { return _dy; }
     
     void linkBitmap(Bitmap *bitmap);
-    /// @brief get a graphics instance where (0,0) is moveed to a different location.
-    /// @param x offset for x
-    /// @param y offset for y
-    /// @return 
-    Graphics offset(int x, int y);
-    /// @brief get a clipped graphics instance for a specific region
-    /// @param x x coordinate for the region
-    /// @param y y coordinate for the region
-    /// @param dx width of the region
-    /// @param dy height of the region
-    /// @param origin when true, then the new instance has its (0,0) at (x,y), when false
-    ///        (0,0) remains the same, but the region is clipped.
-    /// @return a new clipped instance
-    Graphics view(int x, int y, int dx, int dy, bool origin);
+
+    /// @brief create a unclipped view with a new origin. The view has dimensions
+    /// that can be queried, but drawing outside is visible.
+    /// @param x the relative x offset of the new origin
+    /// @param y the relative y offset of the new origin
+    /// @param dx reported width of the region
+    /// @param dy reported height of the region
+    /// @return a new instance
+    Graphics moveOrigin(int x, int y, int dx, int dy);
+
+    /// @brief create a clipped view with a new origin. The view has dimensions
+    /// that can be queried, and drawing outside are not visible.
+    /// @param x the relative x offset of the new origin
+    /// @param y the relative y offset of the new origin
+    /// @param dx clipped width of the region
+    /// @param dy clipped height of the region
+    /// @return a new instance
+    Graphics clipOrigin(int x, int y, int dx, int dy);
+
+    /// @brief Get as view that represents the entire original area.
+    /// @param width the new width of the view, the height changes accordingly.
+    /// typicaly values are -1 (keep old width), 64 and 128.
+    Graphics fullview(int width = -1);
 
     void add(int x, int y, const Color color, uint8_t alpha);
     void set(int x, int y, const Color color);

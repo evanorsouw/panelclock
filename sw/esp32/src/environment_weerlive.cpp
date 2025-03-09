@@ -214,6 +214,12 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
         switch (json.item)
         {
         case JsonItem::Close:
+            // correct the 'sneeuw' image to rain when temperature is above 1°
+            if (_weatherImage == "sneeuw" && _parsedValues.temperature.value() > 1)
+            {
+                _weatherImage = "regen";
+            }
+            _parsedValues.weather.set(parseWeather(_weatherImage.c_str()));
             _state = ParseState::Completed;
             break;
         case JsonItem::End:
@@ -238,7 +244,7 @@ bool EnvironmentWeerlive::handleJson(const JsonEntry &json)
             else if (!strcmp(json.name, "plaats"))
                 _parsedValues.location.set(json.string);
             else if (!strcmp(json.name, "image"))
-                _parsedValues.weather.set(parseWeather(json.string));
+                _weatherImage = json.string;
             else if (!strcmp(json.name, "sup"))
                 _parsedValues.sunrise.set(parseTime(json.string));
             else if (!strcmp(json.name, "sunder"))

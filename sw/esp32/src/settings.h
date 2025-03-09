@@ -48,7 +48,7 @@ public:
     bool loadSettings();
     bool saveSettings();
 
-    void onChanged(std::function<void(Setting*)> callback);
+    void onChanged(std::function<void(Setting*)> callback, bool informImmediately = false);
 
     Setting *add(const char *name, bool value) { return add(name, value ? "1" : "0"); }
     Setting *add(const char *name, int value) 

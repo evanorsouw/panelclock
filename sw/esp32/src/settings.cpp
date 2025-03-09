@@ -33,6 +33,8 @@ bool Settings::loadSettings()
     nvs_release_iterator(it);
     nvs_close(handle);
 
+    onChanged(nullptr);
+
     return true;
 }
 
@@ -60,9 +62,13 @@ bool Settings::saveSettings()
     return true;
 }
 
-void Settings::onChanged(std::function<void(Setting*)> callback)
+void Settings::onChanged(std::function<void(Setting*)> callback, bool informImmediately)
 {
     _onChangedCallbacks.push_back(callback);
+    if (informImmediately)
+    {
+        callback(nullptr);
+    }
 }
 
 Setting *Settings::add(const char *name, const char *value)

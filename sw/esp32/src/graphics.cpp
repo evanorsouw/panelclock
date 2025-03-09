@@ -1,6 +1,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -17,77 +18,89 @@
   #define LOG(...)
 #endif
 
-Graphics::Graphics(int dx, int dy, bool origin)
+Graphics::Graphics(int dx, int dy)
 {
-    _dx = 0;
-    _dy = 0;
     _rasterizeMask = new Bitmap(dx, dy, 1);
+    _dx = dx;
+    _dy = dy;   
+    _ptrx = 0;
+    _ptry = 0;
+    _ptr = nullptr;
+    _sx = 0;
+    _sy = 0;
+    _ex = dx;
+    _ey = dy;
 }
 
 void Graphics::linkBitmap(Bitmap *bitmap)
 {
     assert( bitmap->dx() == _rasterizeMask->dx() && bitmap->dy() == _rasterizeMask->dy());
     _drawingBitmap = bitmap;
-    init(0, 0, bitmap->dx(), bitmap->dy(), true, true);
+    init(0, 0, bitmap->dx(), bitmap->dy(), false);
 }
 
-void Graphics::init(int x, int y, int dx, int dy, bool setoriginatxy, bool cliptoregion)
+void Graphics::init(int x, int y, int dx, int dy, bool clip)
 {
-    dx = std::max(0, dx);
-    dy = std::max(0, dy);
     _stride = _drawingBitmap->stride();
 
-    if (setoriginatxy && cliptoregion)
-    {   // provided (x,y) in bitmap are (0,0) for this Graphics instance
-        // drawing is clipped to (dx,dy) or until bitmap edge
-        _sx = std::max(0, -x);
-        _sy = std::max(0, -y);
-        _ptr = _drawingBitmap->getptr(x, y);
-        _ex = std::min(dx, _rasterizeMask->dx() - x);
-        _ey = std::min(dy, _rasterizeMask->dy() - y);
-        //printf("x,y=%d,%d dx,dy=%d,%d => dx=%d,dy=%d, sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, dx, dy, _sx, _sy, _ex, _ey);
-    }
-    else if (!setoriginatxy && cliptoregion)
-    {   // provided (x,y) in bitmap are (x,y) for this graphics instance
-        // drawing is clipped to (dx, dy)
-        _sx = std::max(0, x);
-        _sy = std::max(0, y);
-        _ptr = _drawingBitmap->getptr(0, 0);
-        _ex = std::min(std::max(_sx, x + dx), _drawingBitmap->dx());
-        _ey = std::min(std::max(_sy, y + dy), _drawingBitmap->dy());
-        //printf("x,y=%d,%d dx,dy=%d,%d => sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, _sx, _sy, _ex, _ey);
-    }
-    else if (setoriginatxy && !cliptoregion)
-    {   // provided (x,y) in bitmap are (0,0) for this Graphics instance
-        // drawing is clipped to the parents region
-        _sx = std::max(0, -x);
-        _sy = std::max(0, -y);
-        _ptr = _drawingBitmap->getptr(x, y);
-        _ex = _sx + _rasterizeMask->dx();
-        _ey = _sy + _rasterizeMask->dy();
-        //printf("x,y=%d,%d dx,dy=%d,%d => dx=%d,dy=%d, sx=%d,sy=%d ex=%d,ey=%d\n", x, y, dx, dy, dx, dy, _sx, _sy, _ex, _ey);
-    }
-    else
-    {
-        assert(false);
-    }
+    _dx = dx;
+    _dy = dy;
+
+    _ptrx += x;
+    _ptry += y;
+    _ptr = _drawingBitmap->getptr(_ptrx, _ptry);
+
+    _sx = std::max(0, -_ptrx);
+    auto xremain = std::max(0, _rasterizeMask->dx() - _ptrx);
+    xremain = clip ? std::min(dx, xremain) : xremain;
+    _ex = _sx + xremain;
+    
+    _sy = std::max(0, -_ptry);
+    auto yremain = std::max(0, _rasterizeMask->dy() - _ptry);
+    yremain = clip ? std::min(dy, yremain) : yremain;
+    _ey = _sy + yremain;
 }
 
-Graphics Graphics::offset(int x, int y)
+Graphics Graphics::moveOrigin(int x, int y, int dx, int dy)
 {
-    Graphics view;
-    view._drawingBitmap = _drawingBitmap;
-    view._rasterizeMask = _rasterizeMask;
-    view.init(x, y, dx(), dy(), false, false);
+    Graphics view(*this);
+    view.init(x, y, dx, dy, false);
     return view;
 }
 
-Graphics Graphics::view(int x, int y, int dx, int dy, bool origin)
+Graphics Graphics::clipOrigin(int x, int y, int dx, int dy)
 {
+    Graphics view(*this);
+    view.init(x, y, dx, dy, true);
+    return view;
+}
+
+Graphics Graphics::fullview(int width)
+{
+    int dx = _rasterizeMask->dx();
+    int dy = _rasterizeMask->dy();
+    if (width != -1)
+    {
+        auto pixels = dx * dy;
+        dx = width;
+        dy = pixels / width;
+        _rasterizeMask->restructure(dx, dy);
+        _drawingBitmap->restructure(dx, dy);
+    }
+
     Graphics view;
     view._drawingBitmap = _drawingBitmap;
     view._rasterizeMask = _rasterizeMask;
-    view.init(x, y, dx, dy, origin, true);
+    view._ptr = _drawingBitmap->getptr(0, 0);
+    view._stride = _drawingBitmap->stride();
+    view._ptrx = 0;
+    view._ptry = 0;
+    view._sx = 0;
+    view._sy = 0;
+    view._dx = dx;
+    view._dy = dy;
+    view._ex = _rasterizeMask->dx();
+    view._ey = _rasterizeMask->dy();
     return view;
 }
 
@@ -548,10 +561,10 @@ void Graphics::trianglescanline(float y, float xl, float xr, float dy, float dxl
 
 void Graphics::clearRasterizedMask(int xl, int yt, int xr, int yb)
 {
-    clip(xl, 0, _rasterizeMask->dx() - 1);
-    clip(xr, 0, _rasterizeMask->dx() - 1);
-    clip(yt, 0, _rasterizeMask->dy() - 1);
-    clip(yb, 0, _rasterizeMask->dy() - 1);
+    clip(xl, 0, _rasterizeMask->dx());
+    clip(xr, 0, _rasterizeMask->dx());
+    clip(yt, 0, _rasterizeMask->dy());
+    clip(yb, 0, _rasterizeMask->dy());
 
     for (auto y=yt; y<yb; ++y)
     {
@@ -562,10 +575,10 @@ void Graphics::clearRasterizedMask(int xl, int yt, int xr, int yb)
 
 void Graphics::mergeRasterizedMask(const Color color, irect area)
 {
-    clip(area.x1, 0, _rasterizeMask->dx() - 1);
-    clip(area.x2, 0, _rasterizeMask->dx() - 1);
-    clip(area.y1, 0, _rasterizeMask->dy() - 1);
-    clip(area.y2, 0, _rasterizeMask->dy() - 1);
+    clip(area.x1, 0, _rasterizeMask->dx());
+    clip(area.x2, 0, _rasterizeMask->dx());
+    clip(area.y1, 0, _rasterizeMask->dy());
+    clip(area.y2, 0, _rasterizeMask->dy());
 
     for (int y=area.y1; y < area.y2; ++y)
     {

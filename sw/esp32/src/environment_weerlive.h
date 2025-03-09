@@ -14,6 +14,7 @@ private:
     Setting *_location;
     enum class ParseState { WaitArray, WaitObject1, Reading, Completed, Failed };
     ParseState _state;
+    std::string _weatherImage;
     optional<uint64_t> _timestamp;
     EnvironmentValues _parsedValues;
     EnvironmentValues _values;

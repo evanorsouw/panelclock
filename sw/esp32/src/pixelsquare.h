@@ -4,7 +4,7 @@
 
 class PixelSquare 
 {
-private:
+protected:
     int _dx;
     int _dy;
 

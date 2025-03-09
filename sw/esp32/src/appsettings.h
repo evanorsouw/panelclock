@@ -7,6 +7,7 @@
 class AppSettings : public Settings
 {
 public:
+    // Note: keys may be max 15 chars long or they won't be written
     inline static const char *KeyLanguage = "language";
     inline static const char *KeyTimeMode = "timemode";
     inline static const char *KeyNTPServer = "ntpserver";
@@ -20,21 +21,12 @@ public:
     inline static const char *KeyOpenWeatherLocation = "openweatherloc";
     inline static const char *KeyTZ = "tz";
     inline static const char *KeyTZCustom = "tzcustom";
-    inline static const char *KeySmoothSecondHand  = "secondhand";
-    inline static const char *KeyFlipDisplay  = "flipdisplay";
-    inline static const char *KeyPanelType  = "setuptype";
-
-    inline static const int PanelTypeCountOffset = 0;    
-    inline static const int PanelTypeCountMsk = (0x03 << PanelTypeCountOffset);
-
-    inline static const int PanelTypeOrientationOffset = 2;
-    inline static const int PanelTypeOrientationMsk = (0x03 << PanelTypeOrientationOffset);
-
-    inline static const int PanelTypeSideOffset = 4;
-    inline static const int PanelTypeSideMask = (0x01 << PanelTypeSideOffset);
-
-    inline static const int PanelTypeKeysOrientationOffset = 5;
-    inline static const int PanelTypeKeysOrientationMsk = (0x01 << PanelTypeOrientationOffset);
+    inline static const char *KeySmoothSecondHand = "secondhand";
+    inline static const char *KeyPanelSides = "panelsides";
+    inline static const char *KeyPanelMode = "panelmode";
+    inline static const char *KeyPanel1Flipped = "panel1flipped";
+    inline static const char *KeyPanel2Flipped = "panel2flipped";
+    inline static const char *KeyFlipKeys = "flipkeys";
 
     AppSettings()
     {        
@@ -44,7 +36,14 @@ public:
 
     void defaultSettings()
     {        
-        add(KeyPanelType, get(KeyPanelType, 0));   // panbel type is maintained
+        // these are maintained
+        add(KeyPanelMode, get(KeyPanelMode, 2));
+        add(KeyPanelSides, get(KeyPanelSides, 0));
+        add(KeyPanel1Flipped, get(KeyPanel1Flipped, 0));
+        add(KeyPanel2Flipped, get(KeyPanel2Flipped, 0));
+        add(KeyFlipKeys, get(KeyFlipKeys, false));
+
+        // the rest is default
         add(KeyLanguage, "en");
         add(KeyTimeMode, "1");
         add(KeyNTPServer, "pool.ntp.org");
@@ -59,11 +58,7 @@ public:
         add(KeyTZ, "UTC");
         add(KeyTZCustom, "__tz__");
         add(KeySmoothSecondHand, true);
-        add(KeyFlipDisplay, true);
     }
-
-    int PanelType() const { return get(KeyPanelType)->asint(); }
-    void PanelType(int type) const { return get(KeyPanelType)->set(type); }
 
     int TimeMode() const { return get(KeyTimeMode)->asint(); }
     void TimeMode(int value) { return get(KeyTimeMode)->set(value); }
@@ -107,40 +102,21 @@ public:
     int SmoothSecondHand() const { return get(KeySmoothSecondHand)->asbool(); }
     void SmoothSecondHand(bool smooth) const { return get(KeySmoothSecondHand)->set(smooth); }
 
-    bool FlipDisplay() const { return get(KeyFlipDisplay)->asbool(); }
-    void FlipDisplay(bool flip) const { return get(KeyFlipDisplay)->set(flip); }
+    bool PanelSides() const { return get(KeyPanelSides)->asbool(); }
+    void PanelSides(bool sides) const { return get(KeyPanelSides)->set(sides); }
 
-    bool OnePanel() const { return PanelCount() == 1; }
-    /// @return 0=landscape usb down, 2=landscape usb up, 1+3=vertical (not supported yet)
+    // Mode, 0=1-panel, 1=2-panel-landscape, 2=2-panel-portrait
+    int PanelMode() const { return get(KeyPanelMode)->asint(); }
+    void PanelMode(int mode) const { return get(KeyPanelMode)->set(std::max(0, std::min(2, mode))); }
 
-    int PanelOrientation() const { return (PanelType() & PanelTypeOrientationMsk) >> PanelTypeOrientationOffset; }
-    void PanelOrientation(int orientation) 
-    {
-        auto type = PanelType() & (~PanelTypeOrientationMsk);
-        type |= (orientation << PanelTypeOrientationOffset) & PanelTypeOrientationMsk;
-        PanelType(type);
-    }
-    int PanelSides() const { return (PanelType() & PanelTypeSideMask) >> PanelTypeSideOffset; }
-    void PanelSides(int sides)
-    {
-        auto type = PanelType() & (~PanelTypeSideMask);
-        type |= (sides << PanelTypeSideOffset) & PanelTypeSideMask;
-        PanelType(type);
-    }
-    int PanelCount() const { return 1 + ((PanelType() & PanelTypeCountMsk) >> PanelTypeCountOffset); }
-    void PanelCount(int count)
-    {
-        auto type = PanelType() & (~PanelTypeCountMsk);
-        type |= ((count-1) << PanelTypeCountOffset) & PanelTypeCountMsk;
-        PanelType(type);
-    }
-    bool FlipKeys() const { return (PanelType() & PanelTypeKeysOrientationMsk) != 0; }
-    void FlipKeys(bool flip) 
-    {
-        auto type = PanelType() & (~PanelTypeKeysOrientationMsk);
-        type |= flip ? PanelTypeKeysOrientationMsk : 0;
-        PanelType(type);
-    }
+    bool Panel1Flipped() const { return get(KeyPanel1Flipped)->asbool(); }
+    void Panel1Flipped(bool flipped) const { return get(KeyPanel1Flipped)->set(flipped); }
+
+    bool Panel2Flipped() const { return get(KeyPanel2Flipped)->asbool(); }
+    void Panel2Flipped(bool flipped) const { return get(KeyPanel2Flipped)->set(flipped); }
+
+    bool FlipKeys() const { return get(KeyFlipKeys)->asbool(); }
+    void FlipKeys(bool flip) const { return get(KeyFlipKeys)->set(flip); }
 };
 
 #endif

@@ -17,26 +17,28 @@ void ConsoleBase::render(Graphics& graphics)
         if (yt >= graphics.dy())
             break;
         auto yb = yt + font->height() - 1;
-        if (yb < 0)
+        if (yb < 0)   
             continue;
 
         auto &info = _lines[i];
         if (info.type == linetype::choices)
         {
             auto x = 0;
-            for (auto i=0; i<info.line.size(); ++i)
+            for (auto j=0; j<info.line.size(); ++j)
             {
-                auto size = font->textsize(info.line[i].c_str());
-                if (info.choice == i)
+                auto txt = info.line[j];
+                if (j == info.choice && info.autoChoiceDelay != 0 && i == _lines.size() - 1)
+                {
+                    auto remaining = info.autoChoiceDelay - elapsed(_autoChoiceTimer) / 1000;
+                    txt += "(" + std::to_string(remaining) +  ")";
+                }
+                auto size = font->textsize(txt.c_str());
+                if (info.choice == j)
                 {
                     graphics.rect(x+1, yt, size.dx, size.dy + font->descend(), Color::darkgreen);
                     graphics.rect(x, yt + 1, size.dx + 2, size.dy - 2 + font->descend(), Color::darkgreen);
-                    graphics.text(font, x + 1, yb + font->descend(), info.line[i].c_str(), info.color());
                 }
-                else
-                {
-                    graphics.text(font, x + 1, yb + font->descend(), info.line[i].c_str(), info.color());
-                }
+                graphics.text(font, x + 1, yb + font->descend(), txt.c_str(), info.color());
                 x += size.dx + 2;
             }
         }
@@ -136,14 +138,23 @@ void ConsoleBase::progress(const char *fmt, ...)
 void ConsoleBase::choices(std::initializer_list<std::string> list)
 {
     _lines.push_back(lineinfo(list, linetype::choices));
+    starttimer(_autoChoiceTimer);
 }
 
 std::string ConsoleBase::handleChoice(KeyPress& press) 
 {
+    auto key = press.key;
     if (_lines.back().type == linetype::choices)
     {
+        if (_lines.back().autoChoiceDelay != 0)
+        {
+            if (timeout(_autoChoiceTimer, _lines.back().autoChoiceDelay * 1000))
+            {
+                key = UserInput::KEY_SET;
+            }
+        }
         auto &info = _lines.back();
-        switch (press.key)
+        switch (key)
         {
         case UserInput::KEY_SET:
             {
@@ -156,9 +167,11 @@ std::string ConsoleBase::handleChoice(KeyPress& press)
                 return choice;
             }
         case UserInput::KEY_DOWN:
+            _lines.back().autoChoiceDelay = 0;
             info.choice = (info.choice + 1) % info.line.size(); 
             break;
         case UserInput::KEY_UP:
+            _lines.back().autoChoiceDelay = 0;
             info.choice = (info.choice - 1 + info.line.size()) % info.line.size(); 
             break;
         }        

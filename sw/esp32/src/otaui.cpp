@@ -5,6 +5,9 @@
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
 
+#include <cstring>
+
+#include "diagnostic.h"
 #include "httpclient.h"
 #include "otaui.h"
 #include "version.h"
@@ -42,19 +45,6 @@ int OTAUI::interact()
         return 0;
 
     auto select = handleChoice(press);
-
-    if (_state == state::restartcountdown)
-    {
-        removeLogs(1);
-        auto remainingSeconds = (int)((_restartCountdownStart.msticks() - _system.now().msticks()) / 1000);
-        char buf[30];
-        if (remainingSeconds == 0)
-        {
-            select = CHOICE_RESTART;
-        }
-        sprintf(buf, "%s (%d)", CHOICE_RESTART, remainingSeconds);
-        choices({buf});
-    }
 
     if (select == CHOICE_UPDATE)
     {
@@ -101,7 +91,7 @@ void OTAUI::readManifest()
     {
         log("version check failed");
         detail("no manifest found, error = %d", result);
-        choices({ CHOICE_EXIT });
+        choices({ CHOICE_EXIT":9" });
         return;
     }
 
@@ -127,12 +117,12 @@ void OTAUI::readManifest()
     if (currentVersion >= _manifestVersion)
     {
         log("already latest version");
-        choices({ CHOICE_EXIT });
+        choices({ CHOICE_EXIT":9" });
     }
     else
     {
         log("new version %s available", _manifestVersion.version());
-        choices({ CHOICE_UPDATE, CHOICE_EXIT });
+        choices({ CHOICE_UPDATE":9", CHOICE_EXIT });
     }
 }
 
@@ -161,7 +151,7 @@ void OTAUI::updateOverTheAir()
     {
         log("download failed;");
         error(" %d (%s)", ret, esp_err_to_name(ret));
-        choices({ CHOICE_EXIT });
+        choices({ CHOICE_EXIT":9" });
         return;
     }
 
@@ -195,7 +185,7 @@ void OTAUI::updateOverTheAir()
                 log("download failed;");
                 error(" %d (%s)", ret, esp_err_to_name(ret));
                 esp_https_ota_abort(ota_handle);
-                initiateRestart();
+                choices({ CHOICE_RESTART":9" });
                 return;
             }
         }
@@ -205,7 +195,7 @@ void OTAUI::updateOverTheAir()
     {
         esp_https_ota_abort(ota_handle);
         error("update cancelled");
-        choices({CHOICE_EXIT});
+        choices({ CHOICE_EXIT":9" });
     }
     else
     {
@@ -215,22 +205,15 @@ void OTAUI::updateOverTheAir()
             log("activating firmware");
             const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
             esp_ota_set_boot_partition(update_partition);
+            choices({ CHOICE_RESTART":9" });
         } 
         else 
         {
             log("update failed;");
             error(" %d (%s)", ret, esp_err_to_name(ret));
+            choices({ CHOICE_RESTART":30" });
         }
-        initiateRestart();
     }
-}
-
-void OTAUI::initiateRestart()
-{
-    _state = state::restartcountdown;
-    _restartCountdownStart = _system.now();
-    _restartCountdownStart.addSeconds(10);
-    choices({ CHOICE_RESTART });
 }
 
 void OTAUI::restart()

@@ -4,8 +4,8 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
 #include <driver/gpio.h>
+
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "events.h"
@@ -19,6 +19,7 @@
 #include "appsettings.h"
 #include "bitmap.h"
 #include "color.h"
+#include "diagnostic.h"
 #include "ds3231.h"
 #include "environment_weerlive.h"
 #include "environment_openweather.h"
@@ -87,8 +88,7 @@ void app_main()
     FpgaConfig.configure();
 
     auto settings = new AppSettings();    
-    auto panel = new LedPanel(128, 64, *spi);
-    panel->setMode(settings->PanelOrientation() & 2, settings->PanelSides());
+    auto panel = new LedPanel(128, 64, *settings, *spi);
 
     auto graphics = new Graphics(panel->dx(), panel->dy());
     auto i2c = new I2CWrapper(I2C_NUM_0, I2C_CLK, I2C_SDA);

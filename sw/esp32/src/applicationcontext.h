@@ -17,45 +17,61 @@ private:
     timeinfo _now;
     long _msSinceMidnight;
     float _intensity;
-    Font *_fonttimeSmall;
-    Font *_fonttimeLarge;
-    Font *_fontdate;
-    Font *_fontWhiteMagic;
-    Font *_fontweatherL;
-    Font *_fontweatherS;
-    Font *_fontIconsS;
-    Font *_fontIconsM;
-    Font *_fontIconsL;
-    Font *_fontIconsXL;
-    Font *_fontSettings;
+    Font *_fonttimeSmall[3];
+    Font *_fonttimeLarge[3];
+    Font *_fontdate[3];
+    Font *_fontweatherL[3];
+    Font *_fontweatherS[3];
+    Font *_fontIconsS[3];
+    Font *_fontIconsM[3];
+    Font *_fontIconsL[3];
+    Font *_fontIconsXL[3];
+    Font *_fontSettings[3];
+    int _activeFontset;
 
 public:
     ApplicationContext(AppSettings &settings)
         : _settings(settings)
     {
-        if (_settings.OnePanel())
-        {
-            _fonttimeSmall = Font::getFont("ArialRoundBold.ttf", 9, 10);
-            _fonttimeLarge = Font::getFont("ArialRoundBold.ttf", 12, 12);
-            _fontIconsS = Font::getFont("panelicons.ttf", 3, 3);
-            _fontIconsM = Font::getFont("panelicons.ttf", 7, 7);
-            _fontIconsL = Font::getFont("panelicons.ttf", 12, 12);
-            _fontIconsXL = Font::getFont("panelicons.ttf", 16, 16);        
-            _fontSettings = Font::getFont("fixedfont-condensed.wmf", 0, 0);
-        }
-        else{
-            _fonttimeSmall = Font::getFont("ArialRoundBold.ttf", 9, 11);
-            _fonttimeLarge = Font::getFont("ArialRoundBold.ttf", 14, 14);
-            _fontIconsS = Font::getFont("panelicons.ttf", 4, 4);
-            _fontIconsM = Font::getFont("panelicons.ttf", 9, 9);
-            _fontIconsL = Font::getFont("panelicons.ttf", 18, 18);
-            _fontIconsXL = Font::getFont("panelicons.ttf", 22, 22);
-            _fontSettings = Font::getFont("fixedfont.wmf", 0, 0);
-        }
-        _fontdate = Font::getFont("ArialRoundRegular.ttf", 11, 11);
-        _fontWhiteMagic = Font::getFont("ArialRoundBold.ttf", 20, 28);
-        _fontweatherL = Font::getFont("ArialRoundRegular.ttf", 9, 10);
-        _fontweatherS = Font::getFont("ArialRoundRegular.ttf", 7, 7);
+        _fonttimeSmall[0] = Font::getFont("ArialRoundBold.ttf", 9, 10);
+        _fonttimeLarge[0] = Font::getFont("ArialRoundBold.ttf", 12, 12);
+        _fontIconsS[0] = Font::getFont("panelicons.ttf", 3, 3);
+        _fontIconsM[0] = Font::getFont("panelicons.ttf", 7, 7);
+        _fontIconsL[0] = Font::getFont("panelicons.ttf", 12, 12);
+        _fontIconsXL[0] = Font::getFont("panelicons.ttf", 16, 16);        
+        _fontSettings[0] = Font::getFont("fixedfont-condensed.wmf", 0, 0);
+        _fontdate[0] = Font::getFont("ArialRoundRegular.ttf", 11, 11);
+        _fontweatherL[0] = Font::getFont("ArialRoundRegular.ttf", 9, 10);
+        _fontweatherS[0] = Font::getFont("ArialRoundRegular.ttf", 7, 7);
+        
+        _fonttimeSmall[1] = Font::getFont("ArialRoundBold.ttf", 9, 11);
+        _fonttimeLarge[1] = Font::getFont("ArialRoundBold.ttf", 14, 14);
+        _fontIconsS[1] = Font::getFont("panelicons.ttf", 5, 5);
+        _fontIconsM[1] = Font::getFont("panelicons.ttf", 9, 9);
+        _fontIconsL[1] = Font::getFont("panelicons.ttf", 18, 18);
+        _fontIconsXL[1] = Font::getFont("panelicons.ttf", 22, 22);
+        _fontSettings[1] = Font::getFont("fixedfont.wmf", 0, 0);
+        _fontdate[1]= Font::getFont("ArialRoundRegular.ttf", 11, 11);
+        _fontweatherL[1] = Font::getFont("ArialRoundRegular.ttf", 9, 10);
+        _fontweatherS[1] = Font::getFont("ArialRoundRegular.ttf", 7, 7);
+
+        _fonttimeSmall[2] = Font::getFont("ArialRoundBold.ttf", 9, 10);
+        _fonttimeLarge[2] = Font::getFont("ArialRoundBold.ttf", 12, 12);
+        _fontIconsS[2] = Font::getFont("panelicons.ttf", 5, 5);
+        _fontIconsM[2] = Font::getFont("panelicons.ttf", 9, 9);
+        _fontIconsL[2] = Font::getFont("panelicons.ttf", 18, 18);
+        _fontIconsXL[2] = Font::getFont("panelicons.ttf", 22, 22);
+        _fontSettings[2] = Font::getFont("fixedfont-condensed.wmf", 0, 0);
+        _fontdate[2] = Font::getFont("ArialRoundRegular.ttf", 11, 11);
+        _fontweatherL[2] = Font::getFont("ArialRoundRegular.ttf", 9, 10);
+        _fontweatherS[2] = Font::getFont("ArialRoundRegular.ttf", 7, 7);
+
+        auto handler = [&](Setting* _) {
+            _activeFontset = _settings.PanelMode();
+        };
+        _settings.onChanged(handler);
+        handler(nullptr);
+
         _intensity = 1;
     }
 
@@ -92,17 +108,16 @@ public:
     }
     void intensity(float intensity) { _intensity = intensity; }
 
-    Font *fonttimeLarge() const { return _fonttimeLarge; }
-    Font *fonttimeSmall() const { return _fonttimeSmall; }
-    Font *fontdate() const { return _fontdate; }
-    Font *fontWhiteMagic() const { return _fontWhiteMagic; }
-    Font *fontweatherL() const { return _fontweatherL; }
-    Font *fontweatherS() const { return _fontweatherS; }
-    Font *fontIconsS() const { return _fontIconsS; }
-    Font *fontIconsM() const { return _fontIconsM; }
-    Font *fontIconsL() const { return _fontIconsL; }
-    Font *fontIconsXL() const { return _fontIconsXL; }
-    Font *fontSettings() const { return _fontSettings; }
+    Font *fonttimeLarge() const { return _fonttimeLarge[_activeFontset]; }
+    Font *fonttimeSmall() const { return _fonttimeSmall[_activeFontset]; }
+    Font *fontdate() const { return _fontdate[_activeFontset]; }
+    Font *fontweatherL() const { return _fontweatherL[_activeFontset]; }
+    Font *fontweatherS() const { return _fontweatherS[_activeFontset]; }
+    Font *fontIconsS() const { return _fontIconsS[_activeFontset]; }
+    Font *fontIconsM() const { return _fontIconsM[_activeFontset]; }
+    Font *fontIconsL() const { return _fontIconsL[_activeFontset]; }
+    Font *fontIconsXL() const { return _fontIconsXL[_activeFontset]; }
+    Font *fontSettings() const { return _fontSettings[_activeFontset]; }
     
     float intensity() const { return _intensity; }
     timeinfo now() const { return _now; }

@@ -10,6 +10,15 @@ I use a number of different fonts for both text as wel as graphics;
 - All .svg files we turned into a panel-icons font.
   I used the same character mechanism to draw icons like circles, clouds etc.
   All because I did not have the means to draw filled arcs and elippses.
+- To edit a ttf font (.ttf or .sfd)  
+  - open with FontForge
+  - save as sfd (if not already done so)  
+    - .sfd is FontForge's native format.
+  - make requried modifications to the glyphs
+  - then File / Generate fonts
+  - in dialg then select output file
+  - press generate (may ignore warnings)
+  
 
 These truetype fonts are loaded in memory and used at different sizes.
 Rendering is done using the opensource 'script.c' library.

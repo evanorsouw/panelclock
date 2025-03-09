@@ -49,11 +49,14 @@ public:
     int interact();
     
 private:
+    void drawSunRiseSet(Graphics& graphics, float x, float y, float diameter);
     void drawClock(Graphics& graphics, float x, float y, float diameter);
     void drawTimeOnePanel(Graphics& graphics, const timeinfo &now);
-    void drawDateTimeTwoPanel(Graphics& graphics, const timeinfo &now);
+    void drawDateTimeHorizontal(Graphics& graphics, const timeinfo &now);
+    void drawDateTimeVertical(Graphics& graphics, const timeinfo &now);
     void drawWeatherOnePanel(Graphics& graphics);
-    void drawWeatherTwoPanel(Graphics& graphics);
+    void drawWeatherHorizontal(Graphics& graphics);
+    void drawWeatherVertical(Graphics& graphics);
     void drawWindArrow(Graphics& graphics, int x, int y, int size, float angle, Color col1, Color col2);
     void drawWeatherImage(Graphics& graphics);
     void drawWindAngle(Graphics& graphics);
@@ -68,6 +71,7 @@ private:
     Color starIntensity(float phase, float when);
     void drawFog(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
     void drawSnow(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
+    void drawHorizontalAnimatedLine(Graphics &graphics, float y);
 
     void drawSegments(Graphics& graphics);
     stripsegment temperatureSegment();
@@ -76,7 +80,6 @@ private:
     stripsegment dateSegment();
     stripsegment separatorSegment();
     stripsegment colorSegment(int dx, Color color);
-    stripsegment sunRiseSegment();
 
     Font *getSizedIconFont(char size, char defaultSize='L');
     Color scaleWeatherColor(Color color, Color defaultColor) { return scaleWeatherColor(color == Color::transparant ? defaultColor : color); }

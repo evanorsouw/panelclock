@@ -24,6 +24,7 @@ ApplicationRunner::ApplicationRunner(
     _appctx.starttimer(_totaltime);
     _appctx.starttimer(_totalrendertime);
     _appctx.starttimer(_totaldisplaytime);
+    _appctx.starttimer(_lastdisplaytime);
     _rendercount = 0;
     _fpsInterval = 10000;
 
@@ -52,8 +53,11 @@ void ApplicationRunner::renderTask()
     _graphics.linkBitmap(screen);
     _appctx.starttimer(timer);
     _appctx.settime(_system.now());
-    stepGUI();
 
+    auto width = _system.settings().PanelMode() == 1 ? 128 : 64;
+    auto height = _system.settings().PanelMode() == 2 ? 128 : 64;
+    auto view = _graphics.fullview(width).moveOrigin(0, 0, width, height);
+    render(view);
     xQueueSend(_hDisplayQueue, &screen, 1000);
     _totalrendertime += _appctx.elapsed(timer);
 }
@@ -71,8 +75,9 @@ void ApplicationRunner::displayTask()
 
     Bitmap *screen;
     xQueueReceive(_hDisplayQueue, &screen, 1000);
+
     _appctx.starttimer(timer);
-    screen->copyTo(_panel, 0, 0);
+    _panel.copyFrom(*screen);
     _panel.showScreen(_iShowScreen);
     if (++_iShowScreen == 3)
         _iShowScreen = 0;
@@ -105,7 +110,7 @@ void ApplicationRunner::startTransition(TransitionPhase phase)
     _phase = phase;
 }
 
-void ApplicationRunner::stepGUI()
+void ApplicationRunner::render(Graphics &graphics)
 {
     auto interact = true;
     if (_phase != TransitionPhase::Stable)
@@ -113,10 +118,11 @@ void ApplicationRunner::stepGUI()
         updateIntensity();
         interact = false;
     }
+
     switch (_mode)
     {
     case UIMode::DateTime:
-        _appui.render(_graphics);
+        _appui.render(graphics);
         if (interact)
         {
             switch (_appui.interact())
@@ -134,21 +140,32 @@ void ApplicationRunner::stepGUI()
         }
         break;
     case UIMode::Config:
-        _configui.render(_graphics);
-        if (interact && _configui.interact())
+        _configui.render(graphics);
+        if (interact)
         {
-            startMode(UIMode::DateTime, TransitionPhase::Leaving);
+            switch (_configui.interact())
+            {
+            case 1:
+                startMode(UIMode::DateTime, TransitionPhase::Leaving);
+                break;
+            case 2:
+                startMode(UIMode::OTA, TransitionPhase::Leaving);
+                break;
+            case 3:
+                startMode(UIMode::Setup, TransitionPhase::Leaving);
+                break;
+            }
         }
         break;
     case UIMode::OTA:
-        _otaui.render(_graphics);
+        _otaui.render(graphics);
         if (interact && _otaui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);
         }
         break;
     case UIMode::Setup:
-        _setupui.render(_graphics);
+        _setupui.render(graphics);
         if (interact && _setupui.interact())
         {
             startMode(UIMode::DateTime, TransitionPhase::Leaving);
@@ -196,7 +213,7 @@ void ApplicationRunner::monitorRefreshRate()
         _rendercount = 0;
         _totaldisplaytime = 0;
         _totalrendertime = 0;
-        _fpsInterval = 10000;//std::min(_fpsInterval * 2, 10*60*1000);
+        _fpsInterval = std::min(_fpsInterval * 2, 10*60*1000);
         printf("%.1f fps, render=%.1f%%, display=%.1f%%\n", fps, prender, pdisplay);
     }
 }

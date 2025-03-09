@@ -14,6 +14,7 @@ class SetupUI : public RenderBase
 private:
     LedPanel &_ledPanel;
     uint64_t _resettimer;
+    bool _resetStarted;
 
 public:
     SetupUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput, LedPanel &panel)
@@ -26,8 +27,10 @@ public:
     int interact() override;
 
 private:
-    void drawButtons(Graphics &graphics, float x, float y, Color color);
-    void drawCentrePanel(Graphics &graphics, Font *font, float x, float y, const char *txt, Color color);
+    void draw1Panel(Graphics &graphics);
+    void draw2PanelLandscape(Graphics &graphics);
+    void draw2PanelPortrait(Graphics &graphics);
+    void drawBorder(Graphics &graphics, float d);
 };
 
 #endif

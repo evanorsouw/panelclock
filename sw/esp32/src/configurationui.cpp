@@ -1,9 +1,10 @@
-
 #include <algorithm>
+
 #include "configurationui.h"
 #include "environment_weerlive.h"
 #include "environment_openweather.h"
 #include "environmentselector.h"
+#include "graphics.h"
 #include "timeinfo.h"
 #include "version.h"
 
@@ -30,13 +31,19 @@ std::vector<configchoice> ConfigurationUI::_secondhandChoices = {
     configchoice("0", ENG_OPTION_SNAP), 
     configchoice("1", ENG_OPTION_SMOOTH) 
 };
-std::vector<configchoice> ConfigurationUI::_flipDisplayChoices = { 
-    configchoice("0", ENG_USBDOWN), 
-    configchoice("1", ENG_USBUP) 
+std::vector<configchoice> ConfigurationUI::_orientationChoices = { 
+    configchoice("0", ENG_ROTATE_0), 
+    configchoice("1", ENG_ROTATE_90),
+    configchoice("2", ENG_ROTATE_180), 
+    configchoice("3", ENG_ROTATE_270) 
 };
 std::vector<configchoice> ConfigurationUI::_timeModeChoices = { 
     configchoice("0", ENG_AUTOMATIC), 
     configchoice("1", ENG_MANUAL) 
+};
+std::vector<configchoice> ConfigurationUI::_flipKeyChoices = { 
+    configchoice("0", ENG_KEYS_NORMAL), 
+    configchoice("1", ENG_KEYS_REVERSED) 
 };
 std::vector<configchoice> ConfigurationUI::_weatherChoices;
 
@@ -46,7 +53,9 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     _font = appdata.fontSettings();    
     _margin = 1.0f;
     
-    addConfig(ENG_VERSION, [this](configline& c){ strcpy(c.value, Version::application().version()); }); 
+    addConfig(ENG_VERSION, 
+        [this](configline& c){ strcpy(c.value, Version::application().version()); },
+        [this](configline& c, bool init){ if (!init) { _exitCode = 2; } return false; });
     addConfig(ENG_TZ, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTZ, _tzChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyTZ, _tzChoices); });
@@ -135,12 +144,12 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_SEC, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeySmoothSecondHand, _secondhandChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeySmoothSecondHand, _secondhandChoices); });
-    addConfig(ENG_FLIP_USB, 
-        [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipDisplay, _flipDisplayChoices); }, 
-        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipDisplay, _flipDisplayChoices); });
+    addConfig(ENG_FLIP_KEYS, 
+        [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipKeys, _flipKeyChoices); }, 
+        [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipKeys, _flipKeyChoices); });
     addConfig(ENG_EXIT, 
         nullptr, 
-        [this](configline&, bool){ _exitConfig = true; return false; });
+        [this](configline&, bool){ _exitCode = 1; return false; });
 
     for (auto e : env.sources())
     {
@@ -158,7 +167,7 @@ void ConfigurationUI::init()
     _selectedLine = 0;
     _keySetLine= 0;
     _updating = false;
-    _exitConfig = false;
+    _exitCode = 0;
     _lastEditTime = _system.now();
     _iEditIndex = -1;
     _inextReaderUpdate = 0;
@@ -204,7 +213,7 @@ void ConfigurationUI::render(Graphics &graphics)
 
             // draw label
             auto x = _margin;
-            auto view = graphics.view(x, yt, _labelwidth, yb - yt, true);
+            auto view = graphics.clipOrigin(x, yt, _labelwidth, yb - yt);
             x = view.text(_font, config.xLabelScrollOffset, y, translate(config.label).c_str(), colWritable);  
             updateScrollState(config.xLabelScrollState, config.xLabelScrollOffset, config.xLabelScrollDelay, x < view.dx());
 
@@ -214,7 +223,7 @@ void ConfigurationUI::render(Graphics &graphics)
             if (!textEditing)
             {
                 x = _margin + _labelwidth + 2;
-                view = graphics.view(x, yt, graphics.dx() - x, yb - yt, true);
+                view = graphics.clipOrigin(x, yt, graphics.dx() - x, yb - yt);
                 auto color = config.updater ? (editing ? colUpdating : colWritable) : colReadonly;
                 x = view.text(_font, config.xValueScrollOffset, y, config.value, color);    
                 updateScrollState(config.xValueScrollState, config.xValueScrollOffset, config.xValueScrollDelay, x < view.dx());
@@ -237,7 +246,7 @@ void ConfigurationUI::render(Graphics &graphics)
         auto yb = yt + _font->height();
         auto y = _font->height() + _font->descend() - 2;
         auto targetXScrollOffset = config.xValueScrollOffset;
-        auto view = graphics.view(xvalues, yt, graphics.dx() - x, yb - yt, true);
+        auto view = graphics.moveOrigin(xvalues, yt, graphics.dx() - x, yb - yt);
         for (auto i=0; i < sizeof(config.value); ++i)
         {
             auto c = config.value[i];
@@ -319,7 +328,7 @@ void ConfigurationUI::calculateLabelWidth()
         auto info = _font->textsize(translate(config.label).c_str());
         _labelwidth = std::max(_labelwidth, info.dx);
     }
-    _labelwidth = std::min(_labelwidth, 24.0f);
+    _labelwidth = std::min(_labelwidth, _system.settings().PanelMode() == 1 ?  32.0f : 24.0f);
 }
 
 void ConfigurationUI::updateScrollState(ScrollState &scrollstate, float &scrolloffset, uint64_t &scrolldelay, bool endfits)
@@ -402,13 +411,16 @@ int ConfigurationUI::interact()
         }
     }
 
-    auto exit = _exitConfig || isTimeout();
-    if (exit)
+    if (isTimeout())
+    {
+        _exitCode = 1;
+    }
+    if (_exitCode != 0)
     {
         _system.settings().saveSettings();
         _system.connectWifi();
     }
-    return exit ? 1 : 0;
+    return _exitCode;
 }
 
 void ConfigurationUI::addConfig(const char *label,

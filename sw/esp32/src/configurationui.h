@@ -59,9 +59,10 @@ private:
     static std::vector<configchoice> _tzChoices;
     static std::vector<configchoice> _bootscreenChoices;
     static std::vector<configchoice> _secondhandChoices;
-    static std::vector<configchoice> _flipDisplayChoices;
+    static std::vector<configchoice> _orientationChoices;
     static std::vector<configchoice> _timeModeChoices;
     static std::vector<configchoice> _weatherChoices;
+    static std::vector<configchoice> _flipKeyChoices;
 
     Font *_font;
     float _margin;
@@ -73,7 +74,7 @@ private:
     std::vector<configline> _configs;
     int _inextReaderUpdate;
     bool _updating;
-    bool _exitConfig;
+    int _exitCode;
     timeinfo _lastEditTime;
     int _iEditIndex;
     float _rollYOffset;

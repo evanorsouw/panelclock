@@ -17,7 +17,6 @@ private:
     state _state;
     bool _cancel;
     Version _manifestVersion;
-    timeinfo _restartCountdownStart;
 
 public:
     OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)

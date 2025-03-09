@@ -21,6 +21,20 @@ struct lineinfo
         scrolldelay = 0;
         state = scrollstate::begin;
         choice = 0;
+        autoChoiceDelay = 0;
+        if (atype == linetype::choices)
+        {
+            for (int i=0; i<line.size(); ++i)
+            {
+                auto pos = line[i].find_last_of(':');
+                if (pos != std::string::npos)
+                {
+                    choice = i;
+                    autoChoiceDelay = std::atoi(line[i].substr(pos+1).c_str());
+                    line[i] = line[i].substr(0, pos);
+                }
+            }
+        }
     }
     std::vector<std::string> line;
     linetype type;
@@ -28,6 +42,7 @@ struct lineinfo
     scrollstate state;
     uint64_t scrolldelay;
     int choice;
+    int autoChoiceDelay;
 
     Color color() const
     {
@@ -50,6 +65,7 @@ private:
     std::vector<lineinfo> _lines;
     std::mutex _loglock;
     float _yTop;
+    uint64_t _autoChoiceTimer;
 
 public:
     ConsoleBase(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)

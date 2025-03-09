@@ -60,7 +60,7 @@ public:
 private:
     void startMode(UIMode mode, TransitionPhase phase);
     void startTransition(TransitionPhase phase);
-    void stepGUI();
+    void render(Graphics &graphics);
     void updateIntensity();
     void monitorRefreshRate();
 };
