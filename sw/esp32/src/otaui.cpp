@@ -19,6 +19,19 @@
 
 #define BASEURL "https://whitemagic.it/panelclock/"
 
+OTAUI::OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
+    : ConsoleBase(appdata, env, sys, userinput)
+{
+    _automatic = false;
+    std::function<void(Setting*)> handler = [&](Setting *_)
+    {
+        _checkUpdateInterval = _system.settings().SoftwareUpdateInterval() * 60000;
+    };
+    _system.settings().onChanged(handler);
+    starttimer(_checkUpdateTimer);
+    handler(nullptr);
+}
+
 void OTAUI::init()
 {
     ConsoleBase::init();
@@ -31,7 +44,7 @@ void OTAUI::init()
     xTaskCreate([](void*arg) { 
         auto ota = (OTAUI*)arg;
         ota->_state = state::readmanifest;
-        ota->readManifest();
+        ota->readManifest(false);
         ota->_state = state::idle;
         vTaskDelete(nullptr); 
     }, "ota", 10000, this, 1, nullptr);
@@ -77,11 +90,26 @@ int OTAUI::interact()
     return 0;
 }
 
-void OTAUI::readManifest()
+bool OTAUI::isUpdateAvailable()
+{
+    if (_checkUpdateInterval == 0)
+        return false;
+    
+    if (!timeout(_checkUpdateTimer, _checkUpdateInterval))
+        return false;
+
+    auto updateAvailable = readManifest(true);
+    starttimer(_checkUpdateTimer);
+
+    return updateAvailable;
+}
+
+bool OTAUI::readManifest(bool silent)
 {
     HTTPClient client;
+    auto newversion = false;
 
-    progress("read manifest");
+    if (!silent) progress("read manifest");
 
     const char * url = BASEURL "manifest.txt";    
     char buf[512];
@@ -89,10 +117,10 @@ void OTAUI::readManifest()
     auto result = client.get(url, (uint8_t*)buf, sizeof(buf));
     if (result != 200)
     {
-        log("version check failed");
-        detail("no manifest found, error = %d", result);
-        choices({ CHOICE_EXIT":9" });
-        return;
+        if (!silent) log("version check failed");
+        if (!silent) detail("no manifest found, error = %d", result);
+        if (!silent) choices({ CHOICE_EXIT":9" });
+        return newversion;
     }
 
     char *pstart = buf;
@@ -112,18 +140,20 @@ void OTAUI::readManifest()
     }
 
     auto currentVersion = Version::application();
-    log("current version %s", currentVersion.version());
+    if (!silent) log("current version %s", currentVersion.version());
 
     if (currentVersion >= _manifestVersion)
     {
-        log("already latest version");
-        choices({ CHOICE_EXIT":9" });
+        if (!silent) log("already latest version");
+        if (!silent) choices({ CHOICE_EXIT":9" });
     }
     else
     {
-        log("new version %s available", _manifestVersion.version());
-        choices({ CHOICE_UPDATE":9", CHOICE_EXIT });
+        if (!silent) log("new version %s available", _manifestVersion.version());
+        if (!silent) choices({ CHOICE_UPDATE":9", CHOICE_EXIT });
+        newversion = true;
     }
+    return newversion;
 }
 
 void OTAUI::updateOverTheAir() 

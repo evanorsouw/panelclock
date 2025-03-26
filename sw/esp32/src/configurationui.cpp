@@ -45,6 +45,13 @@ std::vector<configchoice> ConfigurationUI::_flipKeyChoices = {
     configchoice("0", ENG_KEYS_NORMAL), 
     configchoice("1", ENG_KEYS_REVERSED) 
 };
+std::vector<swupdatechoice> ConfigurationUI::_swUpdateChoices = { 
+    swupdatechoice(0, ENG_UPDATE_MANUAL), 
+    swupdatechoice(1, ENG_UPDATE_MINUTELY), 
+    swupdatechoice(60, ENG_UPDATE_HOURLY), 
+    swupdatechoice(24*60, ENG_UPDATE_DAILY), 
+    swupdatechoice(7*24*60, ENG_UPDATE_WEEKLY), 
+};
 std::vector<configchoice> ConfigurationUI::_weatherChoices;
 
 ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelector &env, System &sys, UserInput &userinput)
@@ -147,6 +154,9 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_FLIP_KEYS, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyFlipKeys, _flipKeyChoices); }, 
         [this](configline& c, bool init){ return updateSettingChoices(c, init, AppSettings::KeyFlipKeys, _flipKeyChoices); });
+    addConfig(ENG_UPDATE_PERIOD, 
+        [this](configline& c){ generateIntervalLine(c); }, 
+        [this](configline& c, bool init){ return updateSettingSwUpdate(c, init); });
     addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitCode = 1; return false; });
@@ -786,6 +796,59 @@ bool ConfigurationUI::updateSettingChoices(configline& config, bool init, const 
         idx = (idx + choices.size()) % choices.size();
         config.setpoint = idx;
         snprintf(config.value, sizeof(config.value), "%s", translate(choices[idx].english).c_str());
+    }
+    return editing;
+}
+
+void ConfigurationUI::generateIntervalLine(configline &config)
+{
+    auto interval = _system.settings().get(AppSettings::KeySoftwareUpdateInterval)->asint();
+    for (auto i=0; i<_swUpdateChoices.size(); ++i)
+    {
+        if (interval <= _swUpdateChoices[i].interval) 
+        {
+            snprintf(config.value, sizeof(config.value), "%s", translate(_swUpdateChoices[i].english).c_str());
+            config.setpoint = i;
+            break;
+        }
+    }
+}
+
+bool ConfigurationUI::updateSettingSwUpdate(configline& config, bool init)
+{
+    if (init)
+    {
+        // setpoint already set in generateIntervalLine()
+    }
+
+    auto editing = !isEditCancelled();
+    if (editing)
+    {
+        auto key = getKey();
+        switch (key)
+        {
+            case UserInput::KEY_SET:
+                config.setpoint = _swUpdateChoices[(int)config.setpoint].interval;
+                _system.settings().get(AppSettings::KeySoftwareUpdateInterval)->set((int)config.setpoint);
+                editing = false;
+                break;
+            case UserInput::KEY_UP:
+                if (config.setpoint + 1 < _swUpdateChoices.size())
+                {
+                    config.setpoint++;
+                }
+                break;
+            case UserInput::KEY_DOWN:
+                if (config.setpoint > 0)
+                {
+                    config.setpoint--;  
+                }
+                break;
+        }
+        if (editing)
+        {
+            snprintf(config.value, sizeof(config.value), "%s", translate(_swUpdateChoices[config.setpoint].english).c_str());
+        }
     }
     return editing;
 }

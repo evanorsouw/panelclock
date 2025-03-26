@@ -1,4 +1,4 @@
-firmware=1.0.1800
+firmware=1.0.1829
 ArialRoundBold.ttf
 ArialRoundRegular.ttf
 fixedfont-condensed.wmf

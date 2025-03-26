@@ -40,7 +40,6 @@ private:
     int _iSegment;
     float _segmentOffset;
 
-
 public:
     Application(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput);
 

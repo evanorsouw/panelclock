@@ -121,7 +121,7 @@ void app_main()
     // use main thread for running periodic tasks.
     for (;;)
     {
-        events->wait();
+        events->wait(60000);
 
         // established wifi forces weather update.
         if (system->wifiConnectedEvent()->wasSet() && system->wifiConnected())
@@ -137,6 +137,10 @@ void app_main()
         if (timeupdater->triggerUpdateEvent()->wasSet())
         {
             timeupdater->update(false); // ignore RTC when NTP is enabled
+        }
+        if (otaui->isUpdateAvailable())
+        {
+            apprunner->newVersionAvailable();
         }
     }
 }

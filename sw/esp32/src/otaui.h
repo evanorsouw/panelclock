@@ -17,17 +17,21 @@ private:
     state _state;
     bool _cancel;
     Version _manifestVersion;
+    int _checkUpdateInterval;
+    bool _automatic;
+    uint64_t _checkUpdateTimer;
 
 public:
-    OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
-        : ConsoleBase(appdata, env, sys, userinput)
-    {}
+    OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput);
 
     void init() override;
     int interact() override;
 
+    bool isUpdateAvailable();
+    void setAutomatic(bool automatic) { _automatic = automatic; }
+
 private:
-    void readManifest();
+    bool readManifest(bool silent);
     void updateOverTheAir();
     void initiateRestart();
     void restart();

@@ -29,6 +29,7 @@ ApplicationRunner::ApplicationRunner(
     _fpsInterval = 10000;
 
     _iShowScreen = 0;
+    _automaticSoftwareUpdate = false;
 
     startMode(UIMode::DateTime, TransitionPhase::Entering);
 
@@ -125,17 +126,22 @@ void ApplicationRunner::render(Graphics &graphics)
         _appui.render(graphics);
         if (interact)
         {
-            switch (_appui.interact())
+            if (_automaticSoftwareUpdate)
             {
-                case 1:
-                    startMode(UIMode::Config, TransitionPhase::Leaving);
-                    break;
-                case 2:
-                    startMode(UIMode::OTA, TransitionPhase::Leaving);
-                    break;
-                case 3:
-                    startMode(UIMode::Setup, TransitionPhase::Leaving);
-                    break;
+                _otaui.setAutomatic(false);
+                startMode(UIMode::OTA, TransitionPhase::Leaving);
+            } 
+            else switch (_appui.interact())
+            {
+            case 1:
+                startMode(UIMode::Config, TransitionPhase::Leaving);
+                break;
+            case 2:
+                startMode(UIMode::OTA, TransitionPhase::Leaving);
+                break;
+            case 3:
+                startMode(UIMode::Setup, TransitionPhase::Leaving);
+                break;
             }
         }
         break;
@@ -149,6 +155,7 @@ void ApplicationRunner::render(Graphics &graphics)
                 startMode(UIMode::DateTime, TransitionPhase::Leaving);
                 break;
             case 2:
+                _otaui.setAutomatic(false);
                 startMode(UIMode::OTA, TransitionPhase::Leaving);
                 break;
             case 3:

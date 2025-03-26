@@ -50,6 +50,12 @@ struct configchoice
     const char *english;
 };
 
+struct swupdatechoice
+{
+    int interval;
+    const char *english;
+};
+
 class ConfigurationUI : public RenderBase
 {
 private:
@@ -63,6 +69,7 @@ private:
     static std::vector<configchoice> _timeModeChoices;
     static std::vector<configchoice> _weatherChoices;
     static std::vector<configchoice> _flipKeyChoices;
+    static std::vector<swupdatechoice> _swUpdateChoices;
 
     Font *_font;
     float _margin;
@@ -93,7 +100,7 @@ private:
     /// @param reader optional the lambda that is called with each refresh of the screen to update 
     /// the config's current value. This is not called when the configuration item is in edit-mode.
     /// @param updater the optional lambda that is called when the config is in edit-mode. The init
-    /// flags is true first call in a edit series abnd may be used for initialization.
+    /// flags is true first call in a edit series and may be used for initialization.
     /// When updater is nullptr, the item becomes readonly.
     /// @param visible optional lambda that is used to dynamically (e.g. based on other settings)
     /// determine if this setting is visible or not.
@@ -116,6 +123,8 @@ private:
     bool updateSettingFreeText(configline &config, bool init, const char *settingKey);
     bool updateSettingInteger(configline &config, bool init, const char *settingKey, int min, int max);
     bool updateSettingChoices(configline &config, bool init, const char *settingKey, const std::vector<configchoice> &choices);
+    void generateIntervalLine(configline &config);
+    bool updateSettingSwUpdate(configline& config, bool init);
     bool updateYear(configline &config, bool init);
     bool updateDate(configline &config, bool init);
     bool updateTime(configline &config, bool init);

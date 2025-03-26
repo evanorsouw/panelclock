@@ -42,6 +42,7 @@ private:
     UIMode _nextMode;
     TransitionPhase _phase;
     uint64_t _transitionStart;
+    bool _automaticSoftwareUpdate;
     
 public:
     ApplicationRunner(
@@ -55,8 +56,9 @@ public:
         Graphics& graphics);
 
     void renderTask();
-    void displayTask();
-    
+    void displayTask(); 
+    void newVersionAvailable() { _automaticSoftwareUpdate = true; }
+
 private:
     void startMode(UIMode mode, TransitionPhase phase);
     void startTransition(TransitionPhase phase);

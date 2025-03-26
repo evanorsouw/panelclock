@@ -298,11 +298,11 @@ void Application::drawDateTimeVertical(Graphics &graphics, const timeinfo &now)
     sprintf(buf, "%d:%02d", now.hour(), now.min());
     size = fontL->textsize(buf);
     char bufs[10];
-    sprintf(bufs, ":%02d", now.sec());
+    sprintf(bufs, "%02d", now.sec());
     auto sizes = fontS->textsize(bufs);
     x = 1 + (62 - size.dx - sizes.dx) * phase(97000, true);
     graphics.text(fontL, x, fontdate->height() * 2 + fontL->ascend() - 5, buf, color);
-    graphics.text(fontS, x + size.dx, fontdate->height() * 2 + fontS->ascend() - 4, bufs, color);
+    graphics.text(fontS, x + size.dx, fontdate->height() * 2 + fontS->ascend() - 4.5, bufs, color);
 }
 
 void Application::drawWeatherHorizontal(Graphics &graphics)
@@ -410,11 +410,15 @@ void Application::drawWeatherOnePanel(Graphics &graphics)
 void Application::drawHorizontalAnimatedLine(Graphics &graphics, float y)
 {
     auto offset = 6;
+    auto p0 = phase(10000, false, 0);
     for (int x = offset; x < graphics.dx() - offset; x++)
     {
         auto ox = (x - offset) / (float)(graphics.dx() - offset * 2);
+        ox += p0;
+        if (ox >= 1.0f)
+            ox -= 1.0f;
         auto p1 = phase(7000, true, ox * 7000);
-        auto p2 = phase(7300, true, ox * 7300);
+        auto p2 = phase(7300, true, (1.0f - ox) * 7300);
         auto o = 10 + p1 * p2 * 245;
         graphics.set(x, y, Color(o, o, o));
     }

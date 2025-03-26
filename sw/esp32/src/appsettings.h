@@ -27,6 +27,7 @@ public:
     inline static const char *KeyPanel1Flipped = "panel1flipped";
     inline static const char *KeyPanel2Flipped = "panel2flipped";
     inline static const char *KeyFlipKeys = "flipkeys";
+    inline static const char *KeySoftwareUpdateInterval = "swupdinterval";
 
     AppSettings()
     {        
@@ -47,7 +48,7 @@ public:
         add(KeyLanguage, "en");
         add(KeyTimeMode, "1");
         add(KeyNTPServer, "pool.ntp.org");
-        add(KeyNTPInterval, 60);
+        add(KeyNTPInterval, 60);    // minutes
         add(KeyWifiSid, "__sid__");
         add(KeyWifiPwd, "__password__");
         add(KeyWeatherSource, "weerlive");
@@ -58,6 +59,7 @@ public:
         add(KeyTZ, "UTC");
         add(KeyTZCustom, "__tz__");
         add(KeySmoothSecondHand, true);
+        add(KeySoftwareUpdateInterval, 7*24*60);  // minutes
     }
 
     int TimeMode() const { return get(KeyTimeMode)->asint(); }
@@ -117,6 +119,9 @@ public:
 
     bool FlipKeys() const { return get(KeyFlipKeys)->asbool(); }
     void FlipKeys(bool flip) const { return get(KeyFlipKeys)->set(flip); }
+
+    int SoftwareUpdateInterval() const { return get(KeySoftwareUpdateInterval)->asbool(); }
+    void SoftwareUpdateInterval(int interval) const { return get(KeySoftwareUpdateInterval)->set(interval); }
 };
 
 #endif

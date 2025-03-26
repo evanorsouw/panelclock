@@ -25,6 +25,13 @@
 #define ENG_KEYS_NORMAL "keys normal"
 #define ENG_KEYS_REVERSED "key reversed"
 
+#define ENG_UPDATE_PERIOD "Update"
+#define ENG_UPDATE_MANUAL "manually"
+#define ENG_UPDATE_WEEKLY "weekly"
+#define ENG_UPDATE_DAILY "daily"
+#define ENG_UPDATE_HOURLY "hourly"
+#define ENG_UPDATE_MINUTELY "minutely"
+
 #define ENG_VERSION "version"
 #define ENG_TZ "TZ"
 #define ENG_TZ_CUSTOM "timezone"
