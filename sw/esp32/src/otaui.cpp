@@ -150,7 +150,7 @@ bool OTAUI::readManifest(bool silent)
     else
     {
         if (!silent) log("new version %s available", _manifestVersion.version());
-        if (!silent) choices({ CHOICE_UPDATE":9", CHOICE_EXIT });
+        if (!silent) choices({ _automatic ? CHOICE_UPDATE":1" : CHOICE_UPDATE":9", CHOICE_EXIT });
         newversion = true;
     }
     return newversion;
@@ -235,7 +235,7 @@ void OTAUI::updateOverTheAir()
             log("activating firmware");
             const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
             esp_ota_set_boot_partition(update_partition);
-            choices({ CHOICE_RESTART":9" });
+            choices({ _automatic ? CHOICE_RESTART":1" : CHOICE_RESTART":9" });
         } 
         else 
         {
@@ -250,6 +250,6 @@ void OTAUI::restart()
 {
     _state = state::restarting;
     progress("restarting");
-    vTaskDelay(2500 / portTICK_PERIOD_MS);
+    vTaskDelay((_automatic ? 500 : 2500) / portTICK_PERIOD_MS);
     esp_restart();
 }

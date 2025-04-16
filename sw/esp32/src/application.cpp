@@ -160,22 +160,55 @@ void Application::drawClock(Graphics &graphics, float x, float y, float diameter
 
     auto cx = x + diameter / 2.0f;
     auto cy = y + diameter / 2.0f;
+
     // draw 5 minute ticks
+    auto animateIntervalMinutes = 5;
+    auto animateDuration = 3.0f;
+
+    auto animationinterval = 60000 * animateIntervalMinutes;
+    auto duration = animateDuration / 60 / animateIntervalMinutes;
     for (int i = 0; i < 12; ++i)
     {
-        auto scale = 0.0f;
+        auto angle = i / 12.0f;
+        auto secnow = (drawtime() % animationinterval) / (float)animationinterval;
+        if (secnow < duration)
+        {
+            auto now = secnow / duration;
+            auto start = i / 12.0f;
+            auto startmove = start - 0.016f * i;
+            if (now > startmove)
+            {
+                angle = now + (start - startmove);
+            }
+        }
+        else if (secnow < duration * 2)
+        {
+            auto now = (secnow - duration) / duration;
+            auto start = i / 12.0f;
+            auto startmove = start - 0.016f * i;
+            if (now < startmove)
+            {
+                angle = now + (start - startmove);
+            }
+        }
+
+        // fatten tick when second-hand passes
         auto secwall = (drawtime() % 60000) / 1000.0f;
         auto sectick = i * 5;
-        auto passed = secwall - sectick;
-        if (passed > 0.0f && passed < 0.2f)
+        auto elapsed = secwall - sectick;
+        auto scale = 0.0f;
+        if (elapsed > 0.0f && elapsed < 0.4f)
         {
-            scale = 0.1f - std::abs(0.1f - passed);
+            scale = 0.2f - std::abs(0.2f - elapsed);
         }
+
+        // draw the tick
         drawLineFromCenter(graphics, 
             cx, cy, diameter, 
-            i / 12.0f, 0.9f - 0.1f * scale, 
+            angle,
+            0.9f - 0.1f * scale, 
             1.0f + 0.1f * scale, 
-            diameter / 40 * (1.0f + scale * 3), 
+            diameter / 40 * (1.0f + scale), 
             color);
     }
 
@@ -298,7 +331,7 @@ void Application::drawDateTimeVertical(Graphics &graphics, const timeinfo &now)
     sprintf(buf, "%d:%02d", now.hour(), now.min());
     size = fontL->textsize(buf);
     char bufs[10];
-    sprintf(bufs, "%02d", now.sec());
+    sprintf(bufs, " %02d", now.sec());
     auto sizes = fontS->textsize(bufs);
     x = 1 + (62 - size.dx - sizes.dx) * phase(97000, true);
     graphics.text(fontL, x, fontdate->height() * 2 + fontL->ascend() - 5, buf, color);

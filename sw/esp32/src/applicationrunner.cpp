@@ -128,7 +128,7 @@ void ApplicationRunner::render(Graphics &graphics)
         {
             if (_automaticSoftwareUpdate)
             {
-                _otaui.setAutomatic(false);
+                _otaui.setAutomatic(true);
                 startMode(UIMode::OTA, TransitionPhase::Leaving);
             } 
             else switch (_appui.interact())
