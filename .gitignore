@@ -11,3 +11,5 @@
 **/Release/**
 **/packages/**
 **/publish/**
+/sw/esp32/data/firmware.bin
+/electronics/standalonepanel/fp-info-cache

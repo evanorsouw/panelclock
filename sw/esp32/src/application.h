@@ -50,6 +50,7 @@ public:
 private:
     void drawSunRiseSet(Graphics& graphics, float x, float y, float diameter);
     void drawClock(Graphics& graphics, float x, float y, float diameter);
+    void drawClockFlash(Graphics &graphics, float x, float y, float diameter);
     void drawTimeOnePanel(Graphics& graphics, const timeinfo &now);
     void drawDateTimeHorizontal(Graphics& graphics, const timeinfo &now);
     void drawDateTimeVertical(Graphics& graphics, const timeinfo &now);
@@ -71,6 +72,7 @@ private:
     void drawFog(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
     void drawSnow(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
     void drawHorizontalAnimatedLine(Graphics &graphics, float y);
+    void drawBackgroundEffects(Graphics &graphics, const timeinfo &now);
 
     void drawSegments(Graphics& graphics);
     stripsegment temperatureSegment();

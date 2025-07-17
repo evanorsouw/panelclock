@@ -35,8 +35,8 @@ private:
     Bitmap *_rasterizeMask;
     int _dx;
     int _dy;
-    int _ptrx;
-    int _ptry;
+    int _ox;
+    int _oy;
     uint8_t *_ptr;
     int _sx;    // start including
     int _sy;    // start including
@@ -92,6 +92,8 @@ public:
     float text(Font *font, float x, float y, const char *txt, int n, Color color, Mode mode = Mode::Set);
     float text(Font *font, float x, float y, char c, Color color, Mode mode = Mode::Set);
     void triangle(float x1, float y1, float x2, float y2, float x3, float y3, Color color);
+
+    void disc(float x, float y, float diameter1, float diameter2, Color color);
 
 private:
     irect rasterizeTriangle(float x1, float y1, float x2, float y2, float x3, float y3);

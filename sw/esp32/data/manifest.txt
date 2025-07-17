@@ -1,6 +1,7 @@
-firmware=1.0.1870
+firmware=1.0.2076
 ArialRoundBold.ttf
 ArialRoundRegular.ttf
+firmware.bin
 fixedfont-condensed.wmf
 fixedfont.wmf
 ice40hx4k.bin

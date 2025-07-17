@@ -9,7 +9,7 @@
 #include "timeinfo.h"
 #include "xy.h"
 
-#define PI M_PI
+#define PI ((float)std::numbers::pi)
 
 Application::Application(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
     : RenderBase(appdata, env, sys, userinput)
@@ -53,28 +53,34 @@ void Application::render(Graphics &graphics)
     auto mode = _system.settings().PanelMode();
     if (mode == 0) // 1 panel
     {
+        drawBackgroundEffects(graphics, now);
         drawSunRiseSet(graphics, 1, 1, 46);
         drawClock(graphics, 1, 1, 46);
         drawTimeOnePanel(graphics, now);
         drawWeatherOnePanel(graphics);
         drawSegments(graphics);
+        drawClockFlash(graphics, 1, 1, 46);
     }
     else if (mode == 1) // 2 panel horizontal
     {
+        drawBackgroundEffects(graphics, now);
         drawSunRiseSet(graphics, 1, 1, 62);
         drawClock(graphics, 1, 1, 62);
         drawDateTimeHorizontal(graphics, now);
         drawWeatherHorizontal(graphics);
+        drawClockFlash(graphics, 1, 1, 62);
     }
     else if (mode == 2) // 2 panel vertical
     {
+        drawBackgroundEffects(graphics, now);
         drawDateTimeVertical(graphics, now);
-        auto view = graphics.moveOrigin(0, 37, 64, 64);
+        drawHorizontalAnimatedLine(graphics, 35);
+        auto view = graphics.moveOrigin(0, 90, 64, 38);
+        drawWeatherVertical(view);
+        view = graphics.moveOrigin(0, 37, 64, 64);
         drawSunRiseSet(view, 1, 1, 62);
         drawClock(view, 1, 1, 62);
-        drawHorizontalAnimatedLine(graphics, 35);
-        view = graphics.moveOrigin(0, 90, 64, 38);
-        drawWeatherVertical(view);
+        drawClockFlash(view, 1, 1, 62);
     }
 }
 
@@ -200,7 +206,7 @@ void Application::drawClock(Graphics &graphics, float x, float y, float diameter
         if (elapsed > 0.0f && elapsed < 0.4f)
         {
             scale = 0.2f - std::abs(0.2f - elapsed);
-        }
+        }      
 
         // draw the tick
         drawLineFromCenter(graphics, 
@@ -241,6 +247,44 @@ void Application::drawClock(Graphics &graphics, float x, float y, float diameter
     auto font = _appctx.fontIconsS();
     auto size = font->charsize('2');
     graphics.text(font, cx - size.dx / 2.0f, cy + size.dy / 2.0f - 1, "2", colorsecond);
+}
+
+void Application::drawClockFlash(Graphics &graphics, float x, float y, float diameter)
+{
+    // draw circle animation
+    auto sec5interval = (int)(drawtime() / 1000.0f) / 5;
+    auto interval = 12 * 3 + 7;
+    if ((sec5interval % interval) > 2)
+        return;
+
+    auto duration = 2.0f;
+    auto elapsed = (drawtime() - sec5interval * 5000) / 1000.0f;
+    if (elapsed < duration)
+    {
+        auto angle = PI * 2.0f * (sec5interval % 12) / 12.0f - PI / 2.0f; 
+        auto hd = diameter / 2.0f;       
+        auto cx = x + hd + std::cos(angle) * hd * 0.95;
+        auto cy = y + hd + std::sin(angle) * hd * 0.95;
+
+        auto col1 = Color(255,255,255);
+        auto col2 = Color(255,32,0);
+        auto iphase = elapsed / duration;
+        auto dphase = 1.0f - iphase;
+        auto color = Color::gradient(col1, col2, (iphase * 2));
+        auto d1 = std::pow(1 + iphase, 8.0f); 
+        auto d2 = std::max(0.0f, d1 - dphase * 10);
+        graphics.disc(cx, cy, d1, d2, color);
+
+        auto delay = 0.4f;
+        if (elapsed > delay)
+        {
+            iphase = (elapsed - delay) / duration;
+            color = Color::white;
+            d1 = std::pow(1.0f + iphase, 12.0f); 
+            d2 = std::max(0.0f, d1 - 1.5f);
+            graphics.disc(cx, cy, d1, d2, color);
+        }
+    }
 }
 
 void Application::drawTimeOnePanel(Graphics &graphics, const timeinfo &now)
@@ -456,6 +500,11 @@ void Application::drawHorizontalAnimatedLine(Graphics &graphics, float y)
         graphics.set(x, y, Color(o, o, o));
     }
 }
+
+void Application::drawBackgroundEffects(Graphics &graphics, const timeinfo &now)
+{
+}
+
 
 void Application::drawWindArrow(Graphics &graphics, int x, int y, int size, float angle, Color col1, Color col2)
 {
