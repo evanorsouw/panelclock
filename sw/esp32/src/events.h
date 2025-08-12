@@ -1,6 +1,7 @@
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
 
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -40,6 +41,7 @@ public:
 
     Event *allocate(const char *name);
     EventBits_t wait(uint32_t delayInMs=0);
+    EventBits_t wait(std::initializer_list<Event*> events, uint32_t delayInMs=0);
 };
 
 #endif

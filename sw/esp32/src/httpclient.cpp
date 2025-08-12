@@ -3,7 +3,6 @@
 #include <cstring>
 #include "esp_crt_bundle.h"
 #include "httpclient.h"
-#include "diagnostic.h"
 
 #if 0
   #define LOG(...) printf(__VA_ARGS__)
@@ -58,8 +57,6 @@ esp_err_t HTTPClient::eventHandler(esp_http_client_event_t *evt)
 
 int HTTPClient::get(const char *url, std::function<void(uint8_t*,size_t)> handler)
 {
-    Diagnostic::printmeminfo();
-
     esp_http_client_config_t config = { 0 } ;
     config.url = url;
     config.method = HTTP_METHOD_GET;

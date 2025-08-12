@@ -27,17 +27,17 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
         {
             _mode = WifiMode::Connecting;
             ESP_ERROR_CHECK(esp_wifi_connect());
-            printf("connecting to access point\n");
+            printf("wifi: connecting to access point AP=%s\n", _wifiConfig.sta.ssid);
         } 
         else if (event_id == WIFI_EVENT_STA_DISCONNECTED) 
         {
             switch (_mode)
             {
                 case WifiMode::Scanning:
-                    printf("wifi disconnected\n");
+                    printf("wifi: disconnected\n");
                     break;
                 case WifiMode::Connected:
-                    printf("wifi disconnected, trying to reconnect\n");
+                    printf("wifi: disconnected, trying to reconnect\n");
                     esp_wifi_connect();
                     break;
                 default:
@@ -70,7 +70,7 @@ void WifiClient::eventHandler(esp_event_base_t event_base, int32_t event_id, voi
                 (int)((_ipinfo.ip.addr>>16) & 0xFF),
                 (int)((_ipinfo.ip.addr>>24) & 0xFF));
             _mode = WifiMode::Connected;
-            printf("wifi connection to sid %s, ip=%s\n", _sid.c_str(), _ip);
+            printf("wifi: connection to sid %s, ip=%s\n", _sid.c_str(), _ip);
             _wifiConnectionEvent->set();
         }
     }
@@ -94,7 +94,7 @@ bool WifiClient::waitForConnection(int timeoutMs) const
 void WifiClient::scanAPs()
 {
     _mode = WifiMode::Scanning;
-    printf("start scanning for AP's\n");
+    printf("start scanning for APs\n");
 
     _scanConfig = {0};
     _scanConfig.scan_type = WIFI_SCAN_TYPE_ACTIVE;
@@ -121,13 +121,18 @@ const char *WifiClient::APSID(int i)
 
 void WifiClient::connect(const char *sid, const char *password)
 {
-    printf("connecting to AP='%s', password='***' (current mode=%d)\n", sid, (int)_mode);
+    printf("connect to AP='%s'", sid);
 
     if (_mode == WifiMode::Connected && _sid == sid && _password == password)
+    {
+        printf(" - already connected\n");
         return;
+    }
+    printf("\n");
 
     if (_mode == WifiMode::Scanning)
     {
+        printf("stop scanning for APs\n");
         esp_wifi_scan_stop();
     }
       
@@ -135,8 +140,11 @@ void WifiClient::connect(const char *sid, const char *password)
     _sid = strcmp(sid, "") ? sid : "<<select>>";
     _password = password;
 
+    printf("restart wifi (AP=%s)\n", _sid.c_str());
     esp_wifi_stop();
+    memset(_wifiConfig.sta.ssid, 0, sizeof(_wifiConfig.sta.ssid));
     std::memcpy(_wifiConfig.sta.ssid, _sid.c_str(), std::min(_sid.length(), sizeof(wifi_sta_config_t::ssid)));
+    memset(_wifiConfig.sta.password, 0, sizeof(_wifiConfig.sta.password));
     std::memcpy(_wifiConfig.sta.password, _password.c_str(), std::min(_sid.length(), sizeof(wifi_sta_config_t::password)));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &_wifiConfig));
     esp_wifi_start();

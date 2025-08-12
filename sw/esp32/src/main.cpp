@@ -5,6 +5,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/gpio.h>
+#include "esp_ota_ops.h"
 
 #include "esp_chip_info.h"
 #include "esp_flash.h"
@@ -65,10 +66,31 @@ void initNVS()
     ESP_ERROR_CHECK(result);
 }
 
+void checkSwitchPreviousFirmware()
+{
+    gpio_set_direction(BUTTON_DOWN, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(BUTTON_DOWN, GPIO_PULLUP_ONLY);
+    gpio_pullup_en(BUTTON_DOWN);
+    gpio_set_direction(BUTTON_UP, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(BUTTON_UP, GPIO_PULLUP_ONLY);
+    gpio_pullup_en(BUTTON_UP);
+    if (gpio_get_level(BUTTON_DOWN) == 0 && gpio_get_level(BUTTON_UP) == 0)
+    {
+        printf("switching to previous partition\n");
+        auto oldota = esp_ota_get_next_update_partition(nullptr);
+        esp_ota_set_boot_partition(oldota);
+        esp_ota_mark_app_valid_cancel_rollback();
+        while (gpio_get_level(BUTTON_DOWN) == 0 && gpio_get_level(BUTTON_UP) == 0)
+            ;
+        esp_restart();
+    }
+}
+
 extern "C" {
 
 void app_main() 
 {
+    checkSwitchPreviousFirmware();
     printf("application starting\n");
 
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
@@ -87,7 +109,7 @@ void app_main()
     FpgaConfigurator FpgaConfig(spi, "/spiffs/ice40hx4k.bin", FPGA_RESET);
     FpgaConfig.configure();
 
-    auto settings = new AppSettings();    
+    auto settings = new AppSettings("standalonepanel");    
     auto panel = new LedPanel(128, 64, *settings, *spi);
 
     auto graphics = new Graphics(panel->dx(), panel->dy());
@@ -95,7 +117,7 @@ void app_main()
     i2c->start();
     auto rtc = new DS3231(i2c);
     auto system = new System(settings, rtc, events);
-    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, BUTTON_BOOT, *system);
+    auto userinput = new UserInputKeys(BUTTON_SET, BUTTON_UP, BUTTON_DOWN, BUTTON_BOOT, system);
     auto environmentWL = new EnvironmentWeerlive(system, *settings, events->allocate("weerlive"));
     auto environmentOW = new EnvironmentOpenWeather(system, *settings, events->allocate("openweather"));
     auto environment = new EnvironmentSelector(std::vector<EnvironmentBase*>{ environmentWL, environmentOW }, *settings);
@@ -109,9 +131,9 @@ void app_main()
     auto apprunner = new ApplicationRunner(*appdata, *panel, *appui, *configui, *otaui, *setupui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc, *settings, events->allocate("timesync"));
 
-    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->renderTask();  }, "render", 80000, apprunner, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->displayTask(); }, "display", 4000, apprunner, 1, nullptr);
-    xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->updateTask(); }, "userinput", 4000, userinput, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->render();  }, "render", 80000, apprunner, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->display(); }, "display", 4000, apprunner, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->update(); }, "userinput", 4000, userinput, 1, nullptr);
 
     printf("application initialized\n");
     Diagnostic::printmeminfo();
@@ -119,6 +141,7 @@ void app_main()
     timeupdater->update(true);     // force immediate update from RTC
 
     // use main thread for running periodic tasks.
+    auto accept_current_firmware = otaui->current_firmware_needs_acceptance();
     for (;;)
     {
         events->wait(60000);
@@ -141,6 +164,11 @@ void app_main()
         if (otaui->isUpdateAvailable())
         {
             apprunner->newVersionAvailable();
+        }
+        if (accept_current_firmware)
+        {
+            accept_current_firmware = false;
+            otaui->accept_current_firmware();
         }
     }
 }

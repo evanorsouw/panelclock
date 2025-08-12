@@ -29,7 +29,8 @@ public:
     inline static const char *KeyFlipKeys = "flipkeys";
     inline static const char *KeySoftwareUpdateInterval = "swupdinterval";
 
-    AppSettings()
+    AppSettings(const char *nvsname) 
+        : Settings(nvsname)
     {        
         defaultSettings();
         loadSettings();

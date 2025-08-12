@@ -38,11 +38,12 @@ class Settings
 {
 friend Setting;
 private:
+    std::string _nvsname;
     std::map<std::string, Setting *> _settings;
     std::vector<std::function<void(Setting*)>> _onChangedCallbacks;
 
 public:
-    Settings() {}
+    Settings(const char *nvsname) : _nvsname(nvsname) {}
     virtual ~Settings() {}
 
     bool loadSettings();

@@ -1,4 +1,4 @@
-firmware=1.0.2076
+firmware=1.2.2116
 ArialRoundBold.ttf
 ArialRoundRegular.ttf
 firmware.bin

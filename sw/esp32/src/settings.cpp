@@ -10,7 +10,7 @@ bool Settings::loadSettings()
 {    
     nvs_handle handle;
 
-    auto result = nvs_open("standalonepanel", NVS_READWRITE, &handle);
+    auto result = nvs_open(_nvsname.c_str(), NVS_READWRITE, &handle);
     if (result != ESP_OK)
     {
         printf("error opening nvs: %s\n", esp_err_to_name(result));
@@ -18,7 +18,7 @@ bool Settings::loadSettings()
     }
 
     nvs_iterator_t it;
-    result = nvs_entry_find("nvs", "standalonepanel", NVS_TYPE_ANY, &it);
+    result = nvs_entry_find("nvs", _nvsname.c_str(), NVS_TYPE_ANY, &it);
     while (result == ESP_OK)
     {
         nvs_entry_info_t info;
@@ -42,7 +42,7 @@ bool Settings::saveSettings()
 {    
     nvs_handle handle;
 
-    auto result = nvs_open("standalonepanel", NVS_READWRITE, &handle);
+    auto result = nvs_open(_nvsname.c_str(), NVS_READWRITE, &handle);
     if (result != ESP_OK)
     {
         printf("error opening nvs: %s\n", esp_err_to_name(result));

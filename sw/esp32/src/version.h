@@ -54,7 +54,7 @@ public:
         return !(*this != rhs);
     }
 
-    const char *version() const { return _txt; }
+    const char *astxt() const { return _txt; }
 };
 
 #endif

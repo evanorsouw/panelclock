@@ -254,8 +254,16 @@ void Application::drawClockFlash(Graphics &graphics, float x, float y, float dia
     // draw circle animation
     auto sec5interval = (int)(drawtime() / 1000.0f) / 5;
     auto interval = 12 * 3 + 7;
-    if ((sec5interval % interval) > 2)
+    switch (sec5interval % interval)
+    {
+    case 0:
+    case 1:
+    case 3:
+    case 6:
+        break;
+    default:
         return;
+    }
 
     auto duration = 2.0f;
     auto elapsed = (drawtime() - sec5interval * 5000) / 1000.0f;

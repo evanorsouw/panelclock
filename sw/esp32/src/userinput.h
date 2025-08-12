@@ -29,7 +29,7 @@ public:
     /// @brief check for how long a key is currently pressed
     /// @param key the key to check.
     /// @return number of ms that key has been pressed (0 if not pressed)
-    virtual uint64_t howLongIsKeyDown(int key) const = 0;
+    virtual uint64_t howLongIsKeyDown(int key) = 0;
 
     /// @brief check if a key has been pressed for a minimum amount of time.
     /// if the key was pressed for that long, it will no longer be recorded as key-press.
@@ -40,6 +40,10 @@ public:
     /// @brief get a key from the queue.
     /// @return object indicating a key was pushed and for how long.
     virtual KeyPress getKeyPress() = 0;
+
+    /// @brief Push a keypress in the buffer 
+    /// @param key the key to push.
+    virtual void pushKeyPress(int key) = 0;
 };
 
 #endif

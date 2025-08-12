@@ -20,6 +20,8 @@ private:
     int _checkUpdateInterval;
     bool _automatic;
     uint64_t _checkUpdateTimer;
+    int _downloaded;
+    int _progress;
 
 public:
     OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput);
@@ -29,6 +31,8 @@ public:
 
     bool isUpdateAvailable();
     void setAutomatic(bool automatic) { _automatic = automatic; }
+    bool current_firmware_needs_acceptance();
+    void accept_current_firmware();
 
 private:
     bool readManifest(bool silent);

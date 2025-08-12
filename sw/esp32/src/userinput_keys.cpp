@@ -1,7 +1,7 @@
 
 #include "userinput_keys.h"
 
-UserInputKeys::UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, gpio_num_t boot, System &system)
+UserInputKeys::UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, gpio_num_t boot, System *system)
     : _system(system)
 {
     _ioSet = set;
@@ -14,10 +14,14 @@ UserInputKeys::UserInputKeys(gpio_num_t set, gpio_num_t up, gpio_num_t down, gpi
     _keys.push_back(_keyinfo { .io=down, .key=KEY_DOWN, .pressedSince = 0 });
     _keys.push_back(_keyinfo { .io=boot, .key=KEY_BOOT, .pressedSince = 0 });
 
-    std::for_each(_keys.begin(), _keys.end(), [](_keyinfo info){ gpio_set_direction(info.io, GPIO_MODE_INPUT);});
+    std::for_each(_keys.begin(), _keys.end(), [](_keyinfo info){ 
+        gpio_set_direction(info.io, GPIO_MODE_INPUT);
+        gpio_set_pull_mode(info.io, GPIO_PULLUP_ONLY);
+        gpio_pullup_en(info.io);
+    });
 }
 
-void UserInputKeys::updateTask()
+void UserInputKeys::update()
 {
     std::for_each(_keys.begin(), _keys.end(), [this](_keyinfo &info){ monitorIO(info);});
     vTaskDelay(20 / portTICK_PERIOD_MS);
@@ -26,6 +30,12 @@ void UserInputKeys::updateTask()
 int UserInputKeys::pendingKeys() const 
 {
      return _keyQueue.size(); 
+}
+
+void UserInputKeys::pushKeyPress(int key)
+{
+    std::lock_guard lock(_mutex);
+    _keyQueue.push(KeyPress(key, 1));
 }
 
 void UserInputKeys::flush()
@@ -37,13 +47,14 @@ void UserInputKeys::flush()
     }    
 }
 
-uint64_t UserInputKeys::howLongIsKeyDown(int key) const
+uint64_t UserInputKeys::howLongIsKeyDown(int key)
 {
+    std::lock_guard lock(_mutex);	
     key = flipKey(key);
     auto it = std::find_if(_keys.begin(), _keys.end(), [=](const _keyinfo &info) { return info.key == key; });
     if (it == _keys.end() || it->pressedSince == 0)
         return 0;
-    auto elapsed = (_system.now().msticks() - it->pressedSince);
+    auto elapsed = (_system->now().msticks() - it->pressedSince);
     return elapsed;
 }
 
@@ -60,11 +71,12 @@ KeyPress UserInputKeys::getKeyPress()
 
 bool UserInputKeys::hasKeyDown(int key, int ms)
 {
+	std::lock_guard lock(_mutex);
     key = flipKey(key);
     auto it = std::find_if(_keys.begin(), _keys.end(), [=](const _keyinfo &info) { return info.key == key; });
     if (it == _keys.end() || it->pressedSince == 0)
         return false;
-    auto elapsed = (_system.now().msticks() - it->pressedSince);
+    auto elapsed = (_system->now().msticks() - it->pressedSince);
     if (elapsed < ms)
         return false;
     it->ignore = true;
@@ -73,12 +85,13 @@ bool UserInputKeys::hasKeyDown(int key, int ms)
 
 void UserInputKeys::monitorIO(_keyinfo &info)
 {
+    std::lock_guard lock(_mutex);
     auto pressed = !gpio_get_level(info.io);
     if (pressed != (info.pressedSince != 0))
     {
         if (pressed)
         {
-            info.pressedSince = _system.now().msticks();
+            info.pressedSince = _system->now().msticks();
         }
         else
         {
@@ -88,8 +101,7 @@ void UserInputKeys::monitorIO(_keyinfo &info)
             }
             else
             {
-                auto elapsed = _system.now().msticks() - info.pressedSince;
-                std::lock_guard lock(_mutex);
+                auto elapsed = _system->now().msticks() - info.pressedSince;
                 _keyQueue.push(KeyPress(flipKey(info.key), elapsed));
                 printf("keypress: %d (%lldms)\n", info.key, elapsed);
             }
@@ -100,7 +112,7 @@ void UserInputKeys::monitorIO(_keyinfo &info)
 
 int UserInputKeys::flipKey(int key) const
 {
-    if (_system.settings().FlipKeys())
+    if (_system->settings().FlipKeys())
     {
         switch (key)
         {

@@ -61,7 +61,7 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     _margin = 1.0f;
     
     addConfig(ENG_VERSION, 
-        [this](configline& c){ strcpy(c.value, Version::application().version()); },
+        [this](configline& c){ strcpy(c.value, Version::application().astxt()); },
         [this](configline& c, bool init){ if (!init) { _exitCode = 2; } return false; });
     addConfig(ENG_TZ, 
         [this](configline& c){ generateSettingLine(c, AppSettings::KeyTZ, _tzChoices); }, 

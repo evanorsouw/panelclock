@@ -55,8 +55,8 @@ public:
         System& system,
         Graphics& graphics);
 
-    void renderTask();
-    void displayTask(); 
+    void render();
+    void display(); 
     void newVersionAvailable() { _automaticSoftwareUpdate = true; }
 
 private:

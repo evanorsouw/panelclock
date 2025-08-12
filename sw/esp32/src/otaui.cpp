@@ -104,6 +104,19 @@ bool OTAUI::isUpdateAvailable()
     return updateAvailable;
 }
 
+bool OTAUI::current_firmware_needs_acceptance()
+{
+    esp_ota_img_states_t state;
+    auto result = esp_ota_get_state_partition(esp_ota_get_running_partition(), &state);
+    return result == ESP_OK && state == ESP_OTA_IMG_PENDING_VERIFY;
+}
+
+void OTAUI::accept_current_firmware()
+{
+    printf("current software version accepted\n");
+    esp_ota_mark_app_valid_cancel_rollback();
+}
+
 bool OTAUI::readManifest(bool silent)
 {
     HTTPClient client;
@@ -140,7 +153,7 @@ bool OTAUI::readManifest(bool silent)
     }
 
     auto currentVersion = Version::application();
-    if (!silent) log("current version %s", currentVersion.version());
+    if (!silent) log("current version %s", currentVersion.astxt());
 
     if (currentVersion >= _manifestVersion)
     {
@@ -149,7 +162,7 @@ bool OTAUI::readManifest(bool silent)
     }
     else
     {
-        if (!silent) log("new version %s available", _manifestVersion.version());
+        if (!silent) log("new version %s available", _manifestVersion.astxt());
         if (!silent) choices({ _automatic ? CHOICE_UPDATE":1" : CHOICE_UPDATE":9", CHOICE_EXIT });
         newversion = true;
     }
@@ -173,7 +186,10 @@ void OTAUI::updateOverTheAir()
         .http_config = &config,
     };
 
+    _downloaded = 0;
+    _progress = 0.0f;
     esp_https_ota_handle_t ota_handle = NULL;
+    accept_current_firmware();
     esp_err_t ret = esp_https_ota_begin(&ota_config, &ota_handle);
     removeLogs(1);
 
@@ -197,8 +213,10 @@ void OTAUI::updateOverTheAir()
         else if (ret == ESP_ERR_HTTPS_OTA_IN_PROGRESS) 
         {
             removeLogs(2);
-            auto loaded = esp_https_ota_get_image_len_read(ota_handle);
-            log("download %.3fMB", loaded / 1024.0f / 1024.0f);
+            auto total = esp_https_ota_get_image_size(ota_handle);
+            _downloaded = esp_https_ota_get_image_len_read(ota_handle); 
+            _progress = _downloaded * 100.0f / total;
+            log("download %d%%", _progress);
             choices({ CHOICE_CANCEL });
             continue;  // Keep downloading and flashing the firmware
         } 
@@ -233,8 +251,6 @@ void OTAUI::updateOverTheAir()
         if (ret == ESP_OK) 
         {
             log("activating firmware");
-            const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-            esp_ota_set_boot_partition(update_partition);
             choices({ _automatic ? CHOICE_RESTART":1" : CHOICE_RESTART":9" });
         } 
         else 

@@ -43,7 +43,7 @@ ApplicationRunner::ApplicationRunner(
     _hDisplayQueue = xQueueCreate(2, sizeof(Bitmap *));
 }
 
-void ApplicationRunner::renderTask()
+void ApplicationRunner::render()
 {
     uint64_t timer;
 
@@ -63,7 +63,7 @@ void ApplicationRunner::renderTask()
     _totalrendertime += _appctx.elapsed(timer);
 }
 
-void ApplicationRunner::displayTask()
+void ApplicationRunner::display()
 {
     uint64_t timer;
 

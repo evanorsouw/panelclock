@@ -6,12 +6,12 @@
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 
-#define LOGGING
+//#define LOGGING
 
 #if defined(LOGGING)
-  #define LOG(...)
-#else
   #define LOG(...) printf(__VA_ARGS__)
+#else
+  #define LOG(...)
 #endif
 
 class I2CWrapper
@@ -24,12 +24,12 @@ private:
     int _speed;
 
 public:
-    I2CWrapper(i2c_port_t port, gpio_num_t clk, gpio_num_t sda, int timeout_ms = 100)
+    I2CWrapper(i2c_port_t port, gpio_num_t clk, gpio_num_t sda, int speed = 100000, int timeout_ms = 100)
     {
         _port = port;
         _clk = clk;
         _sda = sda;
-        _speed = 100000;
+        _speed = speed;
         _timeout = timeout_ms;
     }
 
@@ -75,7 +75,7 @@ public:
         i2c_master_write_to_device(_port, slaveaddr, buf, 2, _timeout);
     }
 
-    void write(uint8_t slaveaddr, uint8_t reg, uint8_t *data, uint8_t len)
+    void write(uint8_t slaveaddr, uint8_t reg, uint8_t *data, uint16_t len)
     {       
         uint8_t buf[128];
         buf[0] = reg;
@@ -89,6 +89,19 @@ public:
         LOG("])\n");
 #endif
         i2c_master_write_to_device(_port, slaveaddr, buf, len + 1, _timeout);
+    }
+
+    void write(uint8_t slaveaddr, uint8_t *data, uint16_t len)
+    {       
+        LOG("i2c.write(0x%02X,[", slaveaddr);
+#ifdef LOGGING
+        for (auto i=0; i<len; ++i)
+        {
+            LOG("0x%02x,", data[i]);
+        }
+        LOG("])\n");
+#endif
+       i2c_master_write_to_device(_port, slaveaddr, data, len, _timeout);
     }
 };
 

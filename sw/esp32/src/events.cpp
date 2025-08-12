@@ -45,6 +45,8 @@ Event *Events::allocate(const char *name)
     _nextBit <<= 1;
     auto event = new Event(_eventGroup, bit, name);
     _events.push_back(event);
+
+    printf("allocated event='%s' = 0x%lX", name, bit);
     return event;
 }
 
@@ -52,5 +54,17 @@ EventBits_t Events::wait(uint32_t delayInMs)
 {
     auto ticks = delayInMs == 0 ? portMAX_DELAY : delayInMs / portTICK_PERIOD_MS;
     auto bits = xEventGroupWaitBits(_eventGroup, _allocatedBits, false, false, ticks);
+    return bits;
+}
+
+EventBits_t Events::wait(std::initializer_list<Event*> events, uint32_t delayInMs)
+{
+    EventBits_t mask = 0;
+    for(auto evt : events)
+    {
+        mask |= evt->bit();
+    }
+    auto ticks = delayInMs == 0 ? portMAX_DELAY : delayInMs / portTICK_PERIOD_MS;
+    auto bits = xEventGroupWaitBits(_eventGroup, mask, false, false, ticks);
     return bits;
 }
