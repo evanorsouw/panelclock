@@ -157,6 +157,9 @@ ConfigurationUI::ConfigurationUI(ApplicationContext &appdata, EnvironmentSelecto
     addConfig(ENG_UPDATE_PERIOD, 
         [this](configline& c){ generateIntervalLine(c); }, 
         [this](configline& c, bool init){ return updateSettingSwUpdate(c, init); });
+    addConfig(ENG_UPDATE_URL, 
+        [this](configline& c){ snprintf(c.value, sizeof(c.value), "%s", _system.settings().SoftwareUpdateURL().c_str()); },  
+        [this](configline& c, bool init){ return updateSettingFreeText(c, init, AppSettings::KeySoftwareUpdateUrl); });
     addConfig(ENG_EXIT, 
         nullptr, 
         [this](configline&, bool){ _exitCode = 1; return false; });

@@ -31,6 +31,7 @@
 #define ENG_UPDATE_DAILY "daily"
 #define ENG_UPDATE_HOURLY "hourly"
 #define ENG_UPDATE_MINUTELY "minutely"
+#define ENG_UPDATE_URL "Update URL"
 
 #define ENG_VERSION "version"
 #define ENG_TZ "TZ"
