@@ -17,18 +17,15 @@
 #define CHOICE_RESTART "RESTART"
 #define CHOICE_CANCEL "CANCEL"
 
-#define BASEURL "https://whitemagic.it/panelclock/"
-
 OTAUI::OTAUI(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput)
     : ConsoleBase(appdata, env, sys, userinput)
 {
     _automatic = false;
     std::function<void(Setting*)> handler = [&](Setting *_)
     {
-        _checkUpdateInterval = _system.settings().SoftwareUpdateInterval() * 60000;
+        _checkUpdateInterval = _system.settings().SoftwareUpdateInterval();
     };
     _system.settings().onChanged(handler);
-    starttimer(_checkUpdateTimer);
     handler(nullptr);
 }
 
@@ -94,12 +91,20 @@ bool OTAUI::isUpdateAvailable()
 {
     if (_checkUpdateInterval == 0)
         return false;
-    
-    if (!timeout(_checkUpdateTimer, _checkUpdateInterval))
+
+    // always check on exact minute/hour/day etc boundaries for predictability
+    auto now = _system.now();    
+    if (now.sec() != 0)
         return false;
 
+    auto mins = now.hour() * 60 + now.min();
+    if ((mins % _checkUpdateInterval) != 0)
+        return false;
+        
     auto updateAvailable = readManifest(true);
-    starttimer(_checkUpdateTimer);
+
+    // prevent double checks in 1 second
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     return updateAvailable;
 }
@@ -124,10 +129,10 @@ bool OTAUI::readManifest(bool silent)
 
     if (!silent) progress("read manifest");
 
-    const char * url = BASEURL "manifest.txt";    
+    auto url = _system.settings().SoftwareUpdateURL() + "/manifest.txt";    
     char buf[512];
     memset(buf, 0, sizeof(buf));
-    auto result = client.get(url, (uint8_t*)buf, sizeof(buf));
+    auto result = client.get(url.c_str(), (uint8_t*)buf, sizeof(buf));
     if (result != 200)
     {
         if (!silent) log("version check failed");
@@ -173,10 +178,10 @@ void OTAUI::updateOverTheAir()
 {
     Diagnostic::printmeminfo();
 
-    const char * url = BASEURL "firmware.bin";    
+    auto url = _system.settings().SoftwareUpdateURL() + "/firmware.bin";    
     log("get firmware");
     esp_http_client_config_t config = { 0 };
-    config.url = url;
+    config.url = url.c_str();
     config.timeout_ms = 5000;
     config.transport_type = HTTP_TRANSPORT_OVER_SSL,
     config.cert_pem = nullptr;

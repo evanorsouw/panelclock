@@ -144,7 +144,7 @@ void app_main()
     auto accept_current_firmware = otaui->current_firmware_needs_acceptance();
     for (;;)
     {
-        events->wait(60000);
+        events->wait(500);
 
         // established wifi forces weather update.
         if (system->wifiConnectedEvent()->wasSet() && system->wifiConnected())

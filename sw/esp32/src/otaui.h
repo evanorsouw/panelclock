@@ -19,7 +19,6 @@ private:
     Version _manifestVersion;
     int _checkUpdateInterval;
     bool _automatic;
-    uint64_t _checkUpdateTimer;
     int _downloaded;
     int _progress;
 
