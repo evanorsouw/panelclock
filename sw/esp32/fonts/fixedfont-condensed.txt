@@ -161,7 +161,7 @@ XX
  X
  X
  X
- X
+XXX
 
 code: 50
 bitmap:

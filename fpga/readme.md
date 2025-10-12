@@ -1,15 +1,15 @@
 
-programming the ICE40.
+# Programming the ICE40.
 
-Using my own Flash Programmer
---------------------------------
+## Using my own Flash Programmer
+
 mode com12 baud=115200 data=8 dtr=off stop=1 parity=n rts=off
 copy /b ice40_Implmnt\sbt\outputs\bitmap\toplevel_bitmap.bin \\.\com12
 
 
 
 
-using Olimes 32u4 board;
+## using Olimes 32u4 board;
 -----------------------
 
 1) have a Olimex 32U4 board programmed and connected via comport.

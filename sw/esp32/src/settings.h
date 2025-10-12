@@ -23,11 +23,13 @@ public:
 
     void set(const char * v) { _value = v; onChanged(); }
     void set(int v) { _value = std::to_string(v); onChanged(); }
+    void set(int64_t v) { _value = std::to_string(v); onChanged(); }
     void set(bool v) { _value = v ? "1" : "0"; onChanged(); }
 
     const std::string &name() { return _name; }
     bool asbool() const { return _value == "1"; }
     int asint() const { return atoi(_value.c_str()); }
+    int64_t asint64() const { return std::stoll(_value.c_str()); }
     const std::string &asstring() { return _value; }
 
 private:

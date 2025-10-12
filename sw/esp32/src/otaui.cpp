@@ -101,7 +101,38 @@ bool OTAUI::isUpdateAvailable()
     if ((mins % _checkUpdateInterval) != 0)
         return false;
         
+    auto persist = false;
+    auto pollintervalMins = 24*60*7;
+    auto allowedIdleTimeMinutes = 3*60;
+    if (_checkUpdateInterval < pollintervalMins)
+    {
+        auto lastupdate = _system.settings().SoftwareUpdateIntervalSet();
+        if (lastupdate != 0)
+        {
+            auto now = _system.now().msticks() / 1000;
+            auto elapsedMinutes = (int)(now - lastupdate) / 60;
+            if (elapsedMinutes > allowedIdleTimeMinutes)
+            {
+                printf("fast pollinterval idle for too long, returning to pollinterval=%d minutes\n", pollintervalMins);
+                _system.settings().SoftwareUpdateInterval(pollintervalMins);
+                persist = true;
+            }                
+        }
+    }
+
     auto updateAvailable = readManifest(true);
+    if (updateAvailable)
+    {
+        auto epoch = _system.now().msticks() / 1000;
+        printf("updating last poll moment='%lld'\n", epoch);
+        _system.settings().SoftwareUpdateIntervalSet(epoch);
+        persist = true;
+    }
+
+    if (persist)
+    {
+        _system.settings().saveSettings();
+    }
 
     // prevent double checks in 1 second
     vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -167,6 +198,7 @@ bool OTAUI::readManifest(bool silent)
     }
     else
     {
+        printf("new version='%s' available\n", _manifestVersion.astxt());
         if (!silent) log("new version %s available", _manifestVersion.astxt());
         if (!silent) choices({ _automatic ? CHOICE_UPDATE":1" : CHOICE_UPDATE":9", CHOICE_EXIT });
         newversion = true;

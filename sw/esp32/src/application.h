@@ -3,7 +3,6 @@
 
 #include <limits>
 
-#include "animation.h"
 #include "applicationcontext.h"
 #include "bitmap.h"
 #include "configurationui.h"

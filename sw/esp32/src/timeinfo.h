@@ -36,7 +36,10 @@ public:
     int millies() const { return _millies; }
     void millies(int value) { _millies = value % 1000; set(); }
     bool dst() const { return _tm.tm_isdst == 1; }
+    /// @brief number of [m s] since epoch
     int64_t msticks() const { return _msticks; }    
+    /// @brief number of [s] since epoch
+    int64_t epoch() const { return _msticks / 1000; }    
 
     void setDate(int year, int month, int mday);
     void setTime(int hour, int minutes, int seconds);

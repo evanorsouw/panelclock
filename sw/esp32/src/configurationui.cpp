@@ -230,13 +230,13 @@ void ConfigurationUI::render(Graphics &graphics)
             x = view.text(_font, config.xLabelScrollOffset, y, translate(config.label).c_str(), colWritable);  
             updateScrollState(config.xLabelScrollState, config.xLabelScrollOffset, config.xLabelScrollDelay, x < view.dx());
 
-            // draw value
+            // draw valueo
             auto editing = i == _selectedLine && _updating;
             auto textEditing = editing && _iEditIndex >= 0;
             if (!textEditing)
             {
-                x = _margin + _labelwidth + 2;
-                view = graphics.clipOrigin(x, yt, graphics.dx() - x, yb - yt);
+                x = _margin + _labelwidth + _margin * 2;
+                view = graphics.clipOrigin(x, yt, graphics.dx() - x - _margin, yb - yt);
                 auto color = config.updater ? (editing ? colUpdating : colWritable) : colReadonly;
                 x = view.text(_font, config.xValueScrollOffset, y, config.value, color);    
                 updateScrollState(config.xValueScrollState, config.xValueScrollOffset, config.xValueScrollDelay, x < view.dx());
@@ -359,8 +359,8 @@ void ConfigurationUI::updateScrollState(ScrollState &scrollstate, float &scrollo
     case ScrollState::Scrolling:
         if (endfits)
         {
-            scrollstate = ScrollState::End;
             starttimer(scrolldelay);
+            scrollstate = ScrollState::End;
         }
         else
         {
@@ -833,6 +833,7 @@ bool ConfigurationUI::updateSettingSwUpdate(configline& config, bool init)
             case UserInput::KEY_SET:
                 config.setpoint = _swUpdateChoices[(int)config.setpoint].interval;
                 _system.settings().get(AppSettings::KeySoftwareUpdateInterval)->set((int)config.setpoint);
+                _system.settings().get(AppSettings::KeySoftwareUpdateIntervalSet)->set(_system.now().msticks() / 1000);
                 editing = false;
                 break;
             case UserInput::KEY_UP:

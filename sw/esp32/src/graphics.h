@@ -52,7 +52,11 @@ private:
 public:
     Graphics(int dx, int dy);
 
+    /// @brief the width as set via moveOrigin() or clipOrigin(), the effective
+    /// width may be less due to clipping
     int dx() const { return _dx; }
+    /// @brief the height as set via moveOrigin() or clipOrigin(), the effective
+    /// height may be less due to clipping
     int dy() const { return _dy; }
     
     void linkBitmap(Bitmap *bitmap);
@@ -111,7 +115,6 @@ private:
     float MIN(float a, float b) { return a < b ? a : b; }
     float MAX(float a, float b) { return a > b ? a : b; }
     float ABS(float x) { return x < 0 ? -x : x; }
-    float TRUNC(float x) { return std::floor(x); }
     uint8_t ALPHA(float alpha) { return (uint8_t)MIN(255, alpha*255); }
 
     template <class T> void clip(T &v, T min, T max);

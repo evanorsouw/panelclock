@@ -28,6 +28,7 @@ public:
     inline static const char *KeyPanel2Flipped = "panel2flipped";
     inline static const char *KeyFlipKeys = "flipkeys";
     inline static const char *KeySoftwareUpdateInterval = "swupdinterval";
+    inline static const char *KeySoftwareUpdateIntervalSet = "swupdivalset";
     inline static const char *KeySoftwareUpdateUrl = "swupdurl";
 
     AppSettings(const char *nvsname) 
@@ -62,6 +63,7 @@ public:
         add(KeyTZCustom, "__tz__");
         add(KeySmoothSecondHand, true);
         add(KeySoftwareUpdateInterval, 7*24*60);  // minutes
+        add(KeySoftwareUpdateIntervalSet, 0); // seconds since epoch
         add(KeySoftwareUpdateUrl, "https://whitemagic.it/panelclock");
     }
 
@@ -125,6 +127,9 @@ public:
 
     int SoftwareUpdateInterval() const { return get(KeySoftwareUpdateInterval)->asbool(); }
     void SoftwareUpdateInterval(int interval) const { return get(KeySoftwareUpdateInterval)->set(interval); }
+
+    int64_t SoftwareUpdateIntervalSet() const { return get(KeySoftwareUpdateIntervalSet)->asint64(); }
+    void SoftwareUpdateIntervalSet(int64_t interval) const { return get(KeySoftwareUpdateIntervalSet)->set(interval); }
 
     const std::string &SoftwareUpdateURL() const { return get(KeySoftwareUpdateUrl)->asstring(); }
     void SoftwareUpdateURL(const char *url) const { return get(KeySoftwareUpdateUrl)->set(url); }

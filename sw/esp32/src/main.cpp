@@ -91,7 +91,7 @@ extern "C" {
 void app_main() 
 {
     checkSwitchPreviousFirmware();
-    printf("application starting\n");
+    printf("application starting, version=%s\n", Version::application().astxt());
 
     gpio_set_direction(FPGA_SPI_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(FPGA_SPI_MOSI, GPIO_MODE_OUTPUT);

@@ -4,7 +4,7 @@
 // major.minor.buildno
 // buildno is incremented with each build.
 // major.minor must be updated manually.
-#define VERSION "1.2.2135"
+#define VERSION "1.3.2340"
 
 Version Version::application()
 {
