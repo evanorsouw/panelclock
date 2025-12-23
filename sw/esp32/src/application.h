@@ -2,9 +2,11 @@
 #define _APPLICATION_H_
 
 #include <limits>
+#include <memory>
 
 #include "applicationcontext.h"
 #include "bitmap.h"
+#include "conwaylife.h"
 #include "configurationui.h"
 #include "ds3231.h"
 #include "environment.h"
@@ -38,6 +40,7 @@ private:
     std::vector<stripsegment> _stripSegments;
     int _iSegment;
     float _segmentOffset;
+    std::shared_ptr<ConwayLife> _conway;
 
 public:
     Application(ApplicationContext &appdata, IEnvironment &env, System &sys, UserInput &userinput);
@@ -71,7 +74,8 @@ private:
     void drawFog(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
     void drawSnow(Graphics& graphics, float x, float y, float dx, float dy, const WeatherLayer &layer);
     void drawHorizontalAnimatedLine(Graphics &graphics, float y);
-    void drawBackgroundEffects(Graphics &graphics, const timeinfo &now);
+    void drawBackgroundEffects(int mode, Graphics &graphics, const timeinfo &now);
+    void runConwaysGameOfLife(int mode, Graphics &graphics, const timeinfo &now);
 
     void drawSegments(Graphics& graphics);
     stripsegment temperatureSegment();

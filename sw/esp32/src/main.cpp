@@ -131,7 +131,7 @@ void app_main()
     auto apprunner = new ApplicationRunner(*appdata, *panel, *appui, *configui, *otaui, *setupui, *system, *graphics);
     auto timeupdater = new TimeSyncer(*rtc, *settings, events->allocate("timesync"));
 
-    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->render();  }, "render", 80000, apprunner, 1, nullptr);
+    xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->render();  }, "render", 60000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((ApplicationRunner*)arg)->display(); }, "display", 4000, apprunner, 1, nullptr);
     xTaskCreate([](void*arg) { for(;;) ((UserInputKeys*)arg)->update(); }, "userinput", 4000, userinput, 1, nullptr);
 

@@ -3,9 +3,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <numbers>
+#include <esp_random.h>
 #include <esp_timer.h>
 
 #include "application.h"
+#include "conwaylife.h"
 #include "timeinfo.h"
 #include "xy.h"
 
@@ -22,6 +24,8 @@ Application::Application(ApplicationContext &appdata, IEnvironment &env, System 
     _stripSegments.push_back(windangleSegment());
     _stripSegments.push_back(windspeedSegment());
     _stripSegments.push_back(separatorSegment());
+
+    _conway = std::make_shared<ConwayLife>(_appctx,32,32);
 }
 
 void Application::init()
@@ -53,7 +57,7 @@ void Application::render(Graphics &graphics)
     auto mode = _system.settings().PanelMode();
     if (mode == 0) // 1 panel
     {
-        drawBackgroundEffects(graphics, now);
+        drawBackgroundEffects(mode, graphics, now);
         drawSunRiseSet(graphics, 1, 1, 46);
         drawClock(graphics, 1, 1, 46);
         drawTimeOnePanel(graphics, now);
@@ -63,7 +67,7 @@ void Application::render(Graphics &graphics)
     }
     else if (mode == 1) // 2 panel horizontal
     {
-        drawBackgroundEffects(graphics, now);
+        drawBackgroundEffects(mode, graphics, now);
         drawSunRiseSet(graphics, 1, 1, 62);
         drawClock(graphics, 1, 1, 62);
         drawDateTimeHorizontal(graphics, now);
@@ -72,7 +76,7 @@ void Application::render(Graphics &graphics)
     }
     else if (mode == 2) // 2 panel vertical
     {
-        drawBackgroundEffects(graphics, now);
+        drawBackgroundEffects(mode, graphics, now);
         drawDateTimeVertical(graphics, now);
         drawHorizontalAnimatedLine(graphics, 35);
         auto view = graphics.moveOrigin(0, 90, 64, 38);
@@ -505,12 +509,37 @@ void Application::drawHorizontalAnimatedLine(Graphics &graphics, float y)
         auto p1 = phase(7000, true, ox * 7000);
         auto p2 = phase(7300, true, (1.0f - ox) * 7300);
         auto o = 10 + p1 * p2 * 245;
-        graphics.set(x, y, Color(o, o, o));
+        graphics.add(x, y, Color(o, o, o), 255);
     }
 }
 
-void Application::drawBackgroundEffects(Graphics &graphics, const timeinfo &now)
+void Application::drawBackgroundEffects(int mode, Graphics &graphics, const timeinfo &now)
 {
+    runConwaysGameOfLife(mode, graphics, now);
+}
+
+void Application::runConwaysGameOfLife(int mode, Graphics &graphics, const timeinfo &now)
+{
+    int dx = (mode == 1 ? 128 : 64);
+    int dy = (mode == 2 ? 128 : 64);
+
+    bool runConway = ((_appctx.msSinceMidnight() / 1000 / 60) % 7) == 0;
+    if (_conway->enable(runConway))
+    {
+        _conway->randomColor();
+        switch (esp_random() % 2)
+        {
+        case 0:
+            _conway->init(dx/8, dy/8);  // less but larger squares
+            _conway->addGlider(esp_random() % dx, esp_random() % dy);
+            break;
+        case 1:
+            _conway->init(dx/4, dy/4);  // more but smaller squares
+            _conway->fillRandom();
+            break;
+        }
+    }
+    _conway->render(graphics, now);
 }
 
 
