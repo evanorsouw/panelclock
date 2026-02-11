@@ -34,3 +34,10 @@ The gist is as follows:
 There were the links I used:
 - https://community.platformio.org/t/unable-to-build-and-upload-spiffs-filesystem-image-with-framework-esp-idf/17820
 
+
+# 2 Updating software
+
+1. Build the software  
+When all is fine, a firmware package `firmware.bin` is copied to the `sw\esp32\data` directory, along with a new manifest that contains a newer version number. 
+2. Upload the files `firmware.bin` and `manifest.bin` to the web location that is monitored by the panelclock (default configuration: `whitemagic.it/panelclock`)
+3. The panelclock will autmomatically pick it up next time it checks. By default the interval setting `Update` setting  is set to `weekly`. During development this can be changed to `minutely`.

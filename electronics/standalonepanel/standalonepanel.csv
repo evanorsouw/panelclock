@@ -11,7 +11,7 @@
 "C23","1","10uF","C","Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder","Unpolarized capacitor","",""
 "D1, D2","2","1N5819WS","1N5819WS","Diode_SMD:D_SOD-323_HandSoldering","40V 600mV@1A 1A SOD-323 Schottky Barrier Diodes, SOD-323","",""
 "DSP1, DSP2","2","IDC_08x02","Conn_02x08_Odd_Even","Connector_IDC:IDC-Header_2x08_P2.54mm_Vertical","Generic connector, double row, 02x08, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)","",""
-"F1","1","500mA","Fuse","0_project:FUSEHOLDER 1808","Fuse","",""
+"F1","1","500mA","Fuse","0_whitemagic:FUSEHOLDER 1808","Fuse","",""
 "J1","1","USB-A","USB_A","Connector_USB:USB_A_Molex_67643_Horizontal","USB Type A connector","",""
 "L1, L2","2","2.2uH","L","Inductor_SMD:L_Abracon_ASPI-0630LR","Inductor","",""
 "LED1","1","ESP32","LED","LED_SMD:LED_1206_3216Metric_Pad1.42x1.75mm_HandSolder","Light emitting diode","",""
