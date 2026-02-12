@@ -10,7 +10,7 @@ and this is my first projects integrating the ICE40HX4K FPGA chip into a design.
 Since I like clocks (as so many people) in all their shapes I decided create a clock from it.
 
 > _This repository contains all files for the hardware (Kicad), FPGA (VHDL via IceCUBE2), software (C++/FreeRTOS/PlatformIO) and the mechanical stl files (design was made from Fusion360 but these are not in this archive).  
-However much more documentation is needed not only for others, but also for myself as a reference later on.
+However much more documentation is needed not only for others, but also for myself as a reference later on._
 
 It clock comes in 2 flavors, as a double panel in 128x64 landscape or portrait mode and as a single 64x64 panel.
 
@@ -20,12 +20,12 @@ It clock comes in 2 flavors, as a double panel in 128x64 landscape or portrait m
 
 # 1.1 History
 
-The initial idea began somewhere 2019 with the purchase of a MAX1000 FPGA board. For this I created a small breakout board to 2 HUB75 connectors. The FPGA was used to do 25Hz rendering at 8bit color depth. The USB connector on the [MAX1000 board](https://duckduckgo.com/?t=ffab&q=google+max1000+trenz&ia=web) was used to push screen updates from the Linux system to the FPGA. The software was C# that I developed and tested on Windows in a simulation and run on Linux afterwards. This setup worked ok but required an external PC (NUC) running linux.
+The initial idea began somewhere 2019 with the purchase of a MAX1000 FPGA board. For this I created a small breakout board to 2 HUB75 connectors. The FPGA was used to do 25Hz rendering at 8bit color depth. The USB connector on the [MAX1000 board](https://duckduckgo.com/?t=ffab&q=google+max1000+trenz&ia=web) was used to push screen updates from the Linux system to the FPGA. The software was C# that I developed and tested on Windows in a simulation and run on Linux afterwards. This setup worked ok but required an external PC (NUC) running linux. You can still find this code in the `old` directory.
 
 I wanted a compact stand-alone setup so in 2024 I started on designing a standalone system. Since at that time the bare MAX10 chip was not easily for sale for searching for an alternative I ran into the ICE40 FPGA. Less capable but more than enough for my purpose. Only real drawback was that internal FPGA memory was far less resulting in the need to add some external static RAM. 
 
 Software wise there was a lot of trial-and-erroring and a lot of hurdles to get over. At the end it all worked nicely but it lacked unittests and the code is quite messy at places. Specifically getting the graphics rendering up to speed was challenging. Running bare metal, the very simple task of drawing 
-antialised graphics took months to complete. The solution here was to have the ability to draw an antialised traiangle and use that as basis for the rest. Text drawing was done using the brilliant [libschrift](https://github.com/tomolt/libschrift) library that allows me to render TTF fonts.
+antialised graphics took months to complete. The solution here was to have the ability to draw an antialised triangle and use that as basis for the rest. Text drawing was done using the brilliant [libschrift](https://github.com/tomolt/libschrift) library that allows me to render TTF fonts.
 
 So in the end, now I know what I want and need I should rewrite much of the software and structurally add unittest...
 
@@ -40,7 +40,6 @@ Other than these 2 main components, the is a static 256KB RAM chip where the FPG
  The assembled 2-layer PCB looks like this; 
 ![pcb_front](doc/images/pcb_front_.jpg)
 ![pcb_back](doc/images/pcb_back_.jpg)
-![schematic](electronics/electronics-v3.jpg)
 
 # 3 Software
 
